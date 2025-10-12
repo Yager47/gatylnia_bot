@@ -11,6 +11,8 @@ module GatylniaBot
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
 
+    config.hosts << ENV.fetch("NGROK_HOST")
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
@@ -23,6 +25,10 @@ module GatylniaBot
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    config.i18n.available_locales = [:uk, :en]
+
+    # Language by default
+    config.i18n.default_locale = :uk
 
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.

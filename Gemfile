@@ -1,9 +1,16 @@
 source "https://rubygems.org"
 
+# Must be first in Gemfile
+gem "dotenv-rails", groups: [:development, :test]
+
+# Ruby wrapper for Telegram's Bot API. [https://github.com/atipugin/telegram-bot-ruby]
+gem "telegram-bot-ruby"
+
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.1"
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", ">= 2.1"
+
+gem "pg"
+
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
