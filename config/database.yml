@@ -15,4 +15,4 @@ test:
 
 production:
   <<: *default
-  database: <%= ENV.fetch("POSTGRES_DB", "gatylnia_bot_production") %>
+  url: <%= ENV["DATABASE_URL"] %>
