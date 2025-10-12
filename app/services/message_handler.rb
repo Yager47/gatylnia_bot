@@ -1,5 +1,5 @@
 class MessageHandler
-  BOT_NAME = "@GatylniaBot"
+  BOT_MENTION = "@#{ENV['BOT_USERNAME']}"
 
   def initialize(message)
     @bot = Telegram::Bot::Client.new(ENV.fetch("TELEGRAM_BOT_API_TOKEN"))
@@ -30,19 +30,19 @@ class MessageHandler
       elsif @text == "видали гатіння"
         @user.entries.last&.destroy
         send_to_chat "Твоє останнє гатіння видалено. \nТіряйся"
-      elsif @text == "#{BOT_NAME.downcase} підтримай мене"
+      elsif @text == "#{BOT_MENTION.downcase} підтримай мене"
         send_to_chat support_response
-      elsif @text == "#{BOT_NAME.downcase} дай ритм"
+      elsif @text == "#{BOT_MENTION.downcase} дай ритм"
         send_to_chat rhythm
-      elsif @text == "#{BOT_NAME.downcase} пошли когось" && @chat.users.present?
+      elsif @text == "#{BOT_MENTION.downcase} пошли когось" && @chat.users.present?
         send_to_chat "@#{@chat.users.sample.username} #{fu_variants.sample}"
-      elsif @text == "#{BOT_NAME.downcase} пошли мене"
+      elsif @text == "#{BOT_MENTION.downcase} пошли мене"
         send_to_chat "@#{@user.username} #{fu_variants.sample}"
-      elsif @text == "#{BOT_NAME.downcase} образь когось" && @chat.users.present?
+      elsif @text == "#{BOT_MENTION.downcase} образь когось" && @chat.users.present?
         send_to_chat "@#{@chat.users.sample.username} #{swear_variants.sample}"
-      elsif @text == "#{BOT_NAME.downcase} образь мене"
+      elsif @text == "#{BOT_MENTION.downcase} образь мене"
         send_to_chat "@#{@user.username} #{swear_variants.sample}"
-      elsif @text.include?("#{BOT_NAME.downcase} гатуни за ")
+      elsif @text.include?("#{BOT_MENTION.downcase} гатуни за ")
         call_bot_command
       # elsif @message[:reply_to_message].present? && true
         # reply_to_message
@@ -55,7 +55,7 @@ class MessageHandler
         )
       elsif @text.include?("в рот") || @text.include?("врот")
         send_to_chat mouth_response_text
-      elsif @message[:text].include?(BOT_NAME)
+      elsif @message[:text].include?(BOT_MENTION)
         send_to_chat bot_call_response
 
       elsif @text.include?("ахах")
@@ -409,7 +409,7 @@ class MessageHandler
   end
 
   def call_bot_command
-    command = @text.sub("#{BOT_NAME.downcase} гатуни за ", "").downcase
+    command = @text.sub("#{BOT_MENTION.downcase} гатуни за ", "").downcase
 
     BotCommand.new(bot: @bot, chat: @chat, command: command).call
   end
@@ -496,8 +496,8 @@ class MessageHandler
   end
 
   def bot_call_response
-    recall = @message[:text].sub(BOT_NAME, "@#{@user.username}")
-    recall2 = "Додік @#{@user.username} написав: \"#{@message[:text].sub(BOT_NAME + ' ', '')}\""
+    recall = @message[:text].sub(BOT_MENTION, "@#{@user.username}")
+    recall2 = "Додік @#{@user.username} написав: \"#{@message[:text].sub(BOT_MENTION + ' ', '')}\""
 
     resp = [
       "Шо", "Шо ти хочеш", "Шо нада", "Не дьоргай мене", "Отстань", "Да-да?",
