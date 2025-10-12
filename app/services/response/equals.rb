@@ -1,4 +1,4 @@
-class Response
+module Response
   class Equals
 
     DATA = {

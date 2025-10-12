@@ -1,4 +1,4 @@
-class Response
+module Response
   class Includes < Response::Base
 
     # To include phrase but does not similar bigger phrase,

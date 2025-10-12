@@ -1,4 +1,4 @@
-class Response
+module Response
   class Base
     def initialize(user:, text:)
       @user = user
