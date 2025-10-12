@@ -5,20 +5,24 @@ module Response
       @text = text
     end
 
-    def response(_text)
+    def response
       raise NotImplementedError
     end
 
     private
 
-    def answer(key)
-      data = DATA[key]
+    def data
+      raise NotImplementedError
+    end
 
-      while data.is_a?(Array) do
-        data = data.sample
+    def answer(key)
+      result = data[key]
+
+      while result.is_a?(Array) do
+        result = result.sample
       end
 
-      data
+      result
     end
 
     def phrases(name, locals = {})
