@@ -72,28 +72,35 @@ module Response
       phrases.map { |phrase| "@#{user.username} #{phrase}" }
     end
 
+    def balance_all
+      response = "Загальний баланс в чаті: \n"
+
+      balances = @chat.users
+                      .map { |user| { name: user.name, balance: balance(user) } }
+                      .sort { |a, b| b[:balance] <=> a[:balance] }
+
+      balances.each { |b_data| response << "\n#{b_data[:name]}: #{b_data[:balance]}" }
+      response
+    end
+
+    def balance(user)
+      user.balance(@chat)
+    end
+
     def data
-      @data ||=
-        begin
-          fu_phrases = phrases("fuck_you")
-          swear_phrases = fu_phrases + phrases("swear")
+      fu_phrases = phrases("fuck_you")
+      swear_phrases = fu_phrases + phrases("swear")
 
-          result = {
-            "підтримай мене" => answers("support", first_name: @user.first_name),
-            "дай ритм" => TimeSignature.call,
-            "пошли мене" => mention_user_in(fu_phrases, @user),
-            "образь мене" => mention_user_in(swear_phrases, @user)
-          }
-
-          if @chat.users.present?
-            result.merge!({
-              "пошли когось" => mention_user_in(fu_phrases, @chat.users.sample),
-              "образь когось" => mention_user_in(swear_phrases, @chat.users.sample)
-            })
-          end
-
-          result
-        end
+      {
+        "підтримай мене" => answers("support", first_name: @user.first_name),
+        "дай ритм" => TimeSignature.call,
+        "пошли мене" => mention_user_in(fu_phrases, @user),
+        "образь мене" => mention_user_in(swear_phrases, @user),
+        "пошли когось" => mention_user_in(fu_phrases, @chat.users.sample),
+        "образь когось" => mention_user_in(swear_phrases, @chat.users.sample),
+        "баланс всі" => balance_all,
+        "баланс" => "Твій баланс: #{balance(@user)}"
+      }
     end
   end
 end
