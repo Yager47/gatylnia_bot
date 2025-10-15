@@ -26,12 +26,19 @@ module Response
       reason = @reply_to_message[:text]
 
       return if !@reply_to_user || @user == @reply_to_user
+      break_if_too_many_points(amount)
 
       @reply_to_user.points.create!(
         amount: amount,
         reason: reason,
         chat: @chat
       )
+    end
+
+    def break_if_too_many_points(amount)
+      edge = 500
+      return if amount <= edge && amount >= -edge
+      success "Не можна за раз більше пʼятихатки вʼєбать"
     end
 
     def point_answer
