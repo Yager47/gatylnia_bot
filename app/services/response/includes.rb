@@ -1,29 +1,24 @@
 module Response
   class Includes < Response::Base
-    def response
+    def process
       data.keys.each do |key|
         if key.is_a?(Array)
           key.each do |sub_key|
-            return answer(key) if @text.include?(sub_key)
+            success answer(key) if @text.include?(sub_key)
           end
         else
-          return answer(key) if @text.include?(key)
+          success answer(key) if @text.include?(key)
         end
       end
-
-      nil
     end
 
     private
 
-    # To include phrase but does not similar bigger phrase,
-    # turn the old condition version:
-    #   @text.include?("кав") && !@text.include?("цікав") => coffee_response
-    # to this:
-    #   "цікав" => nil, "кав" => answers("coffee")
-    #
     def data
+      # To include phrase but does not similar bigger phrase, do it that way:
+      #   "цікав" => nil, "кав" => answers("coffee")
       {
+        ["в рот", "врот"] => answers("mouth"),
         ["ахах", "f[f["] => answers("laugh"),
         "))" => answers("smile"),
         "((" => answers("sad"),

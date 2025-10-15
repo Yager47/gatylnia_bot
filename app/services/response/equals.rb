@@ -1,33 +1,38 @@
 module Response
   class Equals < Response::Base
-    def response
+    def process
+      # Talk back
+      success talk_back_answer if swear_phrases.include?(@text[3..-1])
+
       data.keys.each do |key|
         if key.is_a?(Array)
           key.each do |sub_key|
-            return answer(key) if @text == sub_key
+            success answer(key) if @text == sub_key
           end
         else
-          return answer(key) if @text == key
+          success answer(key) if @text == key
         end
       end
-
-      nil
     end
 
     private
 
+    def talk_back_answer
+      ["Ти шо сука", "Ні, ти #{@text[3..-1]}"].sample
+    end
+
     def swear_phrases
-      fuck_you_phrases + phrases("swear")
+      fu_phrases + phrases("swear")
     end
 
     def swear_answers
       result = ["Ти шо сука", "Ні, ти #{@text}"]
-      result << "Я піду, а чи повернусь я?" if fuck_you_phrases.include?(@text)
+      result << "Я піду, а чи повернусь я?" if fu_phrases.include?(@text)
       result
     end
 
-    def fuck_you_phrases
-      @fuck_you_phrases ||= phrases("fuck_you")
+    def fu_phrases
+      @fu_phrases ||= phrases("fuck_you")
     end
 
     def data
@@ -40,7 +45,7 @@ module Response
         "єбать" => "Блять",
         ["пізда", "пизда"] => "Хуй", "хуй" => "Пізда",
         "так" => "Ні", "так!" => "Ні!",
-        "ні" => "Ні", "ні!" => "Так!",
+        "ні" => "Так", "ні!" => "Так!",
         "ало" => "Ало", "алло" => "Алло",
         "це пізда" => ["Ні, це хуй", "Ні, не пізда"],
         "нє" => "Хуй в говнє",
@@ -58,9 +63,7 @@ module Response
         ["я", "я!", "і я", "я також"] => "Головка от хуя",
         ["та йди ти нахуй", "та йди нахуй"] => ["Їбало притуши", "Своїм помахуй"],
         ["розпач", "rozpach"] => answers("rozpach"),
-        swear_phrases => swear_answers,
-        # elsif swear_variants.include?(@text[3..-1])
-        # send_to_chat ["Ти шо сука", "Ні, ти #{@text[3..-1]}"],
+        swear_phrases => swear_answers
       }
     end
   end

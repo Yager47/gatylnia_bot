@@ -1,0 +1,1 @@
+BOT_MENTION = "@#{ENV['BOT_USERNAME']}"

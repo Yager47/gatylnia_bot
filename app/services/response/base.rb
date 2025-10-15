@@ -1,18 +1,18 @@
 module Response
   class Base
-    def initialize(user:, text:)
+    def initialize(user: nil, text: nil)
       @user = user
       @text = text
     end
 
-    def response
+    def process
       raise NotImplementedError
     end
 
     private
 
-    def data
-      raise NotImplementedError
+    def success(response)
+      raise Success, response
     end
 
     def answer(key)
