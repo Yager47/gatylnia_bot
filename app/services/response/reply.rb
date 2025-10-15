@@ -1,8 +1,9 @@
 module Response
   class Reply < Response::Base
-    def initialize(chat:, text:, reply_to_message:)
+    def initialize(user:, text:, chat:, reply_to_message:)
+      super(user: user, text: text)
+
       @chat = chat
-      @text = text
       @reply_to_message = reply_to_message
       @reply_to_user = nil
       @point = nil
@@ -12,7 +13,7 @@ module Response
       return unless @reply_to_message
 
       @point = add_point
-      success answer("point")
+      success answer("point") if @point
     rescue ArgumentError
       nil
     end
@@ -23,6 +24,8 @@ module Response
       amount = Integer(@text)
       @reply_to_user = User.find_by(telegram_id: @reply_to_message[:from][:id])
       reason = @reply_to_message[:text]
+
+      return if !@reply_to_user || @user == @reply_to_user
 
       @reply_to_user.points.create!(
         amount: amount,

@@ -18,7 +18,7 @@ class MessageHandler
     if @message[:text]
       @text = @message[:text].downcase
 
-      Response::Reply.new(chat: @chat, text: @text, reply_to_message: @message[:reply_to_message]).process
+      Response::Reply.new(user: @user, chat: @chat, text: @text, reply_to_message: @message[:reply_to_message]).process
       Response::BotCommand.new(user: @user, text: @text, chat: @chat).process
       Response::Gato.new(user: @user, text: @text, original_text: @message[:text], chat: @chat).process
       Response::Equals.new(user: @user, text: @text).process
