@@ -47,16 +47,18 @@ class MessageHandler
   end
 
   def process_user
-    User.find_by(telegram_id: @message[:from][:id]) ||
-      begin
-        User.create!(
-          chat: @chat,
-          telegram_id: @message[:from][:id],
-          username: @message[:from][:username],
-          first_name: @message[:from][:first_name],
-          last_name: @message[:from][:last_name]
-        )
-      end
+    user = User.find_by(telegram_id: @message[:from][:id]) || create_user
+    user.chats << @chat unless user.chats.include?(@chat)
+    user
+  end
+
+  def create_user
+    user = User.new
+    user.telegram_id = @message[:from][:id]
+    user.username = @message[:from][:username]
+    user.first_name = @message[:from][:first_name]
+    user.last_name = @message[:from][:last_name]
+    user.save!
   end
 
   def send_to_chat(text)
