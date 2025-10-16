@@ -26,6 +26,7 @@ module Response
         "ооо" => answers("ooo"),
         phrases("thank") => answers("thank"),
         phrases("morning") => answers("morning", first_name: @user.first_name),
+        "цікав" => nil, "кав" => answers("coffee"),
         "годин" => nil, "один" => "Проти цілого світу?",
         ["текіл", "свєт"] => "Мальчікіііііііі",
         ["пить", "пити", "бухат"] => "Шоб і не балакать",

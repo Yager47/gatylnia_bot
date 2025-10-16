@@ -32,6 +32,8 @@ class MessageHandler
     Response::Chance.new.process
   rescue Success => e
     send_to_chat e.message
+  rescue Skip
+    nil
   end
 
   private

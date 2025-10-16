@@ -12,7 +12,11 @@ module Response
     private
 
     def success(response)
-      raise Success, response
+      if response.blank?
+        raise Skip
+      else
+        raise Success, response
+      end
     end
 
     def answer(key)
