@@ -11,6 +11,7 @@ module Response
       return unless @text.include?(BOT_MENTION.downcase)
       @command = @text.sub("#{BOT_MENTION.downcase} ", "")
 
+      process_rps
       process_stat
       process_data
       process_bugging
@@ -18,6 +19,10 @@ module Response
     end
 
     private
+
+    def process_rps
+      RpsGame.new(user: @user, user_weapon: @command, chat: @chat).process
+    end
 
     def process_stat
       keyword = "гатуни за "
