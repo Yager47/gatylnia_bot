@@ -45,7 +45,9 @@ module Response
       amount =  @point.amount.positive? ? "+#{@point.amount}" : @point.amount
       name = @reply_to_user.name
 
-      "#{name} отримує #{amount} по причині: \n\"#{@point.reason}\""
+      response = "#{name} отримує #{amount}"
+      response << " по причині: \n\"#{@point.reason}\"" if @point.reason.present?
+      response
     end
 
     def data

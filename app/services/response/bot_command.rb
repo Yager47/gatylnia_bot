@@ -73,13 +73,13 @@ module Response
       return unless @command.include?(pattern)
 
       @user.points.create!(chat: @chat, user: @user, amount: -fee, reason: @command)
-      target_user = User.find_by(username: @command.sub(pattern, ""))
+      target_user = @chat.users.find_by(username: @command.sub(pattern, ""))
 
       if target_user
         phrases = pattern == "пошли @" ? fu_phrases : swear_phrases
-        success mention_user_in(phrases, target_user).sample
+        success "#{@user.first_name} за #{fee} замовив: \n\n#{mention_user_in(phrases, target_user).sample}"
       else
-        success "Такої людини тут нема, але гроші я все одно забрав. Шоб не вмикала чєпуха."
+        success "Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха."
       end
     end
 
