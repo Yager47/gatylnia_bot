@@ -13,6 +13,7 @@ module Response
 
       process_stat
       process_data
+      process_bugging
       process_other
     end
 
@@ -62,10 +63,28 @@ module Response
       success answer(@command) if data[@command].present?
     end
 
+    def process_bugging
+      bug_user(pattern: "пошли", fee: 100)
+      bug_user(pattern: "образь", fee: 150)
+    end
+
+    def bug_user(pattern:, fee:)
+      pattern = "#{pattern} @"
+      return unless @command.include?(pattern)
+
+      @user.points.create!(chat: @chat, user: @user, amount: -fee, reason: @command)
+      target_user = User.find_by(username: @command.sub(pattern, ""))
+
+      if target_user
+        phrases = pattern == "пошли @" ? fu_phrases : swear_phrases
+        success mention_user_in(phrases, target_user).sample
+      else
+        success "Такої людини тут нема, але гроші я все одно забрав. Шоб не вмикала чєпуха."
+      end
+    end
+
     def process_other
-      key = "bot_call"
-      data.merge!(key => answers("bot_call"))
-      success answer(key)
+      success answers("bot_call").sample
     end
 
     def mention_user_in(phrases, user)
@@ -87,10 +106,15 @@ module Response
       user.balance(@chat)
     end
 
-    def data
-      fu_phrases = phrases("fuck_you")
-      swear_phrases = fu_phrases + phrases("swear")
+    def fu_phrases
+      phrases("fuck_you")
+    end
 
+    def swear_phrases
+      fu_phrases + phrases("swear")
+    end
+
+    def data
       {
         "підтримай мене" => answers("support", first_name: @user.first_name),
         "дай ритм" => TimeSignature.call,
