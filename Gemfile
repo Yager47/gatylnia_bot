@@ -7,7 +7,7 @@ gem "dotenv-rails", groups: [:development, :test]
 gem "telegram-bot-ruby"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.0.1"
+gem "rails", "~> 8.1.0"
 
 gem "pg"
 
