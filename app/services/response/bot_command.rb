@@ -107,6 +107,7 @@ module Response
       response
     end
 
+    # Not used
     def balance(user)
       user.balance(@chat)
     end
@@ -127,8 +128,8 @@ module Response
         "образь мене" => mention_user_in(swear_phrases, @user),
         "пошли когось" => mention_user_in(fu_phrases, @chat.users.sample),
         "образь когось" => mention_user_in(swear_phrases, @chat.users.sample),
-        "баланс всі" => balance_all,
-        "баланс" => "Твій баланс: #{balance(@user)}"
+        "баланс" => balance_all
+        # "баланс" => "Твій баланс: #{balance(@user)}"
       }
     end
   end
