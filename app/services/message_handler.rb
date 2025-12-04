@@ -23,6 +23,7 @@ class MessageHandler
       Response::Gato.new(user: @user, text: @text, original_text: @message[:text], chat: @chat).process
       Response::Equals.new(user: @user, text: @text).process
       Response::Includes.new(user: @user, text: @text).process
+      Response::Ai.new(text: @text).process if chance(0.5)
     else
       Response::VideoNote.new(video_note: @message[:video_note]).process if chance(0.4)
       Response::Voice.new(voice: @message[:voice]).process
