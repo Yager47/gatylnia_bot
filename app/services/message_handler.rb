@@ -2,8 +2,8 @@ class MessageHandler
   def initialize(message)
     @bot = Telegram::Bot::Client.new(ENV.fetch("TELEGRAM_BOT_API_TOKEN"))
     @message = message
-    @chat = process_chat
-    @user = process_user
+    @chat = set_chat
+    @user = set_user
 
     @text = nil
   end
@@ -24,12 +24,12 @@ class MessageHandler
       Response::Equals.new(user: @user, text: @text).process
       Response::Includes.new(user: @user, text: @text).process
     else
-      Response::VideoNote.new(video_note: @message[:video_note]).process
+      Response::VideoNote.new(video_note: @message[:video_note]).process if chance(0.4)
       Response::Voice.new(voice: @message[:voice]).process
       Response::Forward.new(forward_from: @message[:forward_from] || @message[:forward_from_chat]).process
     end
 
-    Response::Chance.new.process
+    Response::Chance.new.process if chance(0.2)
   rescue Success => e
     send_to_chat e.message
   rescue Skip
@@ -38,18 +38,19 @@ class MessageHandler
 
   private
 
-  def process_chat
-    Chat.find_by(telegram_id: @message[:chat][:id]) ||
-      begin
-        Chat.create!(
-          telegram_id: @message[:chat][:id],
-          telegram_type: @message[:chat][:type],
-          title: @message[:chat][:title]
-        )
-      end
+  def set_chat
+    Chat.find_by(telegram_id: @message[:chat][:id]) || create_chat
   end
 
-  def process_user
+  def create_chat
+    Chat.create!(
+      telegram_id:   @message[:chat][:id],
+      telegram_type: @message[:chat][:type],
+      title:         @message[:chat][:title]
+    )
+  end
+
+  def set_user
     user = User.find_by(telegram_id: @message[:from][:id]) || create_user
     user.chats << @chat unless user.chats.include?(@chat)
     user
@@ -58,10 +59,14 @@ class MessageHandler
   def create_user
     user = User.new
     user.telegram_id = @message[:from][:id]
-    user.username = @message[:from][:username]
-    user.first_name = @message[:from][:first_name]
-    user.last_name = @message[:from][:last_name]
+    user.username    = @message[:from][:username]
+    user.first_name  = @message[:from][:first_name]
+    user.last_name   = @message[:from][:last_name]
     user.save!
+  end
+
+  def chance(value)
+    value > rand
   end
 
   def send_to_chat(text)

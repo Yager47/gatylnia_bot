@@ -12,7 +12,7 @@ module Response
         add_entry
       elsif @text == "видали гатіння"
         remove_entry
-      elsif @text.include?("гат")
+      elsif @text.include?("гат") && @chat.createad_at > Time.now - 1.week
         success explanation
       end
     end
