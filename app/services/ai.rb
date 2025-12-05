@@ -31,7 +31,7 @@ class Ai
     end
 
     def examples
-      "Деякі приклади відповідей (ігноруй де є rhythm): " \
+      "Деякі приклади відповідей, щоб краще розуміти стиль (ігноруй де є rhythm): " \
         "#{File.read(Rails.root.join('lib/answers/chance.yml.erb'))}"
     end
 
