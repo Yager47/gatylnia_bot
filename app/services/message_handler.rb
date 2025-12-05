@@ -4,8 +4,6 @@ class MessageHandler
     @message = message
     @chat = set_chat
     @user = set_user
-
-    @text = nil
   end
 
   def call
@@ -16,14 +14,19 @@ class MessageHandler
     return if @message[:edit_date].present? && (Time.now > Time.at(@message[:date]) + 1.minute)
 
     if @message[:text]
-      @text = @message[:text].downcase
+      message = @chat.messages.create!(
+        role: :user,
+        user: @user,
+        content: @message[:text]
+      )
+      text = message.content.downcase
 
-      Response::Reply.new(user: @user, chat: @chat, text: @text, reply_to_message: @message[:reply_to_message]).process
-      Response::BotCommand.new(user: @user, text: @text, chat: @chat).process
-      Response::Gato.new(user: @user, text: @text, original_text: @message[:text], chat: @chat).process
-      Response::Equals.new(user: @user, text: @text).process
-      Response::Includes.new(user: @user, text: @text).process
-      Response::Ai.new(text: @text).process if chance(0.5)
+      Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
+      Response::BotCommand.new(user: @user, text: text, chat: @chat).process
+      Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process
+      Response::Equals.new(user: @user, text: text).process
+      Response::Includes.new(user: @user, text: text).process if chance(0.2)
+      Response::Ai.new(chat: @chat).process if chance(0.8)
     else
       Response::VideoNote.new(video_note: @message[:video_note]).process if chance(0.4)
       Response::Voice.new(voice: @message[:voice]).process
@@ -32,7 +35,8 @@ class MessageHandler
 
     Response::Chance.new.process if chance(0.2)
   rescue Success => e
-    send_to_chat e.message
+    message = @chat.messages.create!(role: :assistant, content: e.message)
+    send_to_chat message.content
   rescue Skip
     nil
   end

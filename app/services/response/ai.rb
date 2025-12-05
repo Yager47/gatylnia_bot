@@ -1,11 +1,11 @@
 module Response
   class Ai < Response::Base
-    def initialize(text:)
-      @text = text
+    def initialize(chat:)
+      @chat = chat
     end
 
     def process
-      ai_response = ::Ai.reply_to(@text)
+      ai_response = ::Ai.reply_in(@chat)
       success ai_response
 
     rescue OpenAI::Errors::RateLimitError

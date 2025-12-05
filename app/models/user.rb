@@ -3,6 +3,7 @@ class User < ApplicationRecord
   has_many :chats, through: :chat_users
   has_many :entries, dependent: :destroy
   has_many :points, dependent: :destroy
+  has_many :messages, dependent: :destroy
 
   validates :telegram_id, presence: true
 
