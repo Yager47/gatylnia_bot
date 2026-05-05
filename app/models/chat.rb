@@ -5,5 +5,10 @@ class Chat < ApplicationRecord
   has_many :points, dependent: :destroy
   has_many :messages, dependent: :destroy
 
-  validates :telegram_id, :telegram_type, :title, presence: true
+  enum :mode, {
+    default: 0,
+    accountant: 1
+  }
+
+  validates :telegram_id, :telegram_type, :title, :mode, presence: true
 end

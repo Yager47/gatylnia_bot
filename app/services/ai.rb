@@ -27,7 +27,7 @@ class Ai
     end
 
     def prompt
-      File.read Rails.root.join("lib/ai_prompt/v2.txt")
+      File.read Rails.root.join("lib/ai_prompt/v3.txt")
     end
 
     def examples

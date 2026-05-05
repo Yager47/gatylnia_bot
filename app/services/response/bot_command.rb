@@ -11,17 +11,55 @@ module Response
       return unless @text.include?(BOT_MENTION.downcase)
       @command = @text.sub("#{BOT_MENTION.downcase} ", "")
 
-      process_rps
-      process_stat
-      process_data
-      process_bugging
-      process_other
+      process_mode
+
+      case @chat.mode
+      when "default"
+        process_rps
+        process_stat
+        process_data
+        process_bugging
+        process_other
+      when "accountant"
+        process_data
+      end
     end
 
     private
 
     def process_rps
       RpsGame.new(user: @user, user_weapon: @command, chat: @chat).process
+    end
+
+    def process_mode
+      keyword = "режим: "
+      return unless @command.include?(keyword)
+
+      response = ""
+      command = @command.sub(keyword, "")
+
+      case command
+      when "звичайний", "дефолт", "дефолтний"
+        if @chat.mode == "default"
+          response << "Я вже на звичайному режимі."
+        else
+          @chat.update!(mode: "default")
+          response << "Активовано звичайний режим."
+        end
+      when "бухгалтер", "бухгалтерський"
+        if @chat.mode == "accountant"
+          response << "Я вже на бухгалтерському режимі."
+        else
+          @chat.update!(mode: "accountant")
+          response << "Активовано бухгалтерський режим."
+        end
+      when "київський", "киівський"
+        response << "Слава Київському режиму!"
+      else
+        response << "Нема такого режиму."
+      end
+
+      success(response) if response.present?
     end
 
     def process_stat
@@ -121,6 +159,13 @@ module Response
     end
 
     def data
+      case @chat.mode
+      when "default" then default_data
+      when "accountant" then accountant_data
+      end
+    end
+
+    def default_data
       {
         "підтримай мене" => answers("support", first_name: @user.first_name),
         "дай ритм" => TimeSignature.call,
@@ -130,6 +175,12 @@ module Response
         "образь когось" => mention_user_in(swear_phrases, @chat.users.sample),
         "баланс" => balance_all
         # "баланс" => "Твій баланс: #{balance(@user)}"
+      }
+    end
+
+    def accountant_data
+      {
+        "баланс" => balance_all
       }
     end
   end
