@@ -1,3 +1,5 @@
+require "telegram/bot"
+
 namespace :telegram do
   desc "Register webhook with reaction updates (bot must be chat admin)"
   task configure_webhook: :environment do
