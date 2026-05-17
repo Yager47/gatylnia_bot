@@ -1,10 +1,14 @@
-require 'telegram/bot'
+require "telegram/bot"
 
 class TelegramController < ApplicationController
   def webhook
-    if params[:message] && params[:message][:new_chat_title].present?
+    if params[:message_reaction].present?
+      MessageReactionHandler.new(params[:message_reaction]).call
+    elsif params[:message_reaction_count].present?
+      MessageReactionHandler.new(params[:message_reaction_count], count_mode: true).call
+    elsif params[:message] && params[:message][:new_chat_title].present?
       NewChatTitle.new(params[:message]).call
-    else
+    elsif message.present?
       MessageHandler.new(message).call
     end
 

@@ -1,9 +1,9 @@
 class DefaultHandler
   def initialize(message:, chat:)
-    @bot = Telegram::Bot::Client.new(ENV.fetch("TELEGRAM_BOT_API_TOKEN"))
     @message = message
     @chat = chat
     @user = set_user
+    @messenger = ChatMessenger.new(chat: @chat)
   end
 
   def call
@@ -14,11 +14,7 @@ class DefaultHandler
     return if @message[:edit_date].present? && (Time.now > Time.at(@message[:date]) + 1.minute)
 
     if @message[:text]
-      message = @chat.messages.create!(
-        role: :user,
-        user: @user,
-        content: @message[:text]
-      )
+      message = record_message
       text = message.content.downcase
 
       Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
@@ -35,13 +31,22 @@ class DefaultHandler
 
     Response::Chance.new.process if chance(0.2)
   rescue Success => e
-    message = @chat.messages.create!(role: :assistant, content: e.message)
-    send_to_chat message.content
+    reply = @chat.messages.create!(role: :assistant, content: e.message)
+    @messenger.deliver(reply)
   rescue Skip
     nil
   end
 
   private
+
+  def record_message
+    MessageRecorder.new(
+      chat: @chat,
+      telegram_message: @message,
+      user: @user,
+      role: :user
+    ).record
+  end
 
   def set_user
     user = User.find_by(telegram_id: @message[:from][:id]) || create_user
@@ -60,11 +65,5 @@ class DefaultHandler
 
   def chance(value)
     value > rand
-  end
-
-  def send_to_chat(text)
-    return if text.blank?
-
-    @bot.api.send_message(chat_id: @chat.telegram_id, text: text)
   end
 end
