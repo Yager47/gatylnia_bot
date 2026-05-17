@@ -35,13 +35,14 @@ class DefaultHandler
   def handle_text
     message = record_message
     text = message.content.downcase
+    bot_mentioned = text.include?(BOT_MENTION.downcase)
 
     Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
     Response::BotCommand.new(user: @user, text: text, chat: @chat).process
     Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process
     Response::Equals.new(user: @user, text: text).process
     Response::Includes.new(user: @user, text: text).process if chance(0.2)
-    Response::Ai.new(chat: @chat).process if chance(0.8)
+    Response::Ai.new(chat: @chat).process if bot_mentioned || chance(0.8)
   end
 
   def handle_video_note
