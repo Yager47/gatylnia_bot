@@ -14,17 +14,10 @@ class DefaultHandler
     return if @message[:edit_date].present? && (Time.now > Time.at(@message[:date]) + 1.minute)
 
     if @message[:text]
-      message = record_message
-      text = message.content.downcase
-
-      Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
-      Response::BotCommand.new(user: @user, text: text, chat: @chat).process
-      Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process
-      Response::Equals.new(user: @user, text: text).process
-      Response::Includes.new(user: @user, text: text).process if chance(0.2)
-      Response::Ai.new(chat: @chat).process if chance(0.8)
+      handle_text
+    elsif @message[:video_note].present?
+      handle_video_note
     else
-      Response::VideoNote.new(video_note: @message[:video_note]).process if chance(0.4)
       Response::Voice.new(voice: @message[:voice]).process
       Response::Forward.new(forward_from: @message[:forward_from] || @message[:forward_from_chat]).process
     end
@@ -39,13 +32,41 @@ class DefaultHandler
 
   private
 
-  def record_message
+  def handle_text
+    message = record_message
+    text = message.content.downcase
+
+    Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
+    Response::BotCommand.new(user: @user, text: text, chat: @chat).process
+    Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process
+    Response::Equals.new(user: @user, text: text).process
+    Response::Includes.new(user: @user, text: text).process if chance(0.2)
+    Response::Ai.new(chat: @chat).process if chance(0.8)
+  end
+
+  def handle_video_note
+    frame_path = nil
+    analysis = VideoNoteAnalyzer.call(video_note: @message[:video_note], user: @user)
+    frame_path = analysis.frame_path
+
+    record_message(content: analysis.description)
+    Response::Ai.new(chat: @chat, vision_frame_path: frame_path).process
+  ensure
+    cleanup_frame(frame_path)
+  end
+
+  def record_message(content: nil)
     MessageRecorder.new(
       chat: @chat,
       telegram_message: @message,
       user: @user,
-      role: :user
+      role: :user,
+      content: content
     ).record
+  end
+
+  def cleanup_frame(path)
+    File.delete(path) if path && File.exist?(path)
   end
 
   def set_user
