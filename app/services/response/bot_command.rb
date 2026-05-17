@@ -19,7 +19,6 @@ module Response
         process_stat
         process_data
         process_bugging
-        process_other
       when "accountant"
         process_data
       end
@@ -124,10 +123,6 @@ module Response
       else
         success "Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха."
       end
-    end
-
-    def process_other
-      success answers("bot_call").sample
     end
 
     def mention_user_in(phrases, user)

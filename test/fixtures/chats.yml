@@ -1,9 +1,13 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  telegram_id: MyString
-  title: MyString
+  telegram_id: "1001"
+  telegram_type: group
+  title: Test Chat
+  mode: 0
 
 two:
-  telegram_id: MyString
-  title: MyString
+  telegram_id: "1002"
+  telegram_type: group
+  title: Other Chat
+  mode: 0

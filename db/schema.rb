@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_05_070701) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_17_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -49,7 +49,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_05_070701) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "telegram_message_id"
+    t.bigint "reply_to_id"
+    t.jsonb "reactions", default: {}, null: false
+    t.jsonb "reply_snapshot"
+    t.index ["chat_id", "telegram_message_id"], name: "index_messages_on_chat_id_and_telegram_message_id", unique: true, where: "(telegram_message_id IS NOT NULL)"
     t.index ["chat_id"], name: "index_messages_on_chat_id"
+    t.index ["reply_to_id"], name: "index_messages_on_reply_to_id"
     t.index ["user_id"], name: "index_messages_on_user_id"
   end
 
@@ -78,6 +84,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_05_070701) do
   add_foreign_key "entries", "chats"
   add_foreign_key "entries", "users"
   add_foreign_key "messages", "chats"
+  add_foreign_key "messages", "messages", column: "reply_to_id"
   add_foreign_key "messages", "users"
   add_foreign_key "points", "chats"
   add_foreign_key "points", "users"
