@@ -47,7 +47,7 @@ class DefaultHandler
 
   def handle_video_note
     frame_path = nil
-    analysis = VideoNoteAnalyzer.call(video_note: @message[:video_note], user: @user)
+    analysis = Video::NoteAnalyzer.call(video_note: @message[:video_note], user: @user)
     frame_path = analysis.frame_path
 
     record_message(content: analysis.description)
