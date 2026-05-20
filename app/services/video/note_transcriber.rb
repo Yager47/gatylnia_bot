@@ -5,7 +5,8 @@ module Video
 
       response = client.audio.transcriptions.create(
         model: "whisper-1",
-        file: File.open(file_path)
+        file: File.open(file_path),
+        language: "uk"
       )
 
       extract_text(response)
