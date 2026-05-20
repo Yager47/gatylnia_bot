@@ -1,6 +1,7 @@
 class MessageReactionHandler
   def initialize(update, count_mode: false)
-    @update = update.with_indifferent_access
+    source = update.respond_to?(:to_unsafe_h) ? update.to_unsafe_h : update
+    @update = source.with_indifferent_access
     @count_mode = count_mode
   end
 
@@ -22,7 +23,7 @@ class MessageReactionHandler
     return @message.reactions if user.blank?
 
     db_user = User.find_by(telegram_id: user[:id])
-    user_name = db_user&.name || [user[:first_name], user[:last_name]].compact.join(" ").presence || user[:username]
+    user_name = db_user&.name || [ user[:first_name], user[:last_name] ].compact.join(" ").presence || user[:username]
 
     users = current_users
     key = user[:id].to_s
