@@ -8,14 +8,15 @@ class MessageRecorder
   end
 
   def record
-    @chat.messages.create!(
-      role: @role,
-      user: @user,
-      content: message_content,
-      telegram_message_id: telegram_message_id,
-      reply_to: reply_to_message,
-      reply_snapshot: reply_snapshot
-    )
+    @chat.messages.find_or_create_by!(
+      telegram_message_id: telegram_message_id
+    ) do |message|
+      message.role = @role
+      message.user = @user
+      message.content = message_content
+      message.reply_to = reply_to_message
+      message.reply_snapshot = reply_snapshot
+    end
   end
 
   private
@@ -50,6 +51,6 @@ class MessageRecorder
     from = parent[:from]
     return unless from
 
-    [from[:first_name], from[:last_name]].compact.join(" ").presence || from[:username]
+    [ from[:first_name], from[:last_name] ].compact.join(" ").presence || from[:username]
   end
 end
