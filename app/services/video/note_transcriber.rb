@@ -1,7 +1,9 @@
 module Video
   class NoteTranscriber
     def self.call(file_path)
-      response = OpenAI::Client.new.transcriptions.create(
+      client = OpenAI::Client.new(api_key: ENV["OPENAI_API_KEY"])
+
+      response = client.audio.transcriptions.create(
         model: "whisper-1",
         file: File.open(file_path)
       )
