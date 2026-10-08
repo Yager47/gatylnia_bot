@@ -1,15 +1,18 @@
 require "rails_helper"
 
-# Characterization specs: they pin down how the webhook behaves *before* the
-# milestone-1 refactor (auth, dedup, background job). Examples tagged
+# Characterization specs, written before the milestone-1 refactor (auth,
+# dedup, background job) and kept passing through it. Examples tagged
 # "KNOWN BUG" describe current behaviour we intend to change; when a later
 # step fixes it, the expectation flips in the same commit.
 RSpec.describe "Telegram webhook", type: :request do
   let(:chat_telegram_id) { -1_001_234_567_890 }
 
-  def post_update(payload, path: "/telegram/webhook", secret: ENV.fetch("TELEGRAM_WEBHOOK_SECRET"))
+  # Performs the enqueued ProcessTelegramUpdateJob by default, so examples
+  # describe the bot's end-to-end behaviour (production runs jobs inline).
+  def post_update(payload, path: "/telegram/webhook", secret: ENV.fetch("TELEGRAM_WEBHOOK_SECRET"), perform_jobs: true)
     headers = secret.nil? ? {} : { "X-Telegram-Bot-Api-Secret-Token" => secret }
-    post path, params: payload, headers: headers, as: :json
+    send_request = -> { post path, params: payload, headers: headers, as: :json }
+    perform_jobs ? perform_enqueued_jobs(&send_request) : send_request.call
   end
 
   # Matches telegram_from in spec/support/telegram_payloads.rb.
@@ -81,6 +84,43 @@ RSpec.describe "Telegram webhook", type: :request do
     end
   end
 
+  describe "ingestion" do
+    it "stores the update and enqueues its processing instead of doing it in the request" do
+      post_update(message_update(update_id: 77, text: "Ало"), perform_jobs: false)
+
+      expect(response).to have_http_status(:ok)
+      update = TelegramUpdate.sole
+      expect(update).to have_attributes(update_id: 77, update_type: "message", status: "received")
+      expect(ProcessTelegramUpdateJob).to have_been_enqueued.with(update.id)
+      expect(Message.count).to eq(0)
+    end
+
+    it "stores the payload exactly as sent, without Rails' wrapped params" do
+      payload = edited_message_update(update_id: 78, text: "Ало")
+
+      post_update(payload, perform_jobs: false)
+
+      update = TelegramUpdate.sole
+      expect(update.update_type).to eq("edited_message")
+      expect(update.payload).to eq(payload.deep_stringify_keys)
+    end
+
+    it "rejects a body without update_id" do
+      post_update({ message: { text: "Ало" } }, perform_jobs: false)
+
+      expect(response).to have_http_status(:bad_request)
+      expect(TelegramUpdate.count).to eq(0)
+      expect(ProcessTelegramUpdateJob).not_to have_been_enqueued
+    end
+
+    it "rejects a non-integer update_id" do
+      post_update({ update_id: "abc", message: { text: "Ало" } }, perform_jobs: false)
+
+      expect(response).to have_http_status(:bad_request)
+      expect(TelegramUpdate.count).to eq(0)
+    end
+  end
+
   describe "message from a sender the bot has never seen" do
     it "creates the chat, user and membership and records the message" do
       post_update(message_update(text: "просто кажу"))
@@ -149,13 +189,15 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(fake_telegram.sent_messages).to eq([ { chat_id: chat_telegram_id.to_s, text: "Відповідь ШІ" } ])
     end
 
-    it "stores a redelivered update once but replies twice (KNOWN BUG: fixed by dedup in steps 3-4)" do
+    it "processes a redelivered update only once" do
       payload = message_update(update_id: 7, text: "Ало", message_id: 42)
 
       2.times { post_update(payload) }
 
+      expect(response).to have_http_status(:ok)
+      expect(TelegramUpdate.sole).to be_processed
       expect(Message.where(role: :user).count).to eq(1)
-      expect(fake_telegram.sent_messages.size).to eq(2)
+      expect(fake_telegram.sent_messages.size).to eq(1)
     end
 
     it "fails on a private chat because Chat requires a title (KNOWN BUG: ignored from step 5)" do
@@ -166,6 +208,7 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(Chat.count).to eq(0)
       expect(fake_telegram.sent_messages).to be_empty
+      expect(TelegramUpdate.sole).to be_received
     end
   end
 
@@ -254,6 +297,7 @@ RSpec.describe "Telegram webhook", type: :request do
       post_update({ update_id: 9, callback_query: { id: "1", data: "x" } })
 
       expect(response).to have_http_status(:ok)
+      expect(TelegramUpdate.sole).to have_attributes(update_type: "callback_query", status: "ignored")
       expect(Chat.count).to eq(0)
       expect(fake_telegram.sent_messages).to be_empty
     end

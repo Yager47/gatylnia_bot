@@ -6,23 +6,20 @@ class TelegramController < ApplicationController
   before_action :verify_secret_token
 
   def webhook
-    if params[:message_reaction].present?
-      MessageReactionHandler.new(params[:message_reaction]).call
-    elsif params[:message_reaction_count].present?
-      MessageReactionHandler.new(params[:message_reaction_count], count_mode: true).call
-    elsif params[:message] && params[:message][:new_chat_title].present?
-      NewChatTitle.new(params[:message]).call
-    elsif message.present?
-      MessageHandler.new(message).call
-    end
+    update_id = Integer(params.expect(:update_id), exception: false)
+    return head :bad_request unless update_id
 
+    TelegramUpdates::Ingest.new(update_id: update_id, payload: payload).call
     head :ok
   end
 
   private
 
-  def message
-    params[:message] || params[:edited_message]
+  # The raw update exactly as Telegram sent it. It is only stored as JSON and
+  # never mass-assigned, so it isn't filtered through strong parameters; the
+  # one field we act on (update_id) is read via params.expect above.
+  def payload
+    JSON.parse(request.raw_post)
   end
 
   def verify_secret_token
