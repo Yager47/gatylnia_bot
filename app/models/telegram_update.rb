@@ -10,4 +10,8 @@ class TelegramUpdate < ApplicationRecord
   # No uniqueness validation on update_id: the unique index enforces it, and
   # ingestion relies on INSERT ... ON CONFLICT DO NOTHING rather than a check.
   validates :update_id, :update_type, :payload, presence: true
+
+  def finished?
+    processed? || ignored?
+  end
 end
