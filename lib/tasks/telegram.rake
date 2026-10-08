@@ -1,43 +1,23 @@
-require "telegram/bot"
-
 namespace :telegram do
-  desc "Register webhook with reaction updates (bot must be chat admin)"
-  task configure_webhook: :environment do
-    token = ENV.fetch("TELEGRAM_BOT_API_TOKEN")
-    url = ENV.fetch("TELEGRAM_WEBHOOK_URL")
-    client = Telegram::Bot::Client.new(token)
-
-    client.api.set_webhook(
-      url: url,
-      allowed_updates: %w[
-        message
-        edited_message
-        message_reaction
-        message_reaction_count
-      ]
+  webhook_registration = lambda do
+    TelegramWebhookRegistration.new(
+      url: ENV.fetch("TELEGRAM_WEBHOOK_URL"),
+      secret_token: ENV.fetch("TELEGRAM_WEBHOOK_SECRET")
     )
+  end
 
-    puts "Webhook set to #{url}"
+  # Prints only the host: the URL path may contain the bot token.
+  webhook_host = -> { URI(ENV.fetch("TELEGRAM_WEBHOOK_URL")).host }
+
+  desc "Register webhook with secret token and reaction updates (bot must be chat admin)"
+  task configure_webhook: :environment do
+    webhook_registration.call.register
+    puts "Webhook registered for #{webhook_host.call}"
   end
 
   desc "Clear pending updates and re-register webhook"
   task reset_webhook: :environment do
-    token = ENV.fetch("TELEGRAM_BOT_API_TOKEN")
-    url = ENV.fetch("TELEGRAM_WEBHOOK_URL")
-    client = Telegram::Bot::Client.new(token)
-
-    client.api.delete_webhook(drop_pending_updates: true)
-    puts "Webhook deleted, pending updates dropped"
-
-    client.api.set_webhook(
-      url: url,
-      allowed_updates: %w[
-        message
-        edited_message
-        message_reaction
-        message_reaction_count
-      ]
-    )
-    puts "Webhook re-registered at #{url}"
+    webhook_registration.call.reset
+    puts "Pending updates dropped, webhook re-registered for #{webhook_host.call}"
   end
 end
