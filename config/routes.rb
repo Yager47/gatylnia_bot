@@ -5,6 +5,9 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  post "telegram/webhook", to: "telegram#webhook"
+  # Legacy path with the bot token in the URL. Remove once TELEGRAM_WEBHOOK_URL
+  # points at telegram/webhook in production.
   post "telegram/:token/webhook", to: "telegram#webhook"
 
   # Defines the root path route ("/")

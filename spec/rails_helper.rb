@@ -9,6 +9,7 @@ ENV["TELEGRAM_BOT_API_TOKEN"] = "test-telegram-token"
 ENV["BOT_USERNAME"] = "test_bot"
 ENV["OPENAI_API_KEY"] = "test-openai-key"
 ENV["TELEGRAM_WEBHOOK_URL"] = "https://example.test/telegram/webhook"
+ENV["TELEGRAM_WEBHOOK_SECRET"] = "test-webhook-secret-0123456789abcdef"
 
 require_relative "../config/environment"
 # Prevent database truncation if the environment is production
