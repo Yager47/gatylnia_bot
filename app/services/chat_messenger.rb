@@ -1,7 +1,7 @@
 class ChatMessenger
-  def initialize(chat:)
+  def initialize(chat:, client: TelegramClient.build)
     @chat = chat
-    @bot = Telegram::Bot::Client.new(ENV.fetch("TELEGRAM_BOT_API_TOKEN"))
+    @bot = client
   end
 
   def deliver(message)
