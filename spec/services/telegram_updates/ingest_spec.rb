@@ -47,13 +47,15 @@ RSpec.describe TelegramUpdates::Ingest do
       expect(ProcessTelegramUpdateJob).not_to have_been_enqueued
     end
 
-    it "re-enqueues an update whose processing never finished" do
-      existing = create(:telegram_update, update_id: 100, status: :received)
+    %i[received processing failed].each do |status|
+      it "re-enqueues an unfinished (#{status}) update and lets the job's claim decide" do
+        existing = create(:telegram_update, update_id: 100, status: status)
 
-      expect(ingest).to eq(:requeued)
+        expect(ingest).to eq(:requeued)
 
-      expect(TelegramUpdate.count).to eq(1)
-      expect(ProcessTelegramUpdateJob).to have_been_enqueued.with(existing.id).exactly(:once)
+        expect(TelegramUpdate.count).to eq(1)
+        expect(ProcessTelegramUpdateJob).to have_been_enqueued.with(existing.id).exactly(:once)
+      end
     end
 
     it "keeps the originally stored payload" do

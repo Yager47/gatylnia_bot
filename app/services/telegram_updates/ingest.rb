@@ -12,10 +12,10 @@ module TelegramUpdates
       return enqueue(inserted_id, :enqueued) if inserted_id
 
       existing = TelegramUpdate.find_by!(update_id: @update_id)
-      # A redelivery of an update whose processing never finished (the job
-      # raised, so Telegram got a non-2xx and retried): process it again.
-      # Finished updates are dropped.
-      existing.received? ? enqueue(existing.id, :requeued) : :duplicate
+      # A redelivery of an update that isn't finished (the job raised, so
+      # Telegram got a non-2xx and retried): enqueue it again and let the
+      # job's claim decide whether it may run. Finished updates are dropped.
+      existing.finished? ? :duplicate : enqueue(existing.id, :requeued)
     end
 
     private

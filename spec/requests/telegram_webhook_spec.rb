@@ -13,6 +13,9 @@ RSpec.describe "Telegram webhook", type: :request do
     headers = secret.nil? ? {} : { "X-Telegram-Bot-Api-Secret-Token" => secret }
     send_request = -> { post path, params: payload, headers: headers, as: :json }
     perform_jobs ? perform_enqueued_jobs(&send_request) : send_request.call
+  rescue Minitest::UnexpectedError => e
+    # perform_enqueued_jobs wraps exceptions raised inside its block.
+    raise e.error
   end
 
   # Matches telegram_from in spec/support/telegram_payloads.rb.
@@ -208,7 +211,25 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(Chat.count).to eq(0)
       expect(fake_telegram.sent_messages).to be_empty
-      expect(TelegramUpdate.sole).to be_received
+      expect(TelegramUpdate.sole).to have_attributes(status: "failed", attempts: 1)
+    end
+
+    it "rolls back a failed send and recovers on Telegram's redelivery without double-counting" do
+      payload = message_update(update_id: 8, text: "гатю")
+      allow(fake_telegram).to receive(:send_message).and_raise(Faraday::ConnectionFailed, "Telegram unreachable")
+
+      expect { post_update(payload) }.to raise_error(Faraday::ConnectionFailed)
+      expect(Entry.count).to eq(0)
+      expect(Message.count).to eq(0)
+      expect(TelegramUpdate.sole).to have_attributes(status: "failed", last_error: /Telegram unreachable/)
+
+      allow(fake_telegram).to receive(:send_message).and_call_original
+      post_update(payload)
+
+      expect(response).to have_http_status(:ok)
+      expect(Entry.count).to eq(1)
+      expect(fake_telegram.sent_messages.size).to eq(1)
+      expect(TelegramUpdate.sole).to have_attributes(status: "processed", attempts: 2)
     end
   end
 
