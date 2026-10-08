@@ -47,5 +47,6 @@ class AccountantHandler
     user.first_name  = @message[:from][:first_name]
     user.last_name   = @message[:from][:last_name]
     user.save!
+    user
   end
 end
