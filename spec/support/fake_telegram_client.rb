@@ -4,10 +4,12 @@
 class FakeTelegramClient
   SentMessage = Struct.new(:message_id, keyword_init: true)
 
-  attr_reader :sent_messages
+  # calls: every API call in order, as [method_name, params].
+  attr_reader :sent_messages, :calls
 
   def initialize
     @sent_messages = []
+    @calls = []
     @next_message_id = 1000
   end
 
@@ -16,9 +18,20 @@ class FakeTelegramClient
   end
 
   def send_message(**params)
+    @calls << [ :send_message, params ]
     @sent_messages << params
     @next_message_id += 1
     SentMessage.new(message_id: @next_message_id)
+  end
+
+  def set_webhook(**params)
+    @calls << [ :set_webhook, params ]
+    true
+  end
+
+  def delete_webhook(**params)
+    @calls << [ :delete_webhook, params ]
+    true
   end
 end
 
