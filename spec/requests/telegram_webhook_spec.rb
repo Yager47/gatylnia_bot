@@ -54,16 +54,12 @@ RSpec.describe "Telegram webhook", type: :request do
       expect_rejected
     end
 
-    it "still serves the legacy token path during the URL migration (removed in step 1c)" do
+    it "no longer serves the legacy path with the bot token in the URL" do
       post_update(payload, path: "/telegram/any-token/webhook")
 
-      expect(response).to have_http_status(:ok)
-    end
-
-    it "rejects the legacy token path without the secret token header" do
-      post_update(payload, path: "/telegram/any-token/webhook", secret: nil)
-
-      expect_rejected
+      expect(response).to have_http_status(:not_found)
+      expect(Message.count).to eq(0)
+      expect(fake_telegram.sent_messages).to be_empty
     end
 
     context "when TELEGRAM_WEBHOOK_SECRET is not set on the server" do
