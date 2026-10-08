@@ -34,27 +34,26 @@ RSpec.describe "Telegram webhook", type: :request do
   end
 
   describe "message from a sender the bot has never seen" do
-    # DefaultHandler#create_user returns the result of save! (true) instead of
-    # the user, so set_user calls true.chats. The user row is already saved.
-    it "saves the chat and user, then crashes (KNOWN BUG: create_user returns true)" do
-      expect { post_update(message_update(text: "просто кажу")) }
-        .to raise_error(NoMethodError, /chats/)
+    it "creates the chat, user and membership and records the message" do
+      post_update(message_update(text: "просто кажу"))
 
-      expect(Chat.sole).to have_attributes(telegram_id: chat_telegram_id.to_s, telegram_type: "supergroup", title: "Гатильня")
-      expect(User.sole).to have_attributes(telegram_id: "555", username: "petro", first_name: "Петро")
-      expect(ChatUser.count).to eq(0)
-      expect(Message.count).to eq(0)
+      expect(response).to have_http_status(:ok)
+      chat = Chat.sole
+      user = User.sole
+      expect(chat).to have_attributes(telegram_id: chat_telegram_id.to_s, telegram_type: "supergroup", title: "Гатильня")
+      expect(user).to have_attributes(telegram_id: "555", username: "petro", first_name: "Петро")
+      expect(chat.users).to contain_exactly(user)
+      expect(Message.sole).to have_attributes(user: user, content: "просто кажу")
     end
 
-    it "succeeds when Telegram redelivers the update, which hides the bug in production" do
-      payload = message_update(text: "просто кажу")
-      expect { post_update(payload) }.to raise_error(NoMethodError)
+    it "creates the user in an accountant-mode chat too" do
+      create(:chat, telegram_id: chat_telegram_id.to_s, mode: :accountant)
 
-      post_update(payload)
+      post_update(message_update(text: "просто кажу"))
 
       expect(response).to have_http_status(:ok)
       expect(Chat.sole.users).to contain_exactly(User.sole)
-      expect(Message.count).to eq(1)
+      expect(Message.sole.user).to eq(User.sole)
     end
   end
 

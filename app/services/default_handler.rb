@@ -83,6 +83,7 @@ class DefaultHandler
     user.first_name  = @message[:from][:first_name]
     user.last_name   = @message[:from][:last_name]
     user.save!
+    user
   end
 
   def chance(value)
