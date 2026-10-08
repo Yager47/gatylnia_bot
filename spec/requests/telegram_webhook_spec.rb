@@ -7,8 +7,9 @@ require "rails_helper"
 RSpec.describe "Telegram webhook", type: :request do
   let(:chat_telegram_id) { -1_001_234_567_890 }
 
-  def post_update(payload, token: "any-token")
-    post "/telegram/#{token}/webhook", params: payload, as: :json
+  def post_update(payload, path: "/telegram/webhook", secret: ENV.fetch("TELEGRAM_WEBHOOK_SECRET"))
+    headers = secret.nil? ? {} : { "X-Telegram-Bot-Api-Secret-Token" => secret }
+    post path, params: payload, headers: headers, as: :json
   end
 
   # Matches telegram_from in spec/support/telegram_payloads.rb.
@@ -23,13 +24,64 @@ RSpec.describe "Telegram webhook", type: :request do
   end
 
   describe "authentication" do
+    let(:payload) { message_update(text: "Ало") }
+
     before { create_known_sender }
 
-    it "accepts any value in the token path segment (KNOWN BUG: no auth, fixed in step 1)" do
-      post_update(message_update(text: "просто кажу"), token: "definitely-not-the-secret")
+    def expect_rejected
+      expect(response).to have_http_status(:unauthorized)
+      expect(Chat.count).to eq(0)
+      expect(Message.count).to eq(0)
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "processes an update that carries the secret token" do
+      post_update(payload)
 
       expect(response).to have_http_status(:ok)
-      expect(Message.count).to eq(1)
+      expect(fake_telegram.sent_messages.size).to eq(1)
+    end
+
+    it "rejects a request without the secret token header" do
+      post_update(payload, secret: nil)
+
+      expect_rejected
+    end
+
+    it "rejects a request with a wrong secret token" do
+      post_update(payload, secret: "wrong-secret-0123456789abcdef0123")
+
+      expect_rejected
+    end
+
+    it "still serves the legacy token path during the URL migration (removed in step 1c)" do
+      post_update(payload, path: "/telegram/any-token/webhook")
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "rejects the legacy token path without the secret token header" do
+      post_update(payload, path: "/telegram/any-token/webhook", secret: nil)
+
+      expect_rejected
+    end
+
+    context "when TELEGRAM_WEBHOOK_SECRET is not set on the server" do
+      around do |example|
+        original = ENV.delete("TELEGRAM_WEBHOOK_SECRET")
+        example.run
+      ensure
+        ENV["TELEGRAM_WEBHOOK_SECRET"] = original
+      end
+
+      it "rejects every request and logs the misconfiguration" do
+        allow(Rails.logger).to receive(:error)
+
+        post_update(payload, secret: "")
+
+        expect_rejected
+        expect(Rails.logger).to have_received(:error).with(/TELEGRAM_WEBHOOK_SECRET is not set/)
+      end
     end
   end
 
