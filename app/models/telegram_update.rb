@@ -7,6 +7,8 @@ class TelegramUpdate < ApplicationRecord
     ignored: 4
   }, validate: true
 
+  scope :finished, -> { where(status: [ :processed, :ignored ]) }
+
   # No uniqueness validation on update_id: the unique index enforces it, and
   # ingestion relies on INSERT ... ON CONFLICT DO NOTHING rather than a check.
   validates :update_id, :update_type, :payload, presence: true
