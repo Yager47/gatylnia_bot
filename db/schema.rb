@@ -10,9 +10,25 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_11_174250) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_11_213056) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "activities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "chat_id", null: false
+    t.integer "kind", null: false
+    t.integer "amount", default: 1, null: false
+    t.integer "source", null: false
+    t.bigint "telegram_message_id", null: false
+    t.datetime "occurred_at", null: false
+    t.jsonb "details", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "kind", "occurred_at"], name: "index_activities_on_chat_id_and_kind_and_occurred_at"
+    t.index ["chat_id", "telegram_message_id", "kind"], name: "index_activities_on_chat_id_and_telegram_message_id_and_kind", unique: true
+    t.index ["user_id"], name: "index_activities_on_user_id"
+  end
 
   create_table "chat_users", force: :cascade do |t|
     t.bigint "chat_id", null: false
@@ -214,6 +230,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_11_174250) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "activities", "chats"
+  add_foreign_key "activities", "users"
   add_foreign_key "chat_users", "chats"
   add_foreign_key "chat_users", "users"
   add_foreign_key "entries", "chats"
