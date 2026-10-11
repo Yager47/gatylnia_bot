@@ -17,6 +17,17 @@ module TelegramPayloads
     { update_id: update_id, message: telegram_message(**message_attrs) }
   end
 
+  # A message starting with a bot command, with the entity Telegram attaches.
+  def command_update(text, update_id: 1, **message_attrs)
+    command_length = text[%r{\A/\S+}].length
+    message_update(
+      update_id: update_id,
+      text: text,
+      entities: [ { type: "bot_command", offset: 0, length: command_length } ],
+      **message_attrs
+    )
+  end
+
   def edited_message_update(update_id: 1, edit_date: Time.current.to_i, **message_attrs)
     { update_id: update_id, edited_message: telegram_message(edit_date: edit_date, **message_attrs) }
   end

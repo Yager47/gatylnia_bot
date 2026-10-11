@@ -203,16 +203,6 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(fake_telegram.sent_messages.size).to eq(1)
     end
 
-    it "fails on a private chat because Chat requires a title (KNOWN BUG: ignored from step 5)" do
-      private_chat = telegram_chat(id: 555, type: "private", title: nil)
-
-      post_update(message_update(text: "Ало", chat: private_chat))
-
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(Chat.count).to eq(0)
-      expect(fake_telegram.sent_messages).to be_empty
-      expect(TelegramUpdate.sole).to have_attributes(status: "failed", attempts: 1)
-    end
 
     it "rolls back a failed send and recovers on Telegram's redelivery without double-counting" do
       payload = message_update(update_id: 8, text: "гатю")
@@ -230,6 +220,71 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(Entry.count).to eq(1)
       expect(fake_telegram.sent_messages.size).to eq(1)
       expect(TelegramUpdate.sole).to have_attributes(status: "processed", attempts: 2)
+    end
+  end
+
+  describe "/ping" do
+    it "replies pong in a group without recording anything" do
+      post_update(command_update("/ping"))
+
+      expect(response).to have_http_status(:ok)
+      expect(fake_telegram.sent_messages).to eq([ { chat_id: chat_telegram_id, text: "pong" } ])
+      expect(TelegramUpdate.sole).to be_processed
+      expect([ Chat.count, User.count, Message.count ]).to eq([ 0, 0, 0 ])
+    end
+
+    it "replies to /ping addressed to this bot" do
+      post_update(command_update("/ping@test_bot"))
+
+      expect(fake_telegram.sent_messages.map { |m| m[:text] }).to eq([ "pong" ])
+    end
+
+    it "leaves /ping addressed to another bot to the regular handlers" do
+      create_known_sender
+
+      post_update(command_update("/ping@other_bot"))
+
+      expect(fake_telegram.sent_messages).to be_empty
+      expect(Message.sole.content).to eq("/ping@other_bot")
+    end
+
+    it "leaves unknown commands to the regular handlers" do
+      create_known_sender
+
+      post_update(command_update("/start"))
+
+      expect(fake_telegram.sent_messages).to be_empty
+      expect(Message.sole.content).to eq("/start")
+    end
+
+    it "doesn't reply again when /ping is edited" do
+      create_known_sender
+      update = command_update("/ping")
+      update[:edited_message] = update.delete(:message).merge(edit_date: Time.current.to_i)
+
+      post_update(update)
+
+      expect(fake_telegram.sent_messages.map { |m| m[:text] }).not_to include("pong")
+    end
+  end
+
+  describe "private chats" do
+    let(:private_chat) { telegram_chat(id: 555, type: "private", title: nil) }
+
+    it "ignores messages without creating anything" do
+      post_update(message_update(text: "Ало", chat: private_chat))
+
+      expect(response).to have_http_status(:ok)
+      expect(TelegramUpdate.sole).to be_ignored
+      expect([ Chat.count, User.count, Message.count ]).to eq([ 0, 0, 0 ])
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "ignores /ping too" do
+      post_update(command_update("/ping", chat: private_chat))
+
+      expect(TelegramUpdate.sole).to be_ignored
+      expect(fake_telegram.sent_messages).to be_empty
     end
   end
 
