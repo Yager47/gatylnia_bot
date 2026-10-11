@@ -24,7 +24,7 @@ RSpec.describe Activities::Confirmation do
   end
 
   it "uses the Ukrainian plural for cups" do
-    labels = [ 1, 2, 4, 5, 11, 12, 14, 20, 21, 22, 25, 111, 112 ].index_with { |count| described_class.new(user: user, chat: chat, day: day).send(:coffee_label, count) }
+    labels = [ 1, 2, 4, 5, 11, 12, 14, 20, 21, 22, 25, 111, 112 ].index_with { |count| described_class.new(user: user, chat: chat, day: day).send(:plural, count, "кава", "кави", "кав") }
 
     expect(labels).to eq(
       1 => "кава", 2 => "кави", 4 => "кави", 5 => "кав", 11 => "кав", 12 => "кав", 14 => "кав",
@@ -46,6 +46,19 @@ RSpec.describe Activities::Confirmation do
     create(:activity, :push_ups, chat: create(:chat), user: user, occurred_at: day)
     create(:activity, :push_ups, chat: chat, occurred_at: day)
 
-    expect(text(push_ups: 1)).to eq("💪 Петро: 1 за сьогодні")
+    expect(text(push_ups: 1)).to eq("💪 Петро: 1 підхід за сьогодні")
+  end
+
+  it "uses the plural for push-up sets in the combined message" do
+    create(:activity, chat: chat, user: user, occurred_at: day)
+    create_list(:activity, 2, :push_ups, chat: chat, user: user, occurred_at: day)
+
+    expect(text(coffee: 1, push_ups: 1)).to eq("☕💪 Петро: 1 кава, 2 підходи відтискань за сьогодні")
+  end
+
+  it "uses the plural for several push-up sets" do
+    create_list(:activity, 2, :push_ups, chat: chat, user: user, occurred_at: day)
+
+    expect(text(push_ups: 1)).to eq("💪 Петро: 2 підходи за сьогодні")
   end
 end

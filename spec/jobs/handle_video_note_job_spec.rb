@@ -73,7 +73,7 @@ RSpec.describe HandleVideoNoteJob do
     perform
 
     expect(Activity.sole).to have_attributes(kind: "push_ups", amount: 1, details: {})
-    expect(sent_texts).to eq([ "💪 Петро: 1 за сьогодні" ])
+    expect(sent_texts).to eq([ "💪 Петро: 1 підхід за сьогодні" ])
   end
 
   it "records both from one video in one message" do
