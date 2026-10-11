@@ -25,7 +25,7 @@ module Response
     end
 
     def remove_entry
-      last_entry = @user.entries.last
+      last_entry = @user.entries.where(chat: @chat).last
 
       if last_entry
         last_entry.destroy
