@@ -69,36 +69,34 @@ module Response
       command = @command.sub(keyword, "")
 
       case command
+      # Time.current is in the app time zone (Kyiv); Date.today would use the
+      # server clock, which is UTC in production.
       when "сьогодні", "день"
         response << "Сьогоднішні гатуни:\n\n"
-        range = Date.today.beginning_of_day..Date.today.end_of_day
-        response << calculate_entries(range)
+        response << calculate_entries(Time.current.all_day)
       when "тиждень"
         response << "Гатуни за поточний тиждень:\n\n"
-        range = Date.today.beginning_of_week.beginning_of_day..Date.today.end_of_week.end_of_day
-        response << calculate_entries(range)
+        response << calculate_entries(Time.current.all_week)
       when "місяць"
         response << "Гатуни за поточний місяць:\n\n"
-        range = Date.today.beginning_of_month.beginning_of_day..Date.today.end_of_month.end_of_day
-        response << calculate_entries(range)
+        response << calculate_entries(Time.current.all_month)
       when "рік"
         response << "Гатуни за поточний рік:\n\n"
-        range = Date.today.beginning_of_year.beginning_of_day..Date.today.end_of_year.end_of_day
-        response << calculate_entries(range)
+        response << calculate_entries(Time.current.all_year)
       end
 
       success(response) if response.present?
     end
 
+    # Two queries no matter how many users the chat has: one grouped count,
+    # one to load the names of users who have entries.
     def calculate_entries(range)
-      info = @chat.users.map do |user|
-        entries_size = user.entries.where(chat: @chat, created_at: range).size
-        next if entries_size.zero?
-        [user.name, entries_size]
-      end.compact
+      counts = @chat.entries.where(created_at: range).group(:user_id).count
+      users = User.where(id: counts.keys).index_by(&:id)
 
-      info = info.sort { |a, b| b[1] <=> a[1] }
-      info.map { |entry| "#{entry[0]}: #{entry[1]}" }.join("\n")
+      counts.sort_by { |_user_id, count| -count }
+            .map { |user_id, count| "#{users[user_id].name}: #{count}" }
+            .join("\n")
     end
 
     def process_data
