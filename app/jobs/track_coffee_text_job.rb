@@ -49,8 +49,7 @@ class TrackCoffeeTextJob < ApplicationJob
       ).call
       next unless recorded
 
-      today = @chat.activities.coffee.where(user: @user, occurred_at: sent_at.all_day).sum(:amount)
-      deliver("#{'☕' * verdict.cups} #{@user.name}: #{today} за сьогодні")
+      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text(coffee: verdict.cups))
     end
   end
 

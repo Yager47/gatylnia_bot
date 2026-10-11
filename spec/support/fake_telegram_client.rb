@@ -24,6 +24,14 @@ class FakeTelegramClient
     SentMessage.new(message_id: @next_message_id)
   end
 
+  # file_path is the location to download from (https://core.telegram.org/bots/api#getfile).
+  TelegramFile = Struct.new(:file_path, keyword_init: true)
+
+  def get_file(**params)
+    @calls << [ :get_file, params ]
+    TelegramFile.new(file_path: "videos/file_#{params[:file_id]}.mp4")
+  end
+
   def set_webhook(**params)
     @calls << [ :set_webhook, params ]
     true

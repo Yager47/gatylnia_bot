@@ -1,19 +1,21 @@
 module Video
   class NoteAnalyzer
-    Result = Struct.new(:description, :frame_path)
+    FRAMES = 6
 
-    def self.call(video_note:, user:)
-      path = TelegramFileDownloader.download(video_note[:file_id])
+    Result = Struct.new(:description, :transcript, :frame_paths)
+
+    # The video and its frames are written into `dir`, which the caller
+    # creates and removes.
+    def self.call(video_note:, user:, dir:)
+      path = TelegramFileDownloader.download(video_note[:file_id], dir: dir)
       transcript = NoteTranscriber.call(path)
-      frame_path = FrameExtractor.call(path)
+      frame_paths = FrameExtractor.call(path, dir: dir, count: FRAMES, duration: video_note[:duration])
       description = build_description(user, video_note[:duration], transcript)
 
-      Result.new(description: description, frame_path: frame_path)
+      Result.new(description: description, transcript: transcript, frame_paths: frame_paths)
     rescue StandardError => e
       Rails.logger.error("[Video::NoteAnalyzer] #{e.class}: #{e.message}")
-      Result.new(description: fallback_description(user, video_note[:duration]), frame_path: nil)
-    ensure
-      cleanup(path)
+      Result.new(description: fallback_description(user, video_note[:duration]), transcript: nil, frame_paths: [])
     end
 
     def self.build_description(user, duration, transcript)
@@ -30,12 +32,6 @@ module Video
       user_name = user&.name || "хтось"
 
       "#{user_name} надіслав відео #{duration_text}, але не вдалося обробити його вміст."
-    end
-
-    def self.cleanup(path)
-      return unless path
-
-      File.delete(path) if File.exist?(path)
     end
   end
 end
