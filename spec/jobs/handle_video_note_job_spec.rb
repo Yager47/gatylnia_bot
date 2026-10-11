@@ -85,18 +85,18 @@ RSpec.describe HandleVideoNoteJob do
     expect(sent_texts).to eq([ "☕💪 Петро: 1 кава, 1 підхід відтискань за сьогодні" ])
   end
 
-  it "replies in character with the middle frame when the video shows neither" do
+  it "replies in character with all frames, tied to this video, when it shows neither" do
     classify_as
-    vision_frame = nil
-    allow(Ai).to receive(:reply_in) do |_chat, vision_frame_path:|
-      vision_frame = vision_frame_path
+    received = nil
+    allow(Ai).to receive(:reply_in) do |_chat, frames_for:, frame_paths:|
+      received = { frames_for: frames_for, frames: frame_paths.map { |path| File.basename(path) } }
       "Шо ти там бубониш"
     end
 
     perform
 
     expect(Activity.count).to eq(0)
-    expect(File.basename(vision_frame)).to eq("frame_1.jpg")
+    expect(received).to eq(frames_for: message, frames: %w[frame_0.jpg frame_1.jpg frame_2.jpg])
     expect(sent_texts).to eq([ "Шо ти там бубониш" ])
   end
 
@@ -108,7 +108,7 @@ RSpec.describe HandleVideoNoteJob do
     perform
 
     expect(Activities::VideoNoteClassifier).not_to have_received(:new)
-    expect(Ai).to have_received(:reply_in).with(chat, vision_frame_path: nil)
+    expect(Ai).to have_received(:reply_in).with(chat, frames_for: message, frame_paths: [])
   end
 
   it "removes the frames when it's done, even after an error" do

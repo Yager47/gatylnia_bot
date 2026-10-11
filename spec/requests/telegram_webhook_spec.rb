@@ -188,7 +188,7 @@ RSpec.describe "Telegram webhook", type: :request do
 
       post_update(message_update(text: "@test_bot як справи"))
 
-      expect(Ai).to have_received(:reply_in).with(Chat.sole, vision_frame_path: nil)
+      expect(Ai).to have_received(:reply_in).with(Chat.sole, frames_for: nil, frame_paths: [])
       expect(fake_telegram.sent_messages).to eq([ { chat_id: chat_telegram_id.to_s, text: "Відповідь ШІ" } ])
     end
 

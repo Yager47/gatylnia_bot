@@ -1,12 +1,13 @@
 module Response
   class Ai < Response::Base
-    def initialize(chat:, vision_frame_path: nil)
+    def initialize(chat:, frames_for: nil, frame_paths: [])
       @chat = chat
-      @vision_frame_path = vision_frame_path
+      @frames_for = frames_for
+      @frame_paths = frame_paths
     end
 
     def process
-      ai_response = ::Ai.reply_in(@chat, vision_frame_path: @vision_frame_path)
+      ai_response = ::Ai.reply_in(@chat, frames_for: @frames_for, frame_paths: @frame_paths)
       success ai_response
 
     rescue OpenAI::Errors::RateLimitError

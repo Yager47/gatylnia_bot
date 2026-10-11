@@ -37,7 +37,7 @@ class HandleVideoNoteJob < ApplicationJob
       if verdict&.kinds&.any?
         record_and_confirm(verdict, sent_at)
       else
-        reply_in_character(analysis.frame_paths[analysis.frame_paths.size / 2])
+        reply_in_character(analysis.frame_paths)
       end
     end
   end
@@ -69,8 +69,8 @@ class HandleVideoNoteJob < ApplicationJob
     end
   end
 
-  def reply_in_character(frame_path)
-    Response::Ai.new(chat: @chat, vision_frame_path: frame_path).process
+  def reply_in_character(frame_paths)
+    Response::Ai.new(chat: @chat, frames_for: @message, frame_paths: frame_paths).process
   rescue Success => e
     deliver(e.message)
   end
