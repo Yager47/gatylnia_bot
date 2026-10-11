@@ -41,8 +41,16 @@ class DefaultHandler
     Response::BotCommand.new(user: @user, text: text, chat: @chat).process
     Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process
     Response::Equals.new(user: @user, text: text).process
+    track_coffee(message) if @message[:edit_date].blank? && Activities::CoffeeTextClassifier.candidate?(text)
     Response::Includes.new(user: @user, text: text).process if chance(0.2)
     Response::Ai.new(chat: @chat).process if bot_mentioned || chance(0.8)
+  end
+
+  # A possible coffee message gets no other reply here: the job either
+  # confirms the coffee or, if it wasn't coffee, replies in character.
+  def track_coffee(message)
+    TrackCoffeeTextJob.perform_later(message, sent_at: Time.zone.at(@message[:date]))
+    raise Skip
   end
 
   def handle_video_note
