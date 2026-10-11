@@ -36,12 +36,15 @@ class DefaultHandler
     message = record_message
     text = message.content.downcase
     bot_mentioned = text.include?(BOT_MENTION.downcase)
+    # Telegram delivers an edit as a new update: don't count or undo twice.
+    edited = @message[:edit_date].present?
 
     Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
     Response::BotCommand.new(user: @user, text: text, chat: @chat).process
-    Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process
+    Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).process unless edited
+    Response::UndoCoffee.new(user: @user, text: text, chat: @chat).process unless edited
     Response::Equals.new(user: @user, text: text).process
-    track_coffee(message) if @message[:edit_date].blank? && Activities::CoffeeTextClassifier.candidate?(text)
+    track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text)
     Response::Includes.new(user: @user, text: text).process if chance(0.2)
     Response::Ai.new(chat: @chat).process if bot_mentioned || chance(0.8)
   end
