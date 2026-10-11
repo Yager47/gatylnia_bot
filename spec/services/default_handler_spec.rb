@@ -35,4 +35,26 @@ RSpec.describe DefaultHandler do
       expect(Response::Includes.new(user: build(:user), text: "кава").send(:data).keys.flatten).not_to include("кав")
     end
   end
+
+  describe "video notes" do
+    let(:video_note) { { file_id: "file-1", file_unique_id: "u1", duration: 10, length: 400 } }
+
+    it "records the message and hands the video to the job without replying" do
+      freeze_time do
+        dispatch(message_update(text: nil, message_id: 88, video_note: video_note))
+
+        message = Message.find_by!(telegram_message_id: 88)
+        expect(message.content).to eq("Петро Тест записав відео 10s.")
+        expect(HandleVideoNoteJob).to have_been_enqueued.with(message, file_id: "file-1", duration: 10, sent_at: Time.current)
+      end
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "ignores Telegram re-sending a video note as an edit" do
+      dispatch(edited_message_update(text: nil, video_note: video_note))
+
+      expect(HandleVideoNoteJob).not_to have_been_enqueued
+      expect(Message.count).to eq(0)
+    end
+  end
 end

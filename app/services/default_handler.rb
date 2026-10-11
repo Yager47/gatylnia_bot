@@ -53,15 +53,17 @@ class DefaultHandler
     raise Skip
   end
 
+  # The job downloads and analyzes the video, then replies. A video note can't
+  # be edited by its author, so an edit is Telegram re-sending it: skip it.
   def handle_video_note
-    frame_path = nil
-    analysis = Video::NoteAnalyzer.call(video_note: @message[:video_note], user: @user)
-    frame_path = analysis.frame_path
+    raise Skip if @message[:edit_date].present?
 
-    record_message(content: analysis.description)
-    Response::Ai.new(chat: @chat, vision_frame_path: frame_path).process
-  ensure
-    cleanup_frame(frame_path)
+    video_note = @message[:video_note]
+    message = record_message(content: Video::NoteAnalyzer.build_description(@user, video_note[:duration], nil))
+    HandleVideoNoteJob.perform_later(
+      message, file_id: video_note[:file_id], duration: video_note[:duration], sent_at: Time.zone.at(@message[:date])
+    )
+    raise Skip
   end
 
   def record_message(content: nil)
@@ -72,10 +74,6 @@ class DefaultHandler
       role: :user,
       content: content
     ).record
-  end
-
-  def cleanup_frame(path)
-    File.delete(path) if path && File.exist?(path)
   end
 
   def set_user
