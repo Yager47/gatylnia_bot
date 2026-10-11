@@ -16,7 +16,7 @@ module Response
 
     def data
       # To include phrase but does not similar bigger phrase, do it that way:
-      #   "цікав" => nil, "кав" => answers("coffee")
+      #   "годин" => nil, "один" => "Проти цілого світу?"
       {
         ["в рот", "врот"] => answers("mouth"),
         ["ахах", "f[f["] => answers("laugh"),
@@ -26,7 +26,6 @@ module Response
         "ооо" => answers("ooo"),
         phrases("thank") => answers("thank"),
         phrases("morning") => answers("morning", first_name: @user.first_name),
-        "цікав" => nil, "кав" => answers("coffee"),
         "годин" => nil, "один" => "Проти цілого світу?",
         ["текіл", "свєт"] => "Мальчікіііііііі",
         ["пить", "пити", "бухат"] => "Шоб і не балакать",
