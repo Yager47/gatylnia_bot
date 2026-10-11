@@ -17,6 +17,7 @@ module Response
       when "default"
         process_rps
         process_stat
+        process_activity_stats
         process_data
         process_bugging
       when "accountant"
@@ -86,6 +87,11 @@ module Response
       end
 
       success(response) if response.present?
+    end
+
+    def process_activity_stats
+      reply = Activities::StatsCommand.new(command: @command, chat: @chat).call
+      success(reply) if reply
     end
 
     # Two queries no matter how many users the chat has: one grouped count,

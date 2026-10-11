@@ -55,6 +55,27 @@ RSpec.describe Response::BotCommand do
     end
   end
 
+  describe "кава / віджимання за ..." do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).process
+      nil
+    rescue Success => e
+      e.message
+    end
+
+    it "replies with activity stats in default mode" do
+      create(:activity, chat: chat, user: user)
+
+      expect(reply_to("@test_bot кава за тиждень")).to eq("Кава за поточний тиждень:\n\n#{user.name}: 1")
+    end
+
+    it "doesn't reply in accountant mode" do
+      chat.update!(mode: :accountant)
+
+      expect(reply_to("@test_bot кава за тиждень")).to be_nil
+    end
+  end
+
   def with_system_time_zone(zone)
     original = ENV["TZ"]
     ENV["TZ"] = zone
