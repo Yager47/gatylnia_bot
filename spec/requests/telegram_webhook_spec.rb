@@ -7,8 +7,8 @@ require "rails_helper"
 RSpec.describe "Telegram webhook", type: :request do
   let(:chat_telegram_id) { -1_001_234_567_890 }
 
-  # Performs the enqueued ProcessTelegramUpdateJob by default, so examples
-  # describe the bot's end-to-end behaviour (production runs jobs inline).
+  # Performs the enqueued ProcessTelegramUpdateJob (and any retries it
+  # schedules) by default, so examples describe the bot's end-to-end behaviour.
   def post_update(payload, path: "/telegram/webhook", secret: ENV.fetch("TELEGRAM_WEBHOOK_SECRET"), perform_jobs: true)
     headers = secret.nil? ? {} : { "X-Telegram-Bot-Api-Secret-Token" => secret }
     send_request = -> { post path, params: payload, headers: headers, as: :json }
@@ -203,23 +203,35 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(fake_telegram.sent_messages.size).to eq(1)
     end
 
+    it "rolls back a failed send and retries it without double-counting" do
+      failures = 0
+      allow(fake_telegram).to receive(:send_message).and_wrap_original do |original, **params|
+        if failures.zero?
+          failures += 1
+          raise Faraday::ConnectionFailed, "Telegram unreachable"
+        end
+        original.call(**params)
+      end
 
-    it "rolls back a failed send and recovers on Telegram's redelivery without double-counting" do
-      payload = message_update(update_id: 8, text: "гатю")
-      allow(fake_telegram).to receive(:send_message).and_raise(Faraday::ConnectionFailed, "Telegram unreachable")
-
-      expect { post_update(payload) }.to raise_error(Faraday::ConnectionFailed)
-      expect(Entry.count).to eq(0)
-      expect(Message.count).to eq(0)
-      expect(TelegramUpdate.sole).to have_attributes(status: "failed", last_error: /Telegram unreachable/)
-
-      allow(fake_telegram).to receive(:send_message).and_call_original
-      post_update(payload)
+      post_update(message_update(update_id: 8, text: "гатю"))
 
       expect(response).to have_http_status(:ok)
       expect(Entry.count).to eq(1)
       expect(fake_telegram.sent_messages.size).to eq(1)
-      expect(TelegramUpdate.sole).to have_attributes(status: "processed", attempts: 2)
+      expect(TelegramUpdate.sole).to have_attributes(status: "processed", attempts: 2, last_error: nil)
+    end
+
+    it "answers Telegram 200 before processing, and retries a failure itself" do
+      allow(fake_telegram).to receive(:send_message).and_raise(Faraday::ConnectionFailed, "Telegram unreachable")
+
+      post_update(message_update(update_id: 9, text: "гатю"), perform_jobs: false)
+      expect(response).to have_http_status(:ok)
+
+      perform_enqueued_jobs
+
+      expect(Entry.count).to eq(0)
+      expect(TelegramUpdate.sole).to have_attributes(status: "failed", attempts: 1, last_error: /Telegram unreachable/)
+      expect(ProcessTelegramUpdateJob).to have_been_enqueued.with(TelegramUpdate.sole.id)
     end
   end
 

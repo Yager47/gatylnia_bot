@@ -1,10 +1,27 @@
+require "telegram/bot"
+
 class ProcessTelegramUpdateJob < ApplicationJob
+  # A Telegram API error worth retrying: rate limited (429) or a server error.
+  class TransientTelegramError < StandardError; end
+
   queue_as :default
 
   MAX_ATTEMPTS = 5
   # A run that has been `processing` this long is assumed dead (dyno restart,
   # crash) and may be claimed again.
   STALE_AFTER = 10.minutes
+
+  # Errors that may pass on their own. Each retry is a new run that claims the
+  # update again, so the claim's attempts cap applies as well. Anything else
+  # (a bug, a 400 from Telegram) fails the job without retrying.
+  retry_on TransientTelegramError,
+    Faraday::ConnectionFailed,
+    Faraday::TimeoutError,
+    OpenAI::Errors::APIConnectionError,
+    OpenAI::Errors::InternalServerError,
+    ActiveRecord::Deadlocked,
+    wait: :polynomially_longer,
+    attempts: MAX_ATTEMPTS
 
   def perform(telegram_update_id)
     unless claim(telegram_update_id)
@@ -42,6 +59,15 @@ class ProcessTelegramUpdateJob < ApplicationJob
     end
   rescue StandardError => e
     update.update!(status: :failed, last_error: "#{e.class}: #{e.message}".truncate(1_000))
+    raise TransientTelegramError, e.message if transient_telegram_error?(e)
+
     raise
+  end
+
+  def transient_telegram_error?(error)
+    return false unless error.is_a?(Telegram::Bot::Exceptions::ResponseError)
+
+    code = error.error_code.to_i
+    code == 429 || code >= 500
   end
 end
