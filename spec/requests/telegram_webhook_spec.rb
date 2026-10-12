@@ -280,6 +280,48 @@ RSpec.describe "Telegram webhook", type: :request do
     end
   end
 
+  describe "messages not sent by a person" do
+    let(:group) { telegram_chat }
+    let(:anonymous_admin) { telegram_from(id: 1_087_968_824, first_name: "Group", last_name: nil, username: "GroupAnonymousBot").merge(is_bot: true) }
+
+    def expect_ignored
+      expect(response).to have_http_status(:ok)
+      expect(TelegramUpdate.sole).to be_ignored
+      expect([ Chat.count, User.count, ChatUser.count, Message.count ]).to eq([ 0, 0, 0, 0 ])
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "ignores an anonymous admin posting as the group" do
+      post_update(message_update(text: "Ало", from: anonymous_admin, sender_chat: group))
+
+      expect_ignored
+    end
+
+    it "ignores an anonymous admin's /ping" do
+      post_update(command_update("/ping", from: anonymous_admin, sender_chat: group))
+
+      expect_ignored
+    end
+
+    it "ignores a post auto-forwarded from a linked channel" do
+      telegram = telegram_from(id: 777_000, first_name: "Telegram", last_name: nil, username: nil)
+      channel = { id: -1_009_999, type: "channel", title: "Канал" }
+
+      post_update(message_update(text: "Ало", from: telegram, sender_chat: channel, is_automatic_forward: true))
+
+      expect_ignored
+    end
+
+    it "still applies a rename done by an anonymous admin" do
+      chat = create(:chat, telegram_id: chat_telegram_id.to_s, title: "Стара назва")
+
+      post_update(message_update(text: nil, from: anonymous_admin, sender_chat: group, new_chat_title: "Нова назва"))
+
+      expect(chat.reload.title).to eq("Нова назва")
+      expect(User.count).to eq(0)
+    end
+  end
+
   describe "private chats" do
     let(:private_chat) { telegram_chat(id: 555, type: "private", title: nil) }
 
