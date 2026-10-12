@@ -1,17 +1,36 @@
 module Response
+  # "@bot <command>": commands addressed to the bot at the start of a message.
   class BotCommand
     include Responder
 
+    MODE_PREFIX = "режим: ".freeze
+    STATS_PREFIX = "гатуни за ".freeze
+
+    # Period word => [Time range method, reply header]
+    STATS_PERIODS = {
+      "сьогодні" => [ :all_day, "Сьогоднішні гатуни" ],
+      "день" => [ :all_day, "Сьогоднішні гатуни" ],
+      "тиждень" => [ :all_week, "Гатуни за поточний тиждень" ],
+      "місяць" => [ :all_month, "Гатуни за поточний місяць" ],
+      "рік" => [ :all_year, "Гатуни за поточний рік" ]
+    }.freeze
+
+    # "пошли @username" / "образь @username": the author pays the fee whether
+    # or not the target is in the chat. Prefix => [fee, phrase list method]
+    BUGGING = {
+      "пошли @" => [ 100, :fu_phrases ],
+      "образь @" => [ 150, :swear_phrases ]
+    }.freeze
+
     def initialize(user:, text:, chat:)
       @user = user
-      @text = text
       @chat = chat
-      @command = nil
+      # nil unless the text starts with the mention followed by a command.
+      @command = text[/\A#{Regexp.escape(BotMention.text)}\s+(.+)/m, 1]
     end
 
     def call
-      return unless @text.include?(BotMention.text)
-      @command = @text.sub("#{BotMention.text} ", "")
+      return unless @command
 
       process_mode || mode_reply
     end
@@ -20,10 +39,9 @@ module Response
 
     # The first command that answers wins, in this order.
     def mode_reply
-      case @chat.mode
-      when "default"
+      if @chat.default?
         process_rps || process_stat || process_activity_stats || process_data || process_bugging
-      when "accountant"
+      elsif @chat.accountant?
         process_data
       end
     end
@@ -33,61 +51,39 @@ module Response
     end
 
     def process_mode
-      keyword = "режим: "
-      return unless @command.include?(keyword)
+      return unless @command.start_with?(MODE_PREFIX)
 
-      response = ""
-      command = @command.sub(keyword, "")
-
-      case command
-      when "звичайний", "дефолт", "дефолтний"
-        if @chat.mode == "default"
-          response << "Я вже на звичайному режимі."
+      text =
+        case @command.delete_prefix(MODE_PREFIX)
+        when "звичайний", "дефолт", "дефолтний"
+          switch_mode("default", already: "Я вже на звичайному режимі.", switched: "Активовано звичайний режим.")
+        when "бухгалтер", "бухгалтерський"
+          switch_mode("accountant", already: "Я вже на бухгалтерському режимі.", switched: "Активовано бухгалтерський режим.")
+        when "київський", "киівський"
+          "Слава Київському режиму!"
         else
-          @chat.update!(mode: "default")
-          response << "Активовано звичайний режим."
+          "Нема такого режиму."
         end
-      when "бухгалтер", "бухгалтерський"
-        if @chat.mode == "accountant"
-          response << "Я вже на бухгалтерському режимі."
-        else
-          @chat.update!(mode: "accountant")
-          response << "Активовано бухгалтерський режим."
-        end
-      when "київський", "киівський"
-        response << "Слава Київському режиму!"
-      else
-        response << "Нема такого режиму."
-      end
 
-      reply(response) if response.present?
+      reply(text)
     end
 
+    def switch_mode(mode, already:, switched:)
+      return already if @chat.mode == mode
+
+      @chat.update!(mode: mode)
+      switched
+    end
+
+    # Time.current is in the app time zone (Kyiv); Date.today would use the
+    # server clock, which is UTC in production.
     def process_stat
-      keyword = "гатуни за "
-      return unless @command.include?(keyword)
+      return unless @command.start_with?(STATS_PREFIX)
 
-      response = ""
-      command = @command.sub(keyword, "")
+      range, header = STATS_PERIODS[@command.delete_prefix(STATS_PREFIX)]
+      return unless range
 
-      case command
-      # Time.current is in the app time zone (Kyiv); Date.today would use the
-      # server clock, which is UTC in production.
-      when "сьогодні", "день"
-        response << "Сьогоднішні гатуни:\n\n"
-        response << calculate_entries(Time.current.all_day)
-      when "тиждень"
-        response << "Гатуни за поточний тиждень:\n\n"
-        response << calculate_entries(Time.current.all_week)
-      when "місяць"
-        response << "Гатуни за поточний місяць:\n\n"
-        response << calculate_entries(Time.current.all_month)
-      when "рік"
-        response << "Гатуни за поточний рік:\n\n"
-        response << calculate_entries(Time.current.all_year)
-      end
-
-      reply(response) if response.present?
+      reply("#{header}:\n\n#{calculate_entries(Time.current.public_send(range))}")
     end
 
     def process_activity_stats
@@ -117,22 +113,14 @@ module Response
     end
 
     def process_bugging
-      bug_user(pattern: "пошли", fee: 100) || bug_user(pattern: "образь", fee: 150)
-    end
+      prefix, (fee, phrase_list) = BUGGING.find { |prefix, _| @command.start_with?(prefix) }
+      return unless prefix
 
-    def bug_user(pattern:, fee:)
-      pattern = "#{pattern} @"
-      return unless @command.include?(pattern)
+      @user.points.create!(chat: @chat, amount: -fee, reason: @command)
+      target_user = @chat.users.find_by(username: @command.delete_prefix(prefix))
+      return reply("Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
 
-      @user.points.create!(chat: @chat, user: @user, amount: -fee, reason: @command)
-      target_user = @chat.users.find_by(username: @command.sub(pattern, ""))
-
-      if target_user
-        phrases = pattern == "пошли @" ? fu_phrases : swear_phrases
-        reply("#{@user.first_name} за #{fee} замовив: \n\n#{mention_user_in(phrases, target_user).sample}")
-      else
-        reply("Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха.")
-      end
+      reply("#{@user.first_name} за #{fee} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
     end
 
     def mention_user_in(phrases, user)
@@ -151,9 +139,10 @@ module Response
     end
 
     def data
-      case @chat.mode
-      when "default" then default_data
-      when "accountant" then accountant_data
+      if @chat.default?
+        default_data
+      elsif @chat.accountant?
+        accountant_data
       end
     end
 
