@@ -46,8 +46,9 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  config.cache_store = :solid_cache_store
+  # Nothing uses Rails.cache yet and there is a single dyno, so the in-process
+  # store is enough (Solid Cache needs tables this app never created).
+  config.cache_store = :memory_store
 
   # Solid Queue, with its tables in the primary database, run by the Puma
   # plugin (config/puma.rb).
