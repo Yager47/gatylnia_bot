@@ -30,6 +30,11 @@ RSpec.describe Response::Reply do
     expect(reply_with("класно")).to be_nil
   end
 
+  it "ignores zero" do
+    expect(reply_with("0")).to be_nil
+    expect(Point.count).to eq(0)
+  end
+
   it "ignores points for yourself and for unknown users" do
     expect(reply_with("50", user: receiver)).to be_nil
     expect(reply_with("50", reply_to_message: { from: { id: 999 } }.with_indifferent_access)).to be_nil

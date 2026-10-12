@@ -1,8 +1,10 @@
 module Response
   class Equals < Response::Base
+    TALK_BACK_PREFIX = "ти ".freeze
+
     def call
-      # Talk back
-      return reply(talk_back_answer) if swear_phrases.include?(@text[3..-1])
+      # "ти <insult>" gets the insult thrown back.
+      return reply(talk_back_answer) if swear_phrases.include?(insult)
 
       match = data.find { |key, _value| Array(key).include?(@text) }
       reply(pick(match.last)) if match
@@ -10,8 +12,12 @@ module Response
 
     private
 
+    def insult
+      @text.delete_prefix(TALK_BACK_PREFIX) if @text.start_with?(TALK_BACK_PREFIX)
+    end
+
     def talk_back_answer
-      [ "Ти шо сука", "Ні, ти #{@text[3..-1]}" ].sample
+      [ "Ти шо сука", "Ні, ти #{insult}" ].sample
     end
 
     def swear_phrases

@@ -3,11 +3,9 @@ module Video
     def self.call(file_path)
       client = OpenAI::Client.new(api_key: ENV["OPENAI_API_KEY"])
 
-      response = client.audio.transcriptions.create(
-        model: "whisper-1",
-        file: File.open(file_path),
-        language: "uk"
-      )
+      response = File.open(file_path) do |file|
+        client.audio.transcriptions.create(model: "whisper-1", file: file, language: "uk")
+      end
 
       extract_text(response)
     end

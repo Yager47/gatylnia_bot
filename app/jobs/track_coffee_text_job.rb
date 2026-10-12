@@ -64,6 +64,6 @@ class TrackCoffeeTextJob < ApplicationJob
   end
 
   def bot_mentioned?
-    @message.content.downcase.include?(BOT_MENTION.downcase)
+    @message.content.downcase.include?(BotMention.text)
   end
 end

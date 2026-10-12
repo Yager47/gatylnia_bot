@@ -4,7 +4,7 @@ ENV["RAILS_ENV"] ||= "test"
 # Force dummy credentials before Rails boots. dotenv-rails loads .env in the
 # test environment too, but never overwrites variables that are already set,
 # so this guarantees specs can't reach Telegram/OpenAI with real keys.
-# Must happen before boot: BOT_MENTION is built from ENV in an initializer.
+# Must happen before boot: some values (e.g. BotMention) are read from ENV and cached.
 ENV["TELEGRAM_BOT_API_TOKEN"] = "test-telegram-token"
 ENV["BOT_USERNAME"] = "test_bot"
 ENV["OPENAI_API_KEY"] = "test-openai-key"
