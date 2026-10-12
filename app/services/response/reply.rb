@@ -1,59 +1,40 @@
 module Response
+  # Replying to someone's message with a number gives them that many points.
   class Reply < Response::Base
+    MAX_POINTS = 500
+
     def initialize(user:, text:, chat:, reply_to_message:)
       super(user: user, text: text)
 
       @chat = chat
       @reply_to_message = reply_to_message
-      @reply_to_user = nil
-      @point = nil
     end
 
-    def process
+    def call
       return unless @reply_to_message
 
-      @point = add_point
-      success answer("point") if @point
-    rescue ArgumentError
-      nil
+      amount = Integer(@text, exception: false)
+      return unless amount
+
+      # A replied-to channel post has no author ("from"), so no one to reward.
+      receiver_id = @reply_to_message.dig(:from, :id)
+      return unless receiver_id
+
+      receiver = User.find_by(telegram_id: receiver_id)
+      return if !receiver || @user == receiver
+      return reply("Не можна за раз більше пʼятихатки вʼєбать") if amount.abs > MAX_POINTS
+
+      point = receiver.points.create!(amount: amount, reason: @reply_to_message[:text], chat: @chat)
+      reply(point_answer(point, receiver))
     end
 
     private
 
-    def add_point
-      amount = Integer(@text)
-      @reply_to_user = User.find_by(telegram_id: @reply_to_message[:from][:id])
-      reason = @reply_to_message[:text]
-
-      return if !@reply_to_user || @user == @reply_to_user
-      break_if_too_many_points(amount)
-
-      @reply_to_user.points.create!(
-        amount: amount,
-        reason: reason,
-        chat: @chat
-      )
-    end
-
-    def break_if_too_many_points(amount)
-      edge = 500
-      return if amount <= edge && amount >= -edge
-      success "Не можна за раз більше пʼятихатки вʼєбать"
-    end
-
-    def point_answer
-      amount =  @point.amount.positive? ? "+#{@point.amount}" : @point.amount
-      name = @reply_to_user.name
-
-      response = "#{name} отримує #{amount}"
-      response << " по причині: \n\"#{@point.reason}\"" if @point.reason.present?
+    def point_answer(point, receiver)
+      amount = point.amount.positive? ? "+#{point.amount}" : point.amount
+      response = "#{receiver.name} отримує #{amount}"
+      response += " по причині: \n\"#{point.reason}\"" if point.reason.present?
       response
-    end
-
-    def data
-      {
-        "point" => point_answer
-      }
     end
   end
 end

@@ -4,10 +4,10 @@ module Response
       @voice = voice
     end
 
-    def process
+    def call
       return if @voice.blank?
 
-      success answer("voice")
+      reply(answer("voice"))
     end
 
     private

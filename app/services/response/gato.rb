@@ -7,13 +7,13 @@ module Response
       @chat = chat
     end
 
-    def process
+    def call
       if phrases("gato").include?(@text)
         add_entry
       elsif @text == "видали гатіння"
         remove_entry
       elsif @text.include?("гат") && @chat.created_at > Time.now - 1.week
-        success explanation
+        reply(explanation)
       end
     end
 
@@ -21,7 +21,7 @@ module Response
 
     def add_entry
       @user.entries.create!(chat: @chat, message: @original_text)
-      success gato_response
+      reply(gato_response)
     end
 
     def remove_entry
@@ -29,9 +29,9 @@ module Response
 
       if last_entry
         last_entry.destroy
-        success "Твоє останнє гатіння видалено. \nТіряйся"
+        reply("Твоє останнє гатіння видалено. \nТіряйся")
       else
-        success "Ти ще тут не гатив, придурок"
+        reply("Ти ще тут не гатив, придурок")
       end
     end
 

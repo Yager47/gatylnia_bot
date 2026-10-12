@@ -1,18 +1,11 @@
 module Response
   class Equals < Response::Base
-    def process
+    def call
       # Talk back
-      success talk_back_answer if swear_phrases.include?(@text[3..-1])
+      return reply(talk_back_answer) if swear_phrases.include?(@text[3..-1])
 
-      data.keys.each do |key|
-        if key.is_a?(Array)
-          key.each do |sub_key|
-            success answer(key) if @text == sub_key
-          end
-        else
-          success answer(key) if @text == key
-        end
-      end
+      match = data.find { |key, _value| Array(key).include?(@text) }
+      reply(pick(match.last)) if match
     end
 
     private

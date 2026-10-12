@@ -6,6 +6,54 @@ RSpec.describe DefaultHandler do
     TelegramUpdates::Dispatcher.new(update.deep_stringify_keys).call
   end
 
+  describe "reply priority" do
+    def sent_texts
+      fake_telegram.sent_messages.map { |params| params[:text] }
+    end
+
+    # Every random roll succeeds: Includes, AI and the random Chance line all
+    # get their turn unless something earlier answers or stops the chain.
+    before { allow_any_instance_of(DefaultHandler).to receive(:chance).and_return(true) }
+
+    it "lets the first responder that answers win" do
+      dispatch(message_update(text: "Ало"))
+
+      expect(sent_texts).to eq([ "Ало" ])
+    end
+
+    it "treats an empty AI reply as stop: no random line after it" do
+      allow(Ai).to receive(:reply_in).and_return("")
+
+      dispatch(message_update(text: "абв"))
+
+      expect(sent_texts).to be_empty
+    end
+
+    it "sends a random line when nothing answered (AI rate-limited)" do
+      rate_limited = OpenAI::Errors::RateLimitError.new(
+        url: URI("https://api.openai.com"), status: 429, headers: {}, body: nil, request: nil, response: nil
+      )
+      allow(Ai).to receive(:reply_in).and_raise(rate_limited)
+
+      dispatch(message_update(text: "абв"))
+
+      expect(sent_texts.size).to eq(1)
+    end
+
+    it "stops after handing a coffee message to its job: no random line" do
+      dispatch(message_update(text: "Перша кава"))
+
+      expect(TrackCoffeeTextJob).to have_been_enqueued
+      expect(sent_texts).to be_empty
+    end
+
+    it "lets a nil answer in Includes stop the chain (\"годин\" shields \"один\")" do
+      dispatch(message_update(text: "Година пройшла"))
+
+      expect(sent_texts).to be_empty
+    end
+  end
+
   describe "coffee messages" do
     it "hands a possible coffee message to the job and replies nothing itself" do
       freeze_time do

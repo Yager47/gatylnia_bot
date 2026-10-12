@@ -7,28 +7,27 @@ module Response
       @command = nil
     end
 
-    def process
+    def call
       return unless @text.include?(BOT_MENTION.downcase)
       @command = @text.sub("#{BOT_MENTION.downcase} ", "")
 
-      process_mode
+      process_mode || mode_reply
+    end
 
+    private
+
+    # The first command that answers wins, in this order.
+    def mode_reply
       case @chat.mode
       when "default"
-        process_rps
-        process_stat
-        process_activity_stats
-        process_data
-        process_bugging
+        process_rps || process_stat || process_activity_stats || process_data || process_bugging
       when "accountant"
         process_data
       end
     end
 
-    private
-
     def process_rps
-      RpsGame.new(user: @user, user_weapon: @command, chat: @chat).process
+      RpsGame.new(user: @user, user_weapon: @command, chat: @chat).call
     end
 
     def process_mode
@@ -59,7 +58,7 @@ module Response
         response << "Нема такого режиму."
       end
 
-      success(response) if response.present?
+      reply(response) if response.present?
     end
 
     def process_stat
@@ -86,12 +85,12 @@ module Response
         response << calculate_entries(Time.current.all_year)
       end
 
-      success(response) if response.present?
+      reply(response) if response.present?
     end
 
     def process_activity_stats
-      reply = Activities::StatsCommand.new(command: @command, chat: @chat).call
-      success(reply) if reply
+      stats = Activities::StatsCommand.new(command: @command, chat: @chat).call
+      reply(stats) if stats
     end
 
     # Two queries no matter how many users the chat has: one grouped count,
@@ -111,14 +110,12 @@ module Response
       build_reply = data[@command]
       return unless build_reply
 
-      reply = build_reply.call
-      reply = reply.sample while reply.is_a?(Array)
-      success reply if reply.present?
+      text = pick(build_reply.call)
+      reply(text) if text.present?
     end
 
     def process_bugging
-      bug_user(pattern: "пошли", fee: 100)
-      bug_user(pattern: "образь", fee: 150)
+      bug_user(pattern: "пошли", fee: 100) || bug_user(pattern: "образь", fee: 150)
     end
 
     def bug_user(pattern:, fee:)
@@ -130,9 +127,9 @@ module Response
 
       if target_user
         phrases = pattern == "пошли @" ? fu_phrases : swear_phrases
-        success "#{@user.first_name} за #{fee} замовив: \n\n#{mention_user_in(phrases, target_user).sample}"
+        reply("#{@user.first_name} за #{fee} замовив: \n\n#{mention_user_in(phrases, target_user).sample}")
       else
-        success "Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха."
+        reply("Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха.")
       end
     end
 

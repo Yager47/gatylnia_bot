@@ -1,7 +1,7 @@
 module Response
   class Chance < Response::Base
-    def process
-      success answer("chance")
+    def call
+      reply(answer("chance"))
     end
 
     private

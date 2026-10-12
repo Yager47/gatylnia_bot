@@ -70,9 +70,8 @@ class HandleVideoNoteJob < ApplicationJob
   end
 
   def reply_in_character(frame_paths)
-    Response::Ai.new(chat: @chat, frames_for: @message, frame_paths: frame_paths).process
-  rescue Success => e
-    deliver(e.message)
+    text = Response::Ai.new(chat: @chat, frames_for: @message, frame_paths: frame_paths).call
+    deliver(text) if text.is_a?(String)
   end
 
   def deliver(text)

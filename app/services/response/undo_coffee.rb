@@ -10,14 +10,14 @@ module Response
       @chat = chat
     end
 
-    def process
+    def call
       return unless @text.strip == PHRASE
 
       last_coffee = @chat.activities.coffee.where(user: @user).order(:occurred_at, :id).last
-      return success("Ти ще тут не пив каву") unless last_coffee
+      return reply("Ти ще тут не пив каву") unless last_coffee
 
       last_coffee.destroy!
-      success "Видалив твою останню каву. Сьогодні: #{today_total}"
+      reply("Видалив твою останню каву. Сьогодні: #{today_total}")
     end
 
     private

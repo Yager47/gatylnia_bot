@@ -5,12 +5,8 @@ RSpec.describe Response::Gato do
   let(:other_chat) { create(:chat) }
   let(:user) { create(:user, chats: [ chat, other_chat ]) }
 
-  # Returns the reply text; the handler raises Success to deliver it.
   def remove_entry_in(target_chat)
-    described_class.new(user: user, text: "видали гатіння", original_text: "Видали гатіння", chat: target_chat).process
-    nil
-  rescue Success => e
-    e.message
+    described_class.new(user: user, text: "видали гатіння", original_text: "Видали гатіння", chat: target_chat).call
   end
 
   describe "видали гатіння" do

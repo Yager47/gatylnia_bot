@@ -11,11 +11,10 @@ module Response
       @chat = chat
     end
 
-    def process
+    def call
       return unless weapons.include?(@user_weapon)
 
-      response = fight
-      success response
+      reply(fight)
     end
 
     private
