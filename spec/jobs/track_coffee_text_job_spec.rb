@@ -14,8 +14,8 @@ RSpec.describe TrackCoffeeTextJob do
     create(:message, chat: chat, user: user, content: text, telegram_message_id: telegram_message_id)
   end
 
-  def classify_as(coffee:, cups: 1, ordinal: nil)
-    allow(classifier).to receive(:call).and_return(Activities::CoffeeTextClassifier::Result.new(coffee: coffee, cups: cups, ordinal: ordinal))
+  def classify_as(coffee:, ordinal: nil)
+    allow(classifier).to receive(:call).and_return(Activities::CoffeeTextClassifier::Result.new(coffee: coffee, ordinal: ordinal))
   end
 
   def perform(message)
@@ -29,7 +29,7 @@ RSpec.describe TrackCoffeeTextJob do
   context "when the message is about drinking coffee" do
     before { classify_as(coffee: true, ordinal: 2) }
 
-    it "records the cups and confirms with today's total" do
+    it "records one cup and confirms with today's total" do
       create(:activity, chat: chat, user: user, occurred_at: sent_at - 2.hours)
 
       perform(message_with("Друга кава"))
@@ -41,12 +41,11 @@ RSpec.describe TrackCoffeeTextJob do
       expect(chat.messages.assistant.last.content).to eq("☕ Петро: 2 за сьогодні")
     end
 
-    it "shows one cup emoji per cup" do
-      classify_as(coffee: true, cups: 2)
+    it "counts one cup even when the message names a number" do
+      perform(message_with("випив 2 каву"))
 
-      perform(message_with("Випив дві кави"))
-
-      expect(sent_texts).to eq([ "☕☕ Петро: 2 за сьогодні" ])
+      expect(Activity.coffee.sole.amount).to eq(1)
+      expect(sent_texts).to eq([ "☕ Петро: 1 за сьогодні" ])
     end
 
     it "does nothing when run again for the same message" do

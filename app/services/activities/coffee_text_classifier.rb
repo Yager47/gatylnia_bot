@@ -1,13 +1,13 @@
 module Activities
-  # Decides whether a chat message says its author drank coffee.
+  # Decides whether a chat message says its author drank coffee. A coffee
+  # message always counts as one cup, whatever number it mentions.
   class CoffeeTextClassifier
-    Result = Data.define(:coffee, :cups, :ordinal)
+    Result = Data.define(:coffee, :ordinal)
 
     # Cheap filter run on every message before paying for a model call.
     # Over-matching is fine (the model decides); "цікаво" is too common to send.
     CANDIDATE = /(?<!ці)кав|кофе|кофі|еспресо|espresso|лате|latte|капучин|cappuccino|американо|americano|coffee/
 
-    MAX_CUPS = 5
     MODEL = "gpt-5-mini".freeze
 
     PROMPT = <<~TEXT.freeze
@@ -17,18 +17,17 @@ module Activities
       - coffee: true for "п'ю каву", "випив каву", "перша кава", "друга кава", "кавуся", "заварив еспресо і п'ю".
         false for wishes or plans ("хочу кави", "піду за кавою"), questions ("хто на каву?"), other people's coffee,
         coffee in general ("кава це ахуєнно", "кава закінчилась"), and words that only look similar.
-      - cups: how many cups this message reports drinking right now; 1 unless a count is stated ("дві кави" = 2).
-        An ordinal is not a count: "друга кава" and "третя кава" are 1 cup each.
+        Also false for corrections, counts or questions about coffee totals, often addressed to the bot
+        ("-2 кави за сьогодні", "мінус одна кава", "скільки в мене кав?", "кава за тиждень").
       - ordinal: the cup number they name ("перша" = 1, "друга" = 2, "третя" = 3...), otherwise null.
     TEXT
 
     SCHEMA = {
       type: "object",
       additionalProperties: false,
-      required: %w[coffee cups ordinal],
+      required: %w[coffee ordinal],
       properties: {
         coffee: { type: "boolean" },
-        cups: { type: "integer" },
         ordinal: { type: %w[integer null] }
       }
     }.freeze
@@ -50,7 +49,7 @@ module Activities
       )
       verdict = JSON.parse(response.choices[0].message.content)
 
-      Result.new(coffee: verdict["coffee"], cups: verdict["cups"].clamp(1, MAX_CUPS), ordinal: verdict["ordinal"])
+      Result.new(coffee: verdict["coffee"], ordinal: verdict["ordinal"])
     end
   end
 end

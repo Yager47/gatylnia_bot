@@ -25,22 +25,30 @@ RSpec.describe Activities::CoffeeTextClassifier do
     end
 
     it "returns the model's verdict" do
-      model_returns(coffee: true, cups: 1, ordinal: 2)
+      model_returns(coffee: true, ordinal: 2)
 
       result = described_class.new(client: client).call("Друга кава")
 
-      expect(result).to eq(described_class::Result.new(coffee: true, cups: 1, ordinal: 2))
+      expect(result).to eq(described_class::Result.new(coffee: true, ordinal: 2))
       expect(completions).to have_received(:create).with(
         hash_including(model: "gpt-5-mini", messages: include({ role: "user", content: "Друга кава" }))
       )
     end
 
-    it "keeps the cup count between 1 and 5" do
-      model_returns(coffee: true, cups: 40, ordinal: nil)
-      expect(described_class.new(client: client).call("40 кав").cups).to eq(5)
+    it "doesn't ask the model for a cup count" do
+      model_returns(coffee: true, ordinal: nil)
 
-      model_returns(coffee: true, cups: 0, ordinal: nil)
-      expect(described_class.new(client: client).call("кава").cups).to eq(1)
+      described_class.new(client: client).call("випив 2 каву")
+
+      expect(completions).to have_received(:create) do |params|
+        schema = params.dig(:response_format, :json_schema, :schema)
+        expect(schema[:required]).to eq(%w[coffee ordinal])
+        expect(schema[:properties].keys).to eq(%i[coffee ordinal])
+      end
+    end
+
+    it "tells the model that corrections and questions about totals aren't coffee" do
+      expect(described_class::PROMPT).to include("-2 кави за сьогодні", "скільки в мене кав?")
     end
   end
 end
