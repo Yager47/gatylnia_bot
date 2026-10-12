@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_11_213056) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_12_085902) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -35,7 +35,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_11_213056) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["chat_id"], name: "index_chat_users_on_chat_id"
+    t.index ["chat_id", "user_id"], name: "index_chat_users_on_chat_id_and_user_id", unique: true
     t.index ["user_id"], name: "index_chat_users_on_user_id"
   end
 
@@ -46,6 +46,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_11_213056) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "mode", default: 0, null: false
+    t.index ["telegram_id"], name: "index_chats_on_telegram_id", unique: true
   end
 
   create_table "entries", force: :cascade do |t|
@@ -228,6 +229,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_11_213056) do
     t.string "last_name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["telegram_id"], name: "index_users_on_telegram_id", unique: true
   end
 
   add_foreign_key "activities", "chats"
