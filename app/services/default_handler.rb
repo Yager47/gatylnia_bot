@@ -1,16 +1,9 @@
-class DefaultHandler
+class DefaultHandler < ChatModeHandler
   LATE_EDIT_AFTER = 1.minute
 
-  def initialize(message:, chat:)
-    @message = message
-    @chat = chat
-    @user = set_user
-    @messenger = ChatMessenger.new(chat: @chat)
-  end
+  private
 
-  def call
-    return unless @message && @message[:date]
-
+  def handle
     # Skip if message was edited later than minute after the original one.
     # Telegram re-sends video messages as edited message after some time for unknown reason.
     return if late_edit?
@@ -20,8 +13,6 @@ class DefaultHandler
     outcome = Response::Chance.new.call if outcome.nil? && chance(0.2)
     deliver(outcome) if outcome.is_a?(String)
   end
-
-  private
 
   def responders
     if @message[:text]
@@ -46,13 +37,13 @@ class DefaultHandler
     edited = @message[:edit_date].present?
 
     [
-      -> { Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
-      -> { Response::BotCommand.new(user: @user, text: text, chat: @chat).call },
-      -> { Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).call unless edited },
-      -> { Response::UndoCoffee.new(user: @user, text: text, chat: @chat).call unless edited },
+      -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
+      -> { Response::BotCommand.new(user: user, text: text, chat: @chat).call },
+      -> { Response::Gato.new(user: user, text: text, original_text: @message[:text], chat: @chat).call unless edited },
+      -> { Response::UndoCoffee.new(user: user, text: text, chat: @chat).call unless edited },
       -> { Response::Equals.new(text: text).call },
       -> { track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text) },
-      -> { Response::Includes.new(user: @user, text: text).call if chance(0.2) },
+      -> { Response::Includes.new(user: user, text: text).call if chance(0.2) },
       -> { Response::Ai.new(chat: @chat).call if bot_mentioned || chance(0.8) }
     ]
   end
@@ -70,30 +61,11 @@ class DefaultHandler
     return Response::STOP if @message[:edit_date].present?
 
     video_note = @message[:video_note]
-    message = record_message(content: Video::NoteAnalyzer.build_description(@user, video_note[:duration], nil))
+    message = record_message(content: Video::NoteAnalyzer.build_description(user, video_note[:duration], nil))
     HandleVideoNoteJob.perform_later(
       message, file_id: video_note[:file_id], duration: video_note[:duration], sent_at: Time.zone.at(@message[:date])
     )
     Response::STOP
-  end
-
-  def deliver(text)
-    reply = @chat.messages.create!(role: :assistant, content: text)
-    @messenger.deliver(reply)
-  end
-
-  def record_message(content: nil)
-    MessageRecorder.new(
-      chat: @chat,
-      telegram_message: @message,
-      user: @user,
-      role: :user,
-      content: content
-    ).record
-  end
-
-  def set_user
-    ChatMembers::Resolver.new(chat: @chat, from: @message[:from]).call
   end
 
   # Both timestamps come from Telegram, so queue lag doesn't matter.
