@@ -1,6 +1,12 @@
 module Response
-  class Equals < Response::Base
+  class Equals
+    include Responder
+
     TALK_BACK_PREFIX = "ти ".freeze
+
+    def initialize(text:)
+      @text = text
+    end
 
     def call
       # "ти <insult>" gets the insult thrown back.
@@ -20,18 +26,10 @@ module Response
       [ "Ти шо сука", "Ні, ти #{insult}" ].sample
     end
 
-    def swear_phrases
-      fu_phrases + phrases("swear")
-    end
-
     def swear_answers
       result = [ "Ти шо сука", "Ні, ти #{@text}" ]
       result << "Я піду, а чи повернусь я?" if fu_phrases.include?(@text)
       result
-    end
-
-    def fu_phrases
-      @fu_phrases ||= phrases("fuck_you")
     end
 
     def data

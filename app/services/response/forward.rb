@@ -1,5 +1,7 @@
 module Response
-  class Forward < Response::Base
+  class Forward
+    include Responder
+
     def initialize(forward_from:)
       @forward_from = forward_from
     end
@@ -7,15 +9,7 @@ module Response
     def call
       return if @forward_from.blank?
 
-      reply(answer("forward"))
-    end
-
-    private
-
-    def data
-      {
-        "forward" => answers("forward")
-      }
+      reply(pick(answers("forward")))
     end
   end
 end

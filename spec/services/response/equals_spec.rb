@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe Response::Equals do
   def reply_to(text)
-    described_class.new(user: build(:user), text: text).call
+    described_class.new(text: text).call
   end
 
   it "answers an exact phrase" do

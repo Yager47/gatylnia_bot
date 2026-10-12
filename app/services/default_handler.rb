@@ -50,7 +50,7 @@ class DefaultHandler
       -> { Response::BotCommand.new(user: @user, text: text, chat: @chat).call },
       -> { Response::Gato.new(user: @user, text: text, original_text: @message[:text], chat: @chat).call unless edited },
       -> { Response::UndoCoffee.new(user: @user, text: text, chat: @chat).call unless edited },
-      -> { Response::Equals.new(user: @user, text: text).call },
+      -> { Response::Equals.new(text: text).call },
       -> { track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text) },
       -> { Response::Includes.new(user: @user, text: text).call if chance(0.2) },
       -> { Response::Ai.new(chat: @chat).call if bot_mentioned || chance(0.8) }

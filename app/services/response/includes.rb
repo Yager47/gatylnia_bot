@@ -1,5 +1,12 @@
 module Response
-  class Includes < Response::Base
+  class Includes
+    include Responder
+
+    def initialize(user:, text:)
+      @user = user
+      @text = text
+    end
+
     # The first key (or any word of a key list) contained in the text wins. A
     # nil value stops the chain without replying, so "годин" shields "один".
     def call
@@ -20,7 +27,7 @@ module Response
         "ааа" => answers("aaa"),
         "ооо" => answers("ooo"),
         phrases("thank") => answers("thank"),
-        phrases("morning") => answers("morning", first_name: @user.first_name),
+        phrases("morning") => render_answers("morning", first_name: @user.first_name),
         "годин" => nil, "один" => "Проти цілого світу?",
         [ "текіл", "свєт" ] => "Мальчікіііііііі",
         [ "пить", "пити", "бухат" ] => "Шоб і не балакать",
@@ -94,7 +101,7 @@ module Response
         "виставка дисторшн" => "Виставка Поноса",
         "виставку дисторшн" => "Виставку Поноса",
         "виставк" => "Дисторшн",
-        "добраніч" => answers("night", first_name: @user.first_name),
+        "добраніч" => render_answers("night", first_name: @user.first_name),
         "правий" => "Лівий", "лівий" => "Правий",
         "мінуси" => "Мінусів нема", "плюси" => "Плюсів нема",
         "ясно" => [ "Хуясно", "Ні, пасмурно" ],

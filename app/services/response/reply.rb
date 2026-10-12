@@ -1,11 +1,13 @@
 module Response
   # Replying to someone's message with a number gives them that many points.
-  class Reply < Response::Base
+  class Reply
+    include Responder
+
     MAX_POINTS = 500
 
     def initialize(user:, text:, chat:, reply_to_message:)
-      super(user: user, text: text)
-
+      @user = user
+      @text = text
       @chat = chat
       @reply_to_message = reply_to_message
     end

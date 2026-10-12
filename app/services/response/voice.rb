@@ -1,5 +1,7 @@
 module Response
-  class Voice < Response::Base
+  class Voice
+    include Responder
+
     def initialize(voice:)
       @voice = voice
     end
@@ -7,15 +9,7 @@ module Response
     def call
       return if @voice.blank?
 
-      reply(answer("voice"))
-    end
-
-    private
-
-    def data
-      {
-        "voice" => answers("voice")
-      }
+      reply(pick(answers("voice")))
     end
   end
 end
