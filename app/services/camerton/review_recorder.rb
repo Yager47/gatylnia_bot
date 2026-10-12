@@ -1,31 +1,28 @@
 module Camerton
-  # Stores a reply to a share as feedback, exactly as written, and has the
-  # review re-scored. An edit replaces that message's text. Safe to run twice
-  # for the same message: unchanged text is neither stored nor scored again.
+  # A reply to a share (or to the bot's announcement of it) is feedback.
+  # Text is stored as written right away; a voice or video note is
+  # transcribed in the background first (TranscribeReviewJob).
   class ReviewRecorder
+    MEDIA_SOURCES = %i[voice video_note].freeze
+
     def initialize(message:, chat:)
       @message = message
       @chat = chat
     end
 
-    # Returns the ReviewMessage, or nil when the message isn't feedback.
+    # Returns the feedback's source (:text, :voice or :video_note), or nil
+    # when the message isn't feedback.
     def call
       share = replied_share
       return unless share
 
-      text = @message[:text] || @message[:caption]
-      return if text.blank?
-
-      review = find_or_create_review(share)
-      review_message = find_or_create_message(review, share, text)
-      unless review_message.previously_new_record?
-        return review_message if review_message.text == text # a redelivery
-
-        review_message.update!(text: text) # an edit
+      if media_source
+        enqueue_transcription(share)
+      elsif text.present?
+        ReviewWriter.new(share: share, user: user)
+          .write(telegram_message_id: @message[:message_id], source: :text, text: text, sent_at: sent_at)
+        :text
       end
-
-      ScoreReviewJob.perform_later(review)
-      review_message
     end
 
     private
@@ -41,20 +38,34 @@ module Camerton
         .first
     end
 
-    def find_or_create_review(share)
-      attributes = { chat: @chat, release: share.release, user: user }
-      Review.find_by(attributes) || Review.create_or_find_by!(attributes)
+    def media_source
+      MEDIA_SOURCES.find { |source| @message[source].present? }
     end
 
-    def find_or_create_message(review, share, text)
-      attributes = { release_share: share, telegram_message_id: @message[:message_id] }
-      ReviewMessage.find_by(attributes) ||
-        ReviewMessage.create_or_find_by!(attributes) do |review_message|
-          review_message.review = review
-          review_message.source = :text
-          review_message.text = text
-          review_message.sent_at = Time.zone.at(@message[:date])
-        end
+    # Voice and video notes can't be edited by their author; an edited one is
+    # Telegram re-sending it, so it isn't transcribed again (but is still
+    # feedback, which keeps the mode handler off it).
+    def enqueue_transcription(share)
+      unless @message[:edit_date].present?
+        TranscribeReviewJob.perform_later(
+          share, user,
+          telegram_message_id: @message[:message_id],
+          file_id: @message[media_source][:file_id],
+          source: media_source.to_s,
+          caption: @message[:caption],
+          sent_at: sent_at
+        )
+      end
+
+      media_source
+    end
+
+    def text
+      @message[:text] || @message[:caption]
+    end
+
+    def sent_at
+      Time.zone.at(@message[:date])
     end
 
     def user

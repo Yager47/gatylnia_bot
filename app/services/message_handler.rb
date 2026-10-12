@@ -8,7 +8,11 @@ class MessageHandler
   # An unknown mode raises KeyError rather than silently ignoring the message.
   # Camerton runs first, on top of whatever the mode is.
   def call
-    Camerton::Handler.new(message: @message, chat: chat).call if chat.camerton_enabled?
+    camerton = Camerton::Handler.new(message: @message, chat: chat).call if chat.camerton_enabled?
+    # A review belongs to Camerton alone: no canned or AI replies to it, and a
+    # video note isn't analyzed (and transcribed) a second time.
+    return if camerton == :review
+
     HANDLERS.fetch(chat.mode).new(message: @message, chat: chat).call
   end
 

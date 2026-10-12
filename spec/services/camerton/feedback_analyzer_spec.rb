@@ -7,7 +7,7 @@ RSpec.describe Camerton::FeedbackAnalyzer do
   let(:messages) do
     [
       build(:review_message, text: "спочатку не зайшло", sent_at: Time.zone.local(2026, 10, 1, 12)),
-      build(:review_message, text: "а тепер 8/10", sent_at: Time.zone.local(2026, 10, 13, 12))
+      build(:review_message, source: :voice, text: "а тепер вісім з десяти", sent_at: Time.zone.local(2026, 10, 13, 12))
     ]
   end
 
@@ -29,8 +29,8 @@ RSpec.describe Camerton::FeedbackAnalyzer do
       expect(JSON.parse(params[:messages].last[:content])).to eq(
         "release" => { "kind" => "song", "artist" => "Queen", "title" => "Bohemian Rhapsody" },
         "replies" => [
-          { "date" => "2026-10-01", "text" => "спочатку не зайшло" },
-          { "date" => "2026-10-13", "text" => "а тепер 8/10" }
+          { "date" => "2026-10-01", "source" => "text", "text" => "спочатку не зайшло" },
+          { "date" => "2026-10-13", "source" => "voice", "text" => "а тепер вісім з десяти" }
         ]
       )
     end
@@ -48,7 +48,7 @@ RSpec.describe Camerton::FeedbackAnalyzer do
     expect(analyze.score).to eq(10)
   end
 
-  it "tells the model that explicit ratings win and the latest opinion matters most" do
-    expect(described_class::PROMPT).to include("7/10", "latest replies matter most")
+  it "tells the model that explicit ratings win, the latest opinion matters most and transcripts may be off" do
+    expect(described_class::PROMPT).to include("7/10", "latest replies matter most", "speech transcripts")
   end
 end

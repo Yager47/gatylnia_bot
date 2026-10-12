@@ -95,6 +95,96 @@ RSpec.describe Camerton::ReviewRecorder do
     expect([ Review.count, ReviewMessage.count ]).to eq([ 0, 0 ])
   end
 
+  describe "voice and video notes" do
+    it "transcribes a voice reply in the background" do
+      sent_at = Time.zone.local(2026, 10, 13, 18, 0)
+
+      dispatch(message_update(
+        text: nil, message_id: 100, date: sent_at.to_i, reply_to_message: { message_id: 42 },
+        voice: { file_id: "voice-1", duration: 7, mime_type: "audio/ogg" }
+      ))
+
+      expect(TranscribeReviewJob).to have_been_enqueued.with(
+        share, User.find_by!(telegram_id: "555"),
+        telegram_message_id: 100, file_id: "voice-1", source: "voice", caption: nil, sent_at: sent_at
+      )
+      expect(ReviewMessage.count).to eq(0)
+    end
+
+    it "transcribes a video note reply to the announcement, passing a caption along" do
+      dispatch(message_update(
+        text: nil, caption: "дивіться", message_id: 101, reply_to_message: { message_id: 43 },
+        video_note: { file_id: "note-1", duration: 12, length: 384 }
+      ))
+
+      expect(TranscribeReviewJob).to have_been_enqueued
+        .with(share, anything, hash_including(file_id: "note-1", source: "video_note", caption: "дивіться"))
+    end
+
+    it "doesn't transcribe a video note again when Telegram re-sends it as an edit" do
+      dispatch(edited_message_update(
+        text: nil, message_id: 101, reply_to_message: { message_id: 42 },
+        video_note: { file_id: "note-1", duration: 12, length: 384 }
+      ))
+
+      expect(TranscribeReviewJob).not_to have_been_enqueued
+    end
+
+    context "in a chat in the default mode" do
+      before { chat.update!(mode: :default) }
+
+      let(:video_note) { { file_id: "note-1", duration: 12, length: 384 } }
+
+      it "leaves a video note review to Camerton alone, so it's transcribed once" do
+        dispatch(message_update(text: nil, message_id: 101, reply_to_message: { message_id: 42 }, video_note: video_note))
+
+        expect(TranscribeReviewJob).to have_been_enqueued
+        expect(HandleVideoNoteJob).not_to have_been_enqueued
+        expect(Message.count).to eq(0)
+      end
+
+      it "leaves a re-sent video note review alone too" do
+        dispatch(edited_message_update(
+          text: nil, message_id: 101, date: 10.seconds.ago.to_i, reply_to_message: { message_id: 42 }, video_note: video_note
+        ))
+
+        expect(HandleVideoNoteJob).not_to have_been_enqueued
+      end
+
+      it "still analyzes a video note that isn't a review" do
+        dispatch(message_update(text: nil, message_id: 102, video_note: video_note))
+
+        expect(HandleVideoNoteJob).to have_been_enqueued
+        expect(TranscribeReviewJob).not_to have_been_enqueued
+      end
+
+      it "leaves voice and text reviews to Camerton alone too: no canned or AI replies" do
+        dispatch(message_update(text: nil, message_id: 103, reply_to_message: { message_id: 42 }, voice: { file_id: "v", duration: 3 }))
+        dispatch(reply_update(text: "Ало, 5/10", message_id: 104))
+        dispatch(edited_message_update(text: "Ало, 6/10", message_id: 104, reply_to_message: { message_id: 42 }))
+
+        expect(TranscribeReviewJob).to have_been_enqueued
+        expect(ReviewMessage.sole.text).to eq("Ало, 6/10")
+        expect(fake_telegram.sent_messages).to be_empty
+        expect(Message.count).to eq(0)
+      end
+
+      it "still lets the mode handler answer a reply that isn't feedback" do
+        allow_any_instance_of(DefaultHandler).to receive(:chance).and_return(false)
+        dispatch(message_update(text: nil, message_id: 105, reply_to_message: { message_id: 42 }, sticker: { file_id: "s" }))
+        dispatch(reply_update(text: "Ало", to: 999, message_id: 106))
+
+        expect(fake_telegram.sent_messages.map { |m| m[:text] }).to eq([ "Ало" ])
+      end
+    end
+
+    it "ignores a voice message that isn't a reply to a share" do
+      dispatch(message_update(text: nil, message_id: 102, voice: { file_id: "voice-2", duration: 3 }))
+
+      expect(TranscribeReviewJob).not_to have_been_enqueued
+    end
+  end
+
   it "does nothing in a chat with Camerton off" do
     chat.update!(camerton_enabled: false)
 
