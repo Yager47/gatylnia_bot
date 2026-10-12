@@ -5,7 +5,7 @@ default: &default
   workers:
     - queues: "*"
       # Each worker thread holds a DB connection, plus 2 for polling and
-      # heartbeat: keep threads <= database pool (RAILS_MAX_THREADS, 5) - 2.
+      # heartbeat: keep threads <= database max_connections (RAILS_MAX_THREADS, 5) - 2.
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1

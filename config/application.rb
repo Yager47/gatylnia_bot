@@ -9,7 +9,7 @@ Bundler.require(*Rails.groups)
 module GatylniaBot
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 8.0
+    config.load_defaults 8.1
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
@@ -32,5 +32,9 @@ module GatylniaBot
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Active Storage is loaded by rails/all but unused; without this, Rails 8.1
+    # warns on every boot that image variants need the image_processing gem.
+    config.active_storage.variant_processor = :disabled
   end
 end
