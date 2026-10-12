@@ -23,7 +23,7 @@ module GatylniaBot
     #
     config.time_zone = "Europe/Kyiv"
     # config.eager_load_paths << Rails.root.join("extras")
-    config.i18n.available_locales = [:uk, :en]
+    config.i18n.available_locales = [ :uk, :en ]
 
     # Language by default
     config.i18n.default_locale = :uk
