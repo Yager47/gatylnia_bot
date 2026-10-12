@@ -31,6 +31,16 @@ module Response
       AnswerFiles.erb("answers", name, locals)
     end
 
+    # The reply a lib/rules/*.yml rule asks for (see the comments there).
+    # `locals` are only used by a rule that renders an ERB answer file.
+    def reply_with_rule(rule, **locals)
+      return STOP if rule["stop"]
+      return reply(pick(answers(rule["answers"]))) if rule["answers"]
+      return reply(pick(render_answers(rule["render"], **locals))) if rule["render"]
+
+      reply(pick(rule["reply"]))
+    end
+
     def fu_phrases
       phrases("fuck_you")
     end

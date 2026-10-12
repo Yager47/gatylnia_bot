@@ -32,7 +32,9 @@ module AnswerFiles
   end
 
   # compute_if_absent runs the block at most once per key, even when several
-  # threads ask for the same file at the same moment.
+  # threads ask for the same file at the same moment. It holds a lock while
+  # the block runs, so the block must not call fetch (or yaml/erb/text)
+  # itself: that deadlocks. Load what the block needs before calling fetch.
   def fetch(key, &load)
     return load.call if Rails.application.config.enable_reloading
 

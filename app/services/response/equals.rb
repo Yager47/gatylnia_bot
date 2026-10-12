@@ -1,4 +1,6 @@
 module Response
+  # Replies to a message that is exactly a known phrase (lib/rules/equals.yml),
+  # and throws insults back.
   class Equals
     include Responder
 
@@ -8,12 +10,24 @@ module Response
       @text = text
     end
 
+    # Phrase => rule, built once per process (see AnswerFiles).
+    def self.rules
+      source = AnswerFiles.yaml("rules", "equals")
+      AnswerFiles.fetch([ :rules, "equals" ]) do
+        source.each_with_object({}) do |rule, index|
+          Array(rule["match"]).each { |phrase| index[phrase] = rule }
+        end.freeze
+      end
+    end
+
     def call
       # "ти <insult>" gets the insult thrown back.
       return reply(talk_back_answer) if swear_phrases.include?(insult)
 
-      match = data.find { |key, _value| Array(key).include?(@text) }
-      reply(pick(match.last)) if match
+      rule = self.class.rules[@text]
+      return reply_with_rule(rule) if rule
+
+      reply(pick(swear_answers)) if swear_phrases.include?(@text)
     end
 
     private
@@ -30,39 +44,6 @@ module Response
       result = [ "Ти шо сука", "Ні, ти #{@text}" ]
       result << "Я піду, а чи повернусь я?" if fu_phrases.include?(@text)
       result
-    end
-
-    def data
-      {
-        "добре" => [ "Ні, це не добре", "Ні, це погано" ],
-        "харашо" => [ "Ні, це не харашо", "Ні, це погано" ],
-        "погано" => [ "Ні, не погано", "Ні, це добре", "Ні, це ахуєнно" ],
-        [ "ок", "оке", "окей" ] => "Ні, не окей",
-        "блять" => [ "Блять треба дома оставлять", "Єбать" ],
-        "єбать" => "Блять",
-        [ "пізда", "пизда" ] => "Хуй", "хуй" => "Пізда",
-        "так" => "Ні", "так!" => "Ні!",
-        "ні" => "Так", "ні!" => "Так!",
-        "ало" => "Ало", "алло" => "Алло",
-        "це пізда" => [ "Ні, це хуй", "Ні, не пізда" ],
-        "нє" => "Хуй в говнє",
-        [ "реально", "скажи" ] => "Внатурє",
-        "це правда" => [ "Ні, це брехня", "Ні, не правда" ],
-        "да" => "Пізда",
-        "це піздєц" => "Погоджуюсь",
-        "піздєц" => "Згоден",
-        [ "боже", "господи" ] => answers("god"),
-        "угу" => "Шо ти угукаєш, дура",
-        "ага" => "Шо ти агакаєш, дура",
-        [ "шо", "шо?" ] => "Хуй зʼїв нашо",
-        "тю" => "Не на ту кутю",
-        "йо" => "Йо!", "йоу" => "Йоу!",
-        [ "я", "я!", "і я", "я також" ] => "Головка от хуя",
-        [ "та йди ти нахуй", "та йди нахуй" ] => [ "Їбало притуши", "Своїм помахуй" ],
-        [ "розпач", "rozpach" ] => answers("rozpach"),
-        "давай" => "Не дам",
-        swear_phrases => swear_answers
-      }
     end
   end
 end
