@@ -1,4 +1,6 @@
 class DefaultHandler
+  LATE_EDIT_AFTER = 1.minute
+
   def initialize(message:, chat:)
     @message = message
     @chat = chat
@@ -11,7 +13,7 @@ class DefaultHandler
 
     # Skip if message was edited later than minute after the original one.
     # Telegram re-sends video messages as edited message after some time for unknown reason.
-    return if @message[:edit_date].present? && (Time.now > Time.at(@message[:date]) + 1.minute)
+    return if late_edit?
 
     outcome = Response.first(responders)
     # A random line only when nothing answered or stopped the chain.
@@ -39,7 +41,7 @@ class DefaultHandler
   def text_responders
     message = record_message
     text = message.content.downcase
-    bot_mentioned = text.include?(BOT_MENTION.downcase)
+    bot_mentioned = text.include?(BotMention.text)
     # Telegram delivers an edit as a new update: don't count or undo twice.
     edited = @message[:edit_date].present?
 
@@ -92,6 +94,11 @@ class DefaultHandler
 
   def set_user
     ChatMembers::Resolver.new(chat: @chat, from: @message[:from]).call
+  end
+
+  # Both timestamps come from Telegram, so queue lag doesn't matter.
+  def late_edit?
+    @message[:edit_date].present? && @message[:edit_date] - @message[:date] > LATE_EDIT_AFTER
   end
 
   def chance(value)

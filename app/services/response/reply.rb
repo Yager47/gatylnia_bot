@@ -14,7 +14,7 @@ module Response
       return unless @reply_to_message
 
       amount = Integer(@text, exception: false)
-      return unless amount
+      return if amount.nil? || amount.zero?
 
       # A replied-to channel post has no author ("from"), so no one to reward.
       receiver_id = @reply_to_message.dig(:from, :id)

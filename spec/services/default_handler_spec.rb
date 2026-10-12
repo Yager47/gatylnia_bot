@@ -153,6 +153,30 @@ RSpec.describe DefaultHandler do
     end
   end
 
+  describe "edited messages" do
+    before do
+      allow_any_instance_of(DefaultHandler).to receive(:chance).and_return(false)
+      allow(Ai).to receive(:reply_in).and_return("Шо ти редагуєш")
+    end
+
+    it "answers an edit made within a minute, even if it is processed later" do
+      sent_at = Time.current
+      travel_to(sent_at + 5.minutes)
+
+      dispatch(edited_message_update(text: "@test_bot абв", date: sent_at.to_i, edit_date: (sent_at + 30.seconds).to_i))
+
+      expect(fake_telegram.sent_messages.size).to eq(1)
+    end
+
+    it "ignores an edit made more than a minute after the message" do
+      sent_at = Time.current
+
+      dispatch(edited_message_update(text: "@test_bot абв", date: sent_at.to_i, edit_date: (sent_at + 2.minutes).to_i))
+
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+  end
+
   describe "video notes" do
     let(:video_note) { { file_id: "file-1", file_unique_id: "u1", duration: 10, length: 400 } }
 

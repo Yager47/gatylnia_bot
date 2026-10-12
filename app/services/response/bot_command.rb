@@ -8,8 +8,8 @@ module Response
     end
 
     def call
-      return unless @text.include?(BOT_MENTION.downcase)
-      @command = @text.sub("#{BOT_MENTION.downcase} ", "")
+      return unless @text.include?(BotMention.text)
+      @command = @text.sub("#{BotMention.text} ", "")
 
       process_mode || mode_reply
     end
