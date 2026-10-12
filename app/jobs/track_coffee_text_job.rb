@@ -45,11 +45,11 @@ class TrackCoffeeTextJob < ApplicationJob
       recorded = Activities::Recorder.new(
         user: @user, chat: @chat, kind: :coffee, source: :text,
         telegram_message_id: @message.telegram_message_id, occurred_at: sent_at,
-        amount: verdict.cups, details: { "ordinal" => verdict.ordinal }.compact
+        details: { "ordinal" => verdict.ordinal }.compact
       ).call
       next unless recorded
 
-      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text(coffee: verdict.cups))
+      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text(coffee: 1))
     end
   end
 
