@@ -1,5 +1,9 @@
 source "https://rubygems.org"
 
+# One Ruby everywhere: Bundler records it in Gemfile.lock, which Heroku reads;
+# CI and rvm read .ruby-version directly.
+ruby file: ".ruby-version"
+
 # Must be first in Gemfile
 gem "dotenv-rails", groups: [ :development, :test ]
 
@@ -50,6 +54,9 @@ group :development, :test do
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
+
+  # Audits gems for known security defects (use config/bundler-audit.yml to ignore issues)
+  gem "bundler-audit", require: false
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
