@@ -38,7 +38,13 @@ plugin :tmp_restart
 # Run the Solid Queue supervisor inside of Puma for single-server deployments.
 # Always on in production (no separate worker dyno), so enabling it ships in the
 # same release as the migration that creates its tables.
-plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"] || ENV["RAILS_ENV"] == "production"
+if ENV["SOLID_QUEUE_IN_PUMA"] || ENV["RAILS_ENV"] == "production"
+  plugin :solid_queue
+  # Run the supervisor, worker, dispatcher and scheduler as threads in the Puma
+  # process. Fork mode ran them as 4 extra Ruby processes whose shared
+  # copy-on-write memory wore off over time, pushing the 512MB dyno to ~1GB (R14).
+  solid_queue_mode :async
+end
 
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.

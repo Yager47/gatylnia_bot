@@ -4,8 +4,8 @@ default: &default
       batch_size: 500
   workers:
     - queues: "*"
-      # Each worker thread holds a DB connection, plus 2 for polling and
-      # heartbeat: keep threads <= database max_connections (RAILS_MAX_THREADS, 5) - 2.
+      # Async mode (config/puma.rb): these threads share the production pool
+      # (database.yml) with Puma, and `processes` is ignored.
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
