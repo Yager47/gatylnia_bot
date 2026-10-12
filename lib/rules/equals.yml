@@ -1,0 +1,70 @@
+# Replies to a message that is exactly one of `match` (after downcasing).
+# Used by Response::Equals.
+#
+#   match:   a string or a list of strings
+#   reply:   a string, or a list to pick one from at random
+#   answers: instead of reply, the name of a list in lib/answers/<name>.yml
+- match: "добре"
+  reply: [ "Ні, це не добре", "Ні, це погано" ]
+- match: "харашо"
+  reply: [ "Ні, це не харашо", "Ні, це погано" ]
+- match: "погано"
+  reply: [ "Ні, не погано", "Ні, це добре", "Ні, це ахуєнно" ]
+- match: [ "ок", "оке", "окей" ]
+  reply: "Ні, не окей"
+- match: "блять"
+  reply: [ "Блять треба дома оставлять", "Єбать" ]
+- match: "єбать"
+  reply: "Блять"
+- match: [ "пізда", "пизда" ]
+  reply: "Хуй"
+- match: "хуй"
+  reply: "Пізда"
+- match: "так"
+  reply: "Ні"
+- match: "так!"
+  reply: "Ні!"
+- match: "ні"
+  reply: "Так"
+- match: "ні!"
+  reply: "Так!"
+- match: "ало"
+  reply: "Ало"
+- match: "алло"
+  reply: "Алло"
+- match: "це пізда"
+  reply: [ "Ні, це хуй", "Ні, не пізда" ]
+- match: "нє"
+  reply: "Хуй в говнє"
+- match: [ "реально", "скажи" ]
+  reply: "Внатурє"
+- match: "це правда"
+  reply: [ "Ні, це брехня", "Ні, не правда" ]
+- match: "да"
+  reply: "Пізда"
+- match: "це піздєц"
+  reply: "Погоджуюсь"
+- match: "піздєц"
+  reply: "Згоден"
+- match: [ "боже", "господи" ]
+  answers: god
+- match: "угу"
+  reply: "Шо ти угукаєш, дура"
+- match: "ага"
+  reply: "Шо ти агакаєш, дура"
+- match: [ "шо", "шо?" ]
+  reply: "Хуй зʼїв нашо"
+- match: "тю"
+  reply: "Не на ту кутю"
+- match: "йо"
+  reply: "Йо!"
+- match: "йоу"
+  reply: "Йоу!"
+- match: [ "я", "я!", "і я", "я також" ]
+  reply: "Головка от хуя"
+- match: [ "та йди ти нахуй", "та йди нахуй" ]
+  reply: [ "Їбало притуши", "Своїм помахуй" ]
+- match: [ "розпач", "rozpach" ]
+  answers: rozpach
+- match: "давай"
+  reply: "Не дам"

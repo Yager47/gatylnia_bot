@@ -47,8 +47,8 @@ RSpec.describe DefaultHandler do
       expect(sent_texts).to be_empty
     end
 
-    it "lets a nil answer in Includes stop the chain (\"годин\" shields \"один\")" do
-      dispatch(message_update(text: "Година пройшла"))
+    it "lets a stop rule in Includes stop the chain" do
+      dispatch(message_update(text: "Рисова каша"))
 
       expect(sent_texts).to be_empty
     end
@@ -80,7 +80,7 @@ RSpec.describe DefaultHandler do
     end
 
     it "no longer jokes about coffee" do
-      expect(Response::Includes.new(user: build(:user), text: "кава").send(:data).keys.flatten).not_to include("кав")
+      expect(Response::Includes.new(user: build(:user), text: "кава").call).to be_nil
     end
   end
 

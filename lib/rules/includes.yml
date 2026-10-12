@@ -1,0 +1,279 @@
+# Replies to a message that contains one of these, checked top to bottom: the
+# first rule that matches wins, so a longer phrase must come before any
+# shorter one it contains (a spec checks this). Used by Response::Includes.
+#
+# Match with one of:
+#   contains: a string or a list of strings, anywhere in the downcased text
+#   phrases:  any phrase from lib/phrases/<name>.yml, anywhere in the text
+#   pattern:  a regular expression, e.g. '\bслово\b' for a whole word
+# Then reply with one of:
+#   reply:    a string, or a list to pick one from at random
+#   answers:  a list from lib/answers/<name>.yml
+#   render:   lib/answers/<name>.yml.erb, rendered with the author's first_name
+#   stop:     true - don't reply, and don't let later rules or responders reply
+#
+# "f[f[" is "ахах" typed on an English keyboard layout.
+- contains: [ "в рот", "врот" ]
+  answers: mouth
+- contains: [ "ахах", "f[f[" ]
+  answers: laugh
+- contains: "))"
+  answers: smile
+- contains: "(("
+  answers: sad
+- contains: "ааа"
+  answers: aaa
+- contains: "ооо"
+  answers: ooo
+- phrases: thank
+  answers: thank
+- phrases: morning
+  render: morning
+- pattern: '\bодин'
+  reply: "Проти цілого світу?"
+- contains: [ "текіл", "свєт" ]
+  reply: "Мальчікіііііііі"
+- contains: [ "пить", "пити", "бухат" ]
+  reply: "Шоб і не балакать"
+- contains: "заборони"
+  reply: "Забороняю!"
+- contains: "вічність"
+  reply: "Вічність тут"
+- contains: "дізна"
+  reply: [ "Ні, ти не дізнаєшся", "Ні, ти не дізнаєшся ніколи" ]
+- contains: "смислі"
+  reply: "В коромислі"
+- contains: "смислє"
+  reply: "В коромислє"
+- contains: [ "бик", "бичар" ]
+  answers: byk
+- contains: "кайф"
+  reply: "Кайф лютий"
+- contains: "гандон"
+  reply: "Штопаний"
+- contains: "плачу"
+  answers: plachu
+- contains: "рево"
+  answers: revo
+- contains: [ "важко", "тяжко" ]
+  reply: "А кому легко"
+- contains: "чуєш"
+  reply: "На хую переночуєш"
+- contains: "прекрасно"
+  reply: "Ні, це жахливо"
+- contains: "жах"
+  reply: [ "Ні, це прекрасно", "Ні, це ахуєнно" ]
+- contains: [ "не вірно", "невірно" ]
+  reply: "Ні, це вірно"
+- contains: "вірно"
+  answers: virno
+- contains: [ "не правильно", "неправильно" ]
+  reply: "Ні, це правильно"
+- contains: "правильно"
+  answers: pravylno
+- contains: "алкоголь це яд"
+  reply: "Отрута це гурт"
+- contains: "алкоголь"
+  reply: "Алкоголь це яд"
+- contains: "отрута"
+  reply: "Отрута це гурт"
+- contains: [ "в аху", "ваху" ]
+  reply: "Ні, ти не в ахуі"
+- contains: "боря друг"
+  reply: "Боря брат"
+- contains: "саша друг"
+  reply: "Саша брат"
+- contains: "саня друг"
+  reply: "Саня брат"
+- contains: "сєрий друг"
+  reply: "Сєрий брат"
+- contains: "данік друг"
+  reply: "Данік брат"
+- contains: "даня друг"
+  reply: "Даня брат"
+- contains: "мормуль друг"
+  reply: "Мормуль брат"
+- contains: "боря"
+  reply: [ "БОРЯЯЯЯЯ!!", "Боря блять" ]
+- contains: [ "сєрий", "сірий" ]
+  reply: "СЄРЬОЖАААА!!"
+- contains: "саша"
+  reply: "САШАААААА!!"
+- contains: "саня"
+  reply: "САНЯЯЯЯЯЯ!!"
+- contains: "данік"
+  reply: "ДАНІІІК!!"
+- contains: "даня"
+  reply: "ДАНЯЯЯЯЯЯ!!"
+- contains: "мормуль"
+  reply: "МОРМУУУУЛЬ!!"
+- contains: "мінімум"
+  reply: "Більше можна \nМенше нізя"
+- contains: "максимум"
+  reply: "Менше можна \nБільше нізя"
+- contains: [ "більше можна", "можна більше" ]
+  reply: "Менше нізя"
+- contains: [ "менше можна", "можна менше" ]
+  reply: "Більше нізя"
+- contains: "не сподобалось"
+  reply: "Ні, тобі сподобалось"
+- contains: "сподобалось"
+  reply: "Ні, не сподобалось"
+- contains: "послухав"
+  reply: "Ні, не послухав"
+- contains: "послухаю"
+  reply: "Ні, не послухаєш"
+- contains: "сдєлав?"
+  reply: "Проєбав"
+- contains: "джент корпорейшн"
+  answers: djent_corp
+- contains: "підар"
+  reply: "Підари кругом"
+- contains: "бог дав"
+  reply: "Бог взяв"
+- contains: "чіна"
+  answers: china
+- contains: "кріпт"
+  answers: crypt
+- contains: "свій оазис"
+  reply: "Не знайти, а створити"
+- contains: "оазис"
+  reply: "Його не знайти"
+- contains: "вибач"
+  answers: sorry
+- contains: "не ригай хуйню"
+  reply: [ "Я должен", "Я буду", "Я не можу" ]
+- contains: "заткнись"
+  reply: [ "Я не можу", "Ні, буду пиздіть", "Ні, не заткнусь" ]
+- contains: [ "закрий", "стули", "завали" ]
+  reply: [ "Я не можу", "Ні, буду пиздіть" ]
+- contains: "живий"
+  reply: "Назавжди живий"
+- contains: "горить"
+  reply: "Поглянь як горить"
+- contains: [ "сюда", "суда" ]
+  reply: "На базу"
+- contains: [ "за шо", "зашо" ]
+  reply: "За все хароше"
+- contains: [ "сасать", "сосать" ]
+  reply: "І причмакувать"
+- contains: "шляпа рисова"
+  reply: [ "Шляпа з рису, получається", "Їв таку шляпу, не смачна" ]
+- contains: "рисова"
+  stop: true
+- contains: "шляпа"
+  reply: "Рисова"
+- contains: "рисові"
+  stop: true
+- contains: "шляпи"
+  reply: "Рисові"
+- contains: "не смішно"
+  reply: "Ні, це смішно"
+- contains: "смішно"
+  reply: "Ні, це не смішно"
+- contains: "аменр"
+  reply: "Ти заєбав зі своєю Аменрою"
+- contains: [ "гнів", "відчай" ]
+  reply: "Розпач"
+- contains: "ненавиджу"
+  reply: "Я не навиджу тебе \nТи ненавидиш мене"
+- contains: "кожний день"
+  reply: "Кожна хвилина"
+- contains: "кожна хвилина"
+  reply: "Кожна секунда"
+- contains: "кожна секунда"
+  reply: "Кожна година"
+- contains: "кожна година"
+  reply: "Кожний місяць"
+- contains: "кожний місяць"
+  reply: "Кожний рік"
+- contains: "кожний рік"
+  reply: "Мають значення для нас всіх"
+- contains: "мають значення"
+  reply: "Для нас всіх"
+- contains: "лишився лише"
+  reply: "РОЗПАЧ!"
+- contains: "в моїй душі"
+  reply: "РООООЗПААААААААЧ!!!!"
+- contains: "кожна"
+  reply: "Кожна хвилина"
+- contains: [ "кожн", "кожен" ]
+  reply: "Кожний день"
+- pattern: '\bра[йю]\b'
+  reply: "Тісний рай, получається"
+- contains: "виставка дисторшн"
+  reply: "Виставка Поноса"
+- contains: "виставку дисторшн"
+  reply: "Виставку Поноса"
+- contains: "виставк"
+  reply: "Дисторшн"
+- contains: "добраніч"
+  render: night
+- contains: "правий"
+  reply: "Лівий"
+- contains: "лівий"
+  reply: "Правий"
+- contains: "мінуси"
+  reply: "Мінусів нема"
+- contains: "плюси"
+  reply: "Плюсів нема"
+- contains: "ясно"
+  reply: [ "Хуясно", "Ні, пасмурно" ]
+- contains: [ "набереш", "набирай" ]
+  reply: [ "Наберу", "Наберу, на старий" ]
+- contains: "нахуя"
+  reply: "Шоб сміху було дохуя"
+- contains: [ "не нада", "ненада" ]
+  reply: "Нада"
+- contains: [ "нада", "надо" ]
+  reply: "Ні, не нада"
+- contains: "не можу"
+  reply: "Ні, ти можеш"
+- contains: "можу"
+  reply: "Ні, не можеш"
+- contains: "не можна"
+  reply: "Можна"
+- contains: "можна"
+  reply: "Ні, не можна"
+- contains: "не люблю"
+  reply: "Ні, ти любиш"
+- contains: "люблю"
+  reply: "Ні, не любиш"
+- contains: "не треба"
+  reply: "Ні, треба"
+- contains: "треба"
+  reply: "Ні, не треба"
+- contains: "не будуть"
+  reply: "Ні, вони будуть"
+- contains: "будуть"
+  reply: "Ні, не будуть"
+- contains: "не будем"
+  reply: "Будете"
+- contains: "будем"
+  reply: "Ні, не будете"
+- contains: "не буду"
+  reply: "Ні, ти будеш"
+- contains: "буду"
+  reply: "Ні, не будеш"
+- contains: "не буде"
+  reply: "Ні, буде"
+- contains: "буде"
+  reply: "Ні, не буде"
+- contains: "не хочу"
+  reply: "Ні, ти хочеш"
+- contains: "хочу"
+  reply: "Ні, не хочеш"
+- contains: "не знаю"
+  reply: "Ні, ти знаєш"
+- contains: "знаю"
+  reply: "Ні, ти не знаєш"
+- contains: "не поняв"
+  reply: "Ні, ти поняв"
+- contains: "поняв"
+  reply: "Ні, ти не поняв"
+- contains: [ "ціпок", "ціпки" ]
+  reply: [ "Жорсткої кольчуги", "Жорсткої кольчуги?", "Жорсткої кольчуги сподіваюсь" ]
+- contains: "?"
+  answers: question
+- contains: "!"
+  answers: exclamation
