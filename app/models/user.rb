@@ -9,7 +9,7 @@ class User < ApplicationRecord
   validates :telegram_id, presence: true
 
   def name
-    [first_name, last_name].compact.join(" ")
+    [ first_name, last_name ].compact.join(" ")
   end
 
   def balance(chat = nil)

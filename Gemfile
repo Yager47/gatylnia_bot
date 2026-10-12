@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # Must be first in Gemfile
-gem "dotenv-rails", groups: [:development, :test]
+gem "dotenv-rails", groups: [ :development, :test ]
 
 # Ruby wrapper for Telegram's Bot API. [https://github.com/atipugin/telegram-bot-ruby]
 gem "telegram-bot-ruby"
@@ -57,5 +57,3 @@ group :development, :test do
   gem "rspec-rails"
   gem "factory_bot_rails"
 end
-
-

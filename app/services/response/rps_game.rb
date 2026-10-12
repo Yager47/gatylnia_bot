@@ -36,14 +36,14 @@ module Response
 
     def user_won?(computer_weapon)
       [
-        [ROCK, SCISSORS],
-        [PAPER, ROCK],
-        [SCISSORS, PAPER]
-      ].include? [@user_weapon, computer_weapon]
+        [ ROCK, SCISSORS ],
+        [ PAPER, ROCK ],
+        [ SCISSORS, PAPER ]
+      ].include? [ @user_weapon, computer_weapon ]
     end
 
     def weapons
-      [ROCK, PAPER, SCISSORS]
+      [ ROCK, PAPER, SCISSORS ]
     end
 
     def win_answer
