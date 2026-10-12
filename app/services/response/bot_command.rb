@@ -4,6 +4,7 @@ module Response
     include Responder
 
     MODE_PREFIX = "режим: ".freeze
+    CAMERTON_PREFIX = "камертон: ".freeze
     STATS_PREFIX = "гатуни за ".freeze
 
     # Period word => [Time range method, reply header]
@@ -32,7 +33,7 @@ module Response
     def call
       return unless @command
 
-      process_mode || mode_reply
+      process_mode || process_camerton || mode_reply
     end
 
     private
@@ -59,6 +60,8 @@ module Response
           switch_mode("default", already: "Я вже на звичайному режимі.", switched: "Активовано звичайний режим.")
         when "бухгалтер", "бухгалтерський"
           switch_mode("accountant", already: "Я вже на бухгалтерському режимі.", switched: "Активовано бухгалтерський режим.")
+        when "тихий"
+          switch_mode("quiet", already: "Я вже на тихому режимі.", switched: "Активовано тихий режим. Відповідаю лише на команди.")
         when "київський", "киівський"
           "Слава Київському режиму!"
         else
@@ -72,6 +75,30 @@ module Response
       return already if @chat.mode == mode
 
       @chat.update!(mode: mode)
+      switched
+    end
+
+    # Works in every mode: Camerton runs alongside whatever the mode is.
+    def process_camerton
+      return unless @command.start_with?(CAMERTON_PREFIX)
+
+      text =
+        case @command.delete_prefix(CAMERTON_PREFIX)
+        when "увімкни", "вкл"
+          switch_camerton(true, already: "Камертон вже увімкнений.", switched: "Камертон увімкнено.")
+        when "вимкни", "викл"
+          switch_camerton(false, already: "Камертон вже вимкнений.", switched: "Камертон вимкнено.")
+        else
+          "Камертон: увімкни або вимкни?"
+        end
+
+      reply(text)
+    end
+
+    def switch_camerton(enabled, already:, switched:)
+      return already if @chat.camerton_enabled == enabled
+
+      @chat.update!(camerton_enabled: enabled)
       switched
     end
 
