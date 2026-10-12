@@ -57,12 +57,12 @@ class Ai
     end
 
     def prompt
-      File.read Rails.root.join("lib/ai_prompt/v2.txt")
+      AnswerFiles.text("lib/ai_prompt/v2.txt")
     end
 
     def examples
       "А ще, ось додаткові фрази для глибшого розуміння нашого сленгу та вайбу, може бути корисним (ігноруй де є rhythm): " \
-        "#{File.read(Rails.root.join('lib/answers/chance.yml.erb'))}"
+        "#{AnswerFiles.text('lib/answers/chance.yml.erb')}"
     end
   end
 end

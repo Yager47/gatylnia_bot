@@ -38,14 +38,7 @@ module Response
     end
 
     def get(type, name, locals = {})
-      if locals.present?
-        path = Rails.root.join("lib/#{type}/#{name}.yml.erb")
-        erb_text = ERB.new(File.read(path)).result_with_hash(locals)
-
-        YAML.safe_load erb_text
-      else
-        YAML.load_file Rails.root.join("lib/#{type}/#{name}.yml")
-      end
+      locals.present? ? AnswerFiles.erb(type, name, locals) : AnswerFiles.yaml(type, name)
     end
   end
 end
