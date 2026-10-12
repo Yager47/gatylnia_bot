@@ -9,6 +9,7 @@ module Camerton
     PROMPT = <<~TEXT.freeze
       You read what one member of a Ukrainian friends' music chat wrote about a song or album someone shared.
       You get the release and their replies in order, possibly across several listens. Surzhyk, slang and swearing are normal.
+      Replies with source "voice" or "video_note" are speech transcripts and may contain recognition mistakes.
       - review: true if they say anything about how the music sounds or how they like it.
         false if the replies are only questions, jokes, links, logistics or about something else
         ("де ти це знайшов?", "скинь ще", "о, це ж з того фільму").
@@ -54,7 +55,7 @@ module Camerton
     def input(release, messages)
       JSON.generate(
         release: { kind: release.kind, artist: release.artist, title: release.title },
-        replies: messages.map { |message| { date: message.sent_at.to_date.iso8601, text: message.text } }
+        replies: messages.map { |message| { date: message.sent_at.to_date.iso8601, source: message.source, text: message.text } }
       )
     end
   end
