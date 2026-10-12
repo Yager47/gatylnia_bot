@@ -17,3 +17,6 @@ production:
   primary:
     <<: *default
     url: <%= ENV["DATABASE_URL"] %>
+    # Puma threads and the in-process Solid Queue threads (3 job threads plus
+    # polling, heartbeats, dispatcher and scheduler) share this one pool.
+    max_connections: 12
