@@ -8,7 +8,8 @@ class Chat < ApplicationRecord
 
   enum :mode, {
     default: 0,
-    accountant: 1
+    accountant: 1,
+    quiet: 2
   }
 
   validates :telegram_id, :telegram_type, :title, :mode, presence: true

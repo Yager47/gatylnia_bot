@@ -1,5 +1,5 @@
 class MessageHandler
-  HANDLERS = { "default" => DefaultHandler, "accountant" => AccountantHandler }.freeze
+  HANDLERS = { "default" => DefaultHandler, "accountant" => AccountantHandler, "quiet" => QuietHandler }.freeze
 
   def initialize(message)
     @message = message

@@ -154,9 +154,55 @@ RSpec.describe Response::BotCommand do
       expect(chat.reload).to be_default
     end
 
+    it "switches to quiet mode" do
+      expect(reply_to("@test_bot режим: тихий")).to eq("Активовано тихий режим. Відповідаю лише на команди.")
+      expect(chat.reload).to be_quiet
+    end
+
     it "answers an unknown mode without switching" do
       expect(reply_to("@test_bot режим: вечірній")).to eq("Нема такого режиму.")
       expect(chat.reload).to be_default
+    end
+  end
+
+  describe "камертон: ..." do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).call
+    end
+
+    it "turns Camerton on and off" do
+      expect(reply_to("@test_bot камертон: увімкни")).to eq("Камертон увімкнено.")
+      expect(chat.reload.camerton_enabled).to be(true)
+
+      expect(reply_to("@test_bot камертон: вимкни")).to eq("Камертон вимкнено.")
+      expect(chat.reload.camerton_enabled).to be(false)
+    end
+
+    it "says when Camerton is already in that state" do
+      expect(reply_to("@test_bot камертон: вимкни")).to eq("Камертон вже вимкнений.")
+    end
+
+    it "asks again on an unknown argument without changing anything" do
+      expect(reply_to("@test_bot камертон: може")).to eq("Камертон: увімкни або вимкни?")
+      expect(chat.reload.camerton_enabled).to be(false)
+    end
+
+    it "works in every mode without changing the mode" do
+      Chat.modes.each_key do |mode|
+        chat.update!(mode: mode, camerton_enabled: false)
+
+        expect(reply_to("@test_bot камертон: вкл")).to eq("Камертон увімкнено.")
+        expect(chat.reload).to have_attributes(mode: mode, camerton_enabled: true)
+      end
+    end
+  end
+
+  describe "quiet mode" do
+    it "answers no other commands" do
+      chat.update!(mode: :quiet)
+
+      expect(described_class.new(user: user, chat: chat, text: "@test_bot баланс").call).to be_nil
+      expect(described_class.new(user: user, chat: chat, text: "@test_bot кава за тиждень").call).to be_nil
     end
   end
 
