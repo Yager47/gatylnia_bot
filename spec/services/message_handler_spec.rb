@@ -24,4 +24,8 @@ RSpec.describe MessageHandler do
     expect(Chat.count).to eq(1)
     expect(DefaultHandler).to have_received(:new).with(message: message, chat: existing)
   end
+
+  it "has a handler for every chat mode" do
+    expect(described_class::HANDLERS.keys).to match_array(Chat.modes.keys)
+  end
 end
