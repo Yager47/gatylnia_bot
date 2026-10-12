@@ -6,6 +6,7 @@ class Chat < ApplicationRecord
   has_many :points, dependent: :destroy
   has_many :messages, dependent: :destroy
   has_many :release_shares, dependent: :destroy
+  has_many :reviews, dependent: :destroy
 
   enum :mode, {
     default: 0,
