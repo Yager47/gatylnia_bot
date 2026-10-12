@@ -1,13 +1,22 @@
+require "telegram/bot"
+
 class ChatMessenger
   def initialize(chat:, client: TelegramClient.build)
     @chat = chat
     @bot = client
   end
 
-  def deliver(message)
+  # reply_to: a Telegram message id to answer in a thread. Still sent if that
+  # message was deleted in the meantime.
+  def deliver(message, reply_to: nil)
     return if message.content.blank?
 
-    result = @bot.api.send_message(chat_id: @chat.telegram_id, text: message.content)
+    params = { chat_id: @chat.telegram_id, text: message.content }
+    if reply_to
+      params[:reply_parameters] = Telegram::Bot::Types::ReplyParameters.new(message_id: reply_to, allow_sending_without_reply: true)
+    end
+
+    result = @bot.api.send_message(**params)
     telegram_message_id = extract_message_id(result)
     message.update!(telegram_message_id: telegram_message_id) if telegram_message_id
   end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_12_204754) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_12_210407) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -86,6 +86,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_204754) do
     t.datetime "updated_at", null: false
     t.index ["chat_id", "user_id"], name: "index_points_on_chat_id_and_user_id"
     t.index ["user_id"], name: "index_points_on_user_id"
+  end
+
+  create_table "release_shares", force: :cascade do |t|
+    t.bigint "chat_id", null: false
+    t.bigint "release_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "telegram_message_id", null: false
+    t.datetime "shared_at", null: false
+    t.datetime "announced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "shared_at"], name: "index_release_shares_on_chat_id_and_shared_at"
+    t.index ["chat_id", "telegram_message_id"], name: "index_release_shares_on_chat_id_and_telegram_message_id", unique: true
+    t.index ["release_id"], name: "index_release_shares_on_release_id"
+    t.index ["user_id"], name: "index_release_shares_on_user_id"
+  end
+
+  create_table "releases", force: :cascade do |t|
+    t.string "platform", null: false
+    t.string "external_id", null: false
+    t.integer "kind", null: false
+    t.integer "status", default: 0, null: false
+    t.string "url", null: false
+    t.string "artist"
+    t.string "title"
+    t.string "source_title"
+    t.string "source_author"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["platform", "external_id"], name: "index_releases_on_platform_and_external_id", unique: true
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -244,6 +274,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_204754) do
   add_foreign_key "messages", "users"
   add_foreign_key "points", "chats"
   add_foreign_key "points", "users"
+  add_foreign_key "release_shares", "chats"
+  add_foreign_key "release_shares", "releases"
+  add_foreign_key "release_shares", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

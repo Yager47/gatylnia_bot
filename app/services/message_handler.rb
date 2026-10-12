@@ -6,7 +6,9 @@ class MessageHandler
   end
 
   # An unknown mode raises KeyError rather than silently ignoring the message.
+  # Camerton runs first, on top of whatever the mode is.
   def call
+    Camerton::ShareRecorder.new(message: @message, chat: chat).call if chat.camerton_enabled?
     HANDLERS.fetch(chat.mode).new(message: @message, chat: chat).call
   end
 
