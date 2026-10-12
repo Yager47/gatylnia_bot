@@ -1,21 +1,13 @@
 module Video
   class NoteTranscriber
+    MODEL = "whisper-1".freeze
+    LANGUAGE = "uk".freeze
+
+    # With the default JSON response format the result is an
+    # OpenAI::Audio::Transcription, which always has #text.
     def self.call(file_path)
-      client = OpenAI::Client.new(api_key: ENV["OPENAI_API_KEY"])
-
-      response = File.open(file_path) do |file|
-        client.audio.transcriptions.create(model: "whisper-1", file: file, language: "uk")
-      end
-
-      extract_text(response)
-    end
-
-    def self.extract_text(response)
-      if response.respond_to?(:text)
-        response.text
-      else
-        payload = response.is_a?(Hash) ? response : response.to_h
-        payload.dig("text")
+      File.open(file_path) do |file|
+        OpenAiClient.build.audio.transcriptions.create(model: MODEL, file: file, language: LANGUAGE).text
       end
     end
   end

@@ -2,6 +2,10 @@ module Response
   class Gato
     include Responder
 
+    REMOVE_PHRASE = "видали гатіння".freeze
+    # A chat this new still gets told how to log a gato properly.
+    ONBOARDING_PERIOD = 1.week
+
     def initialize(user:, text:, original_text:, chat:)
       @user = user
       @text = text
@@ -12,9 +16,9 @@ module Response
     def call
       if phrases("gato").include?(@text)
         add_entry
-      elsif @text == "видали гатіння"
+      elsif @text == REMOVE_PHRASE
         remove_entry
-      elsif @text.include?("гат") && @chat.created_at > Time.now - 1.week
+      elsif @text.include?("гат") && @chat.created_at > ONBOARDING_PERIOD.ago
         reply(explanation)
       end
     end
@@ -27,10 +31,10 @@ module Response
     end
 
     def remove_entry
-      last_entry = @user.entries.where(chat: @chat).last
+      last_entry = @user.entries.where(chat: @chat).order(:created_at, :id).last
 
       if last_entry
-        last_entry.destroy
+        last_entry.destroy!
         reply("Твоє останнє гатіння видалено. \nТіряйся")
       else
         reply("Ти ще тут не гатив, придурок")
@@ -38,20 +42,19 @@ module Response
     end
 
     def gato_response
-      params = {
+      pick(render_answers(
+        "gato",
         text: @text,
         rhythm: TimeSignature.call,
         first_name: @user.first_name,
         last_name: @user.last_name,
         chat_title: @chat.title
-      }
-
-      pick(render_answers("gato", **params))
+      ))
     end
 
     def explanation
       "Якшо ти гатиш, напиши нормально, одним словом: гатю, погатив, сру, насрав, посрав, какаю і т.д.\n\n" \
-        "Якшо ти хочеш, шоб я видалив твоє останнє гатіння, напиши: \"видали гатіння\""
+        "Якшо ти хочеш, шоб я видалив твоє останнє гатіння, напиши: \"#{REMOVE_PHRASE}\""
     end
   end
 end

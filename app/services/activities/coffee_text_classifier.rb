@@ -36,7 +36,7 @@ module Activities
       CANDIDATE.match?(text.to_s.downcase)
     end
 
-    def initialize(client: OpenAI::Client.new(api_key: ENV["OPENAI_API_KEY"]))
+    def initialize(client: OpenAiClient.build)
       @client = client
     end
 

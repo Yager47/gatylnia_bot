@@ -2,19 +2,24 @@ module Response
   class RpsGame
     include Responder
 
-    ROCK = "камінь"
-    PAPER = "папір"
-    SCISSORS = "ножиці"
-    FEE = 10
+    ROCK = "камінь".freeze
+    PAPER = "папір".freeze
+    SCISSORS = "ножиці".freeze
+    WEAPONS = [ ROCK, PAPER, SCISSORS ].freeze
+    # Weapon => the weapon it beats.
+    BEATS = { ROCK => SCISSORS, PAPER => ROCK, SCISSORS => PAPER }.freeze
+    STAKE = 10
 
-    def initialize(user:, user_weapon:, chat:)
+    # random: anything with #rand, so specs can fix the bot's move.
+    def initialize(user:, user_weapon:, chat:, random: Random)
       @user = user
       @user_weapon = user_weapon
       @chat = chat
+      @random = random
     end
 
     def call
-      return unless weapons.include?(@user_weapon)
+      return unless WEAPONS.include?(@user_weapon)
 
       reply(fight)
     end
@@ -22,41 +27,15 @@ module Response
     private
 
     def fight
-      computer_weapon = weapons.sample
+      bot_weapon = WEAPONS.sample(random: @random)
+      return pick(answers("rps_draw")) if @user_weapon == bot_weapon
 
-      if @user_weapon == computer_weapon
-        draw_answer
-      elsif user_won?(computer_weapon)
-        @user.points.create!(chat: @chat, amount: FEE, reason: "RPS: #{@user_weapon} > #{computer_weapon}")
-        "#{win_answer} #{@user_weapon.capitalize} > #{computer_weapon.capitalize}. +#{FEE}"
-      else
-        @user.points.create!(chat: @chat, amount: -FEE, reason: "RPS: #{@user_weapon} < #{computer_weapon}")
-        "#{lose_answer} #{@user_weapon.capitalize} < #{computer_weapon.capitalize}. -#{FEE}"
-      end
-    end
+      won = BEATS[@user_weapon] == bot_weapon
+      sign, answers_name = won ? [ ">", "rps_win" ] : [ "<", "rps_lose" ]
+      amount = won ? STAKE : -STAKE
+      @user.points.create!(chat: @chat, amount: amount, reason: "RPS: #{@user_weapon} #{sign} #{bot_weapon}")
 
-    def user_won?(computer_weapon)
-      [
-        [ ROCK, SCISSORS ],
-        [ PAPER, ROCK ],
-        [ SCISSORS, PAPER ]
-      ].include? [ @user_weapon, computer_weapon ]
-    end
-
-    def weapons
-      [ ROCK, PAPER, SCISSORS ]
-    end
-
-    def win_answer
-      pick(answers("rps_win"))
-    end
-
-    def lose_answer
-      pick(answers("rps_lose"))
-    end
-
-    def draw_answer
-      pick(answers("rps_draw"))
+      "#{pick(answers(answers_name))} #{@user_weapon.capitalize} #{sign} #{bot_weapon.capitalize}. #{format('%+d', amount)}"
     end
   end
 end
