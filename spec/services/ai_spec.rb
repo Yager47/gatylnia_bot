@@ -9,6 +9,16 @@ RSpec.describe Ai do
     File.join(@dir, name).tap { |path| File.binwrite(path, bytes) }
   end
 
+  describe ".reply_in" do
+    it "returns the content of the first choice" do
+      completions = double(create: double(choices: [ double(message: double(content: "Ок")) ]))
+      allow(OpenAiClient).to receive(:build).and_return(double(chat: double(completions: completions)))
+      allow(described_class).to receive(:reply_in).and_call_original # the client is stubbed above
+
+      expect(described_class.reply_in(create(:chat))).to eq("Ок")
+    end
+  end
+
   describe ".vision_message" do
     it "encodes every frame as a low-detail base64 image, in order" do
       message = described_class.send(:vision_message, "Іван надіслав кружочек", [ frame("a.jpg", "one"), frame("b.jpg", "two") ])

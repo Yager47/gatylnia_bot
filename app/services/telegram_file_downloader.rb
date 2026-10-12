@@ -2,13 +2,15 @@ require "net/http"
 require "uri"
 
 class TelegramFileDownloader
+  class Error < StandardError; end
+
   # Downloads a Telegram file into `dir` and returns its path. The caller owns
   # `dir` and removes it. (A closed Tempfile's path isn't safe to return: the
   # file is deleted when the Tempfile object is garbage-collected.)
   def self.download(file_id, dir:)
     response = TelegramClient.build.api.get_file(file_id: file_id)
     remote_path = extract_file_path(response)
-    raise "Telegram file path missing" if remote_path.blank?
+    raise Error, "Telegram file path missing" if remote_path.blank?
 
     download_from_telegram(remote_path, dir)
   end
@@ -28,7 +30,7 @@ class TelegramFileDownloader
     File.open(path, "wb") do |file|
       Net::HTTP.start(url.host, url.port, use_ssl: url.scheme == "https") do |http|
         http.request(Net::HTTP::Get.new(url)) do |response|
-          raise "Telegram file download failed: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+          raise Error, "Telegram file download failed: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
 
           response.read_body { |chunk| file.write(chunk) }
         end

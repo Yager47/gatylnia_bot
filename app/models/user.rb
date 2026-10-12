@@ -11,9 +11,4 @@ class User < ApplicationRecord
   def name
     [ first_name, last_name ].compact.join(" ")
   end
-
-  def balance(chat = nil)
-    points_scope = chat ? points.where(chat: chat) : points
-    points_scope.sum(:amount)
-  end
 end

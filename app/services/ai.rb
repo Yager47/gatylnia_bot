@@ -6,14 +6,12 @@ class Ai
     # to that message, not to whatever was said last, and the reply is aimed
     # at it even if others wrote in the meantime.
     def reply_in(chat, frames_for: nil, frame_paths: [])
-      client = OpenAI::Client.new(api_key: ENV["OPENAI_API_KEY"])
-
-      response = client.chat.completions.create(
+      response = OpenAiClient.build.chat.completions.create(
         model: "gpt-5-mini",
         messages: messages(chat, frames_for: frames_for, frame_paths: frame_paths)
       )
 
-      response[:choices][0][:message][:content]
+      response.choices.first.message.content
     end
 
     private
