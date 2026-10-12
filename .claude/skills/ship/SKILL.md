@@ -17,7 +17,8 @@ Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6
 ## Environment
 
 - The shell is zsh: write paths out explicitly (`$VARS` don't word-split).
-- Start Ruby commands with `source ~/.rvm/scripts/rvm 2>/dev/null; rvm use 3.3.6 >/dev/null 2>&1;`
+- Start Ruby commands with `source ~/.rvm/scripts/rvm 2>/dev/null; rvm use "$(cat .ruby-version)" >/dev/null 2>&1;`
+  (the version pinned in `.ruby-version`, also used by the Gemfile, CI and Heroku).
 - Production: Heroku app `gatylnia`, deployed with `git push heroku main`.
   Health check: `https://gatylnia-6e3de023de50.herokuapp.com/up`.
 - Local `main` has no upstream: use `git pull --ff-only origin main`.
