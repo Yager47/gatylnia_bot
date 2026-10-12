@@ -1,19 +1,9 @@
 module Response
-  class Chance < Response::Base
+  class Chance
+    include Responder
+
     def call
-      reply(answer("chance"))
-    end
-
-    private
-
-    def rhythm
-      TimeSignature.call
-    end
-
-    def data
-      {
-        "chance" => answers("chance", rhythm: rhythm).sample(10)
-      }
+      reply(pick(render_answers("chance", rhythm: TimeSignature.call)))
     end
   end
 end

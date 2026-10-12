@@ -1,5 +1,7 @@
 module Response
-  class RpsGame < Response::Base
+  class RpsGame
+    include Responder
+
     ROCK = "камінь"
     PAPER = "папір"
     SCISSORS = "ножиці"
@@ -46,15 +48,15 @@ module Response
     end
 
     def win_answer
-      answers("rps_win").sample
+      pick(answers("rps_win"))
     end
 
     def lose_answer
-      answers("rps_lose").sample
+      pick(answers("rps_lose"))
     end
 
     def draw_answer
-      answers("rps_draw").sample
+      pick(answers("rps_draw"))
     end
   end
 end

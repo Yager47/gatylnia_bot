@@ -1,8 +1,10 @@
 module Response
-  class BotCommand < Response::Base
-    def initialize(user:, text:, chat:)
-      super(user: user, text: text)
+  class BotCommand
+    include Responder
 
+    def initialize(user:, text:, chat:)
+      @user = user
+      @text = text
       @chat = chat
       @command = nil
     end
@@ -148,14 +150,6 @@ module Response
       "Загальний баланс в чаті: \n" + lines.map { |name, balance| "\n#{name}: #{balance}" }.join
     end
 
-    def fu_phrases
-      phrases("fuck_you")
-    end
-
-    def swear_phrases
-      fu_phrases + phrases("swear")
-    end
-
     def data
       case @chat.mode
       when "default" then default_data
@@ -165,7 +159,7 @@ module Response
 
     def default_data
       {
-        "підтримай мене" => -> { answers("support", first_name: @user.first_name) },
+        "підтримай мене" => -> { render_answers("support", first_name: @user.first_name) },
         "дай ритм" => -> { TimeSignature.call },
         "пошли мене" => -> { mention_user_in(fu_phrases, @user) },
         "образь мене" => -> { mention_user_in(swear_phrases, @user) },

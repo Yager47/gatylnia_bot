@@ -1,12 +1,14 @@
 module Response
   # "видали каву": removes the author's latest coffee in this chat, whether it
   # came from text or a video note. Push-ups can't be undone, on purpose.
-  class UndoCoffee < Response::Base
+  class UndoCoffee
+    include Responder
+
     PHRASE = "видали каву".freeze
 
     def initialize(user:, text:, chat:)
-      super(user: user, text: text)
-
+      @user = user
+      @text = text
       @chat = chat
     end
 

@@ -1,8 +1,10 @@
 module Response
-  class Gato < Response::Base
-    def initialize(user:, text:, original_text:, chat:)
-      super(user: user, text: text)
+  class Gato
+    include Responder
 
+    def initialize(user:, text:, original_text:, chat:)
+      @user = user
+      @text = text
       @original_text = original_text
       @chat = chat
     end
@@ -44,7 +46,7 @@ module Response
         chat_title: @chat.title
       }
 
-      answers("gato", params).sample
+      pick(render_answers("gato", **params))
     end
 
     def explanation

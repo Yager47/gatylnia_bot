@@ -1,5 +1,7 @@
 module Response
-  class Ai < Response::Base
+  class Ai
+    include Responder
+
     def initialize(chat:, frames_for: nil, frame_paths: [])
       @chat = chat
       @frames_for = frames_for
