@@ -119,6 +119,83 @@ RSpec.describe Response::BotCommand do
     end
   end
 
+  describe "command extraction" do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).call
+    end
+
+    it "only takes commands that start with the mention" do
+      expect(reply_to("ну @test_bot режим: бухгалтер")).to be_nil
+      expect(chat.reload).to be_default
+    end
+
+    it "ignores a longer username that starts with the bot's" do
+      expect(reply_to("@test_botx режим: бухгалтер")).to be_nil
+      expect(chat.reload).to be_default
+    end
+
+    it "ignores a bare mention" do
+      expect(reply_to("@test_bot")).to be_nil
+    end
+  end
+
+  describe "режим: ..." do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).call
+    end
+
+    it "switches mode and says so" do
+      expect(reply_to("@test_bot режим: бухгалтер")).to eq("Активовано бухгалтерський режим.")
+      expect(chat.reload).to be_accountant
+    end
+
+    it "says when the chat is already in that mode" do
+      expect(reply_to("@test_bot режим: звичайний")).to eq("Я вже на звичайному режимі.")
+      expect(chat.reload).to be_default
+    end
+
+    it "answers an unknown mode without switching" do
+      expect(reply_to("@test_bot режим: вечірній")).to eq("Нема такого режиму.")
+      expect(chat.reload).to be_default
+    end
+  end
+
+  describe "гатуни за an unknown period" do
+    it "isn't a command" do
+      expect(stats_for("вчора")).to be_nil
+    end
+  end
+
+  describe "пошли @ / образь @" do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).call
+    end
+
+    before { user.update!(first_name: "Іван") }
+
+    it "charges the author and mentions the target with a fuck-you phrase" do
+      create(:user, username: "olga", chats: [ chat ])
+
+      reply = reply_to("@test_bot пошли @olga")
+
+      expect(reply).to start_with("Іван за 100 замовив: \n\n@olga ")
+      expect(AnswerFiles.yaml("phrases", "fuck_you")).to include(reply.split("@olga ").last)
+      expect(Point.sole).to have_attributes(user: user, chat: chat, amount: -100, reason: "пошли @olga")
+    end
+
+    it "uses the bigger fee and the swear list for образь" do
+      create(:user, username: "olga", chats: [ chat ])
+
+      expect(reply_to("@test_bot образь @olga")).to start_with("Іван за 150 замовив:")
+      expect(Point.sole.amount).to eq(-150)
+    end
+
+    it "still charges when the target isn't in the chat" do
+      expect(reply_to("@test_bot пошли @nobody")).to start_with("Такої людини тут нема, але 100")
+      expect(Point.sole.amount).to eq(-100)
+    end
+  end
+
   def with_system_time_zone(zone)
     original = ENV["TZ"]
     ENV["TZ"] = zone
