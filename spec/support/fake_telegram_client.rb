@@ -32,6 +32,11 @@ class FakeTelegramClient
     TelegramFile.new(file_path: "videos/file_#{params[:file_id]}.mp4")
   end
 
+  def set_message_reaction(**params)
+    @calls << [ :set_message_reaction, params ]
+    true
+  end
+
   def set_webhook(**params)
     @calls << [ :set_webhook, params ]
     true

@@ -34,6 +34,49 @@ RSpec.describe Camerton::ShareAnnouncement do
     end
   end
 
+  describe "#text for a re-share" do
+    let(:release) { create(:release, :resolved) }
+    let(:sharer) { create(:user) }
+
+    around { |example| travel_to(Time.zone.local(2026, 10, 13, 12)) { example.run } }
+
+    before { create(:release_share, chat: chat, release: release, user: sharer, shared_at: Time.zone.local(2026, 3, 12, 20)) }
+
+    def reshare_text(shared_at: Time.current)
+      described_class.new(create(:release_share, chat: chat, release: release, shared_at: shared_at)).text
+    end
+
+    it "adds the first share date and the average score, the sharer's own review included" do
+      create(:review, chat: chat, release: release, score: 6)
+      create(:review, chat: chat, release: release, score: 8)
+      create(:review, chat: chat, release: release, score: nil)
+      create(:review, chat: chat, release: release, user: sharer, score: 10)
+      create(:review, release: release, score: 1) # another chat
+
+      expect(reshare_text).to eq("🎵 Queen — Bohemian Rhapsody · пісня · вже скидали 12.03, середня 8")
+    end
+
+    it "rounds the average to one decimal" do
+      create(:review, chat: chat, release: release, score: 7)
+      create(:review, chat: chat, release: release, score: 7)
+      create(:review, chat: chat, release: release, score: 8)
+
+      expect(reshare_text).to end_with("середня 7.3")
+    end
+
+    it "says when nobody has scored it yet" do
+      expect(reshare_text).to end_with("вже скидали 12.03, оцінок ще нема")
+    end
+
+    it "adds the year when the first share was in another year" do
+      expect(reshare_text(shared_at: Time.zone.local(2027, 1, 5))).to include("вже скидали 12.03.2026")
+    end
+
+    it "doesn't count shares in other chats" do
+      expect(described_class.new(create(:release_share, release: release)).text).to eq("🎵 Queen — Bohemian Rhapsody · пісня")
+    end
+  end
+
   describe "#deliver" do
     it "replies to the shared link and records the reply" do
       share = share_of(create(:release, :resolved))
@@ -43,7 +86,7 @@ RSpec.describe Camerton::ShareAnnouncement do
       sent = fake_telegram.sent_messages.sole
       expect(sent).to include(chat_id: chat.telegram_id, text: "🎵 Queen — Bohemian Rhapsody · пісня")
       expect(sent[:reply_parameters].to_h).to eq(message_id: 42, allow_sending_without_reply: true)
-      expect(share.reload.announced_at).to be_present
+      expect(share.reload).to have_attributes(announced_at: be_present, announcement_telegram_message_id: 1001)
       expect(chat.messages.sole).to have_attributes(role: "assistant", content: sent[:text], telegram_message_id: 1001)
     end
 

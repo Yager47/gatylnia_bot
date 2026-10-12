@@ -1,5 +1,6 @@
 class Release < ApplicationRecord
   has_many :shares, class_name: "ReleaseShare", dependent: :restrict_with_exception
+  has_many :reviews, dependent: :restrict_with_exception
 
   enum :kind, { song: 0, album: 1 }, validate: true
 

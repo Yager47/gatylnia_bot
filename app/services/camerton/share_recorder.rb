@@ -1,13 +1,13 @@
 module Camerton
-  # Runs before the chat's mode handler when Camerton is on: a message with a
-  # music link becomes a ReleaseShare, and replies to it become feedback.
-  # Safe to run twice for the same message (unique indexes, create_or_find_by!).
+  # A message with a music link becomes a ReleaseShare. Safe to run twice for
+  # the same message (unique indexes, create_or_find_by!).
   class ShareRecorder
     def initialize(message:, chat:)
       @message = message
       @chat = chat
     end
 
+    # Returns the share, or nil when the message isn't one.
     def call
       # An edit can't turn a message into a share: replies may already exist.
       return if @message[:edit_date].present?
@@ -17,6 +17,7 @@ module Camerton
 
       share = record_share(find_or_create_release(link))
       AnnounceReleaseJob.perform_later(share) unless share.announced_at
+      share
     end
 
     private
