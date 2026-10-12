@@ -1,1 +1,0 @@
-class Success < StandardError; end

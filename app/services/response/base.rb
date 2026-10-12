@@ -5,28 +5,26 @@ module Response
       @text = text
     end
 
-    def process
+    # Returns a reply String, Response::STOP or nil (see Response).
+    def call
       raise NotImplementedError
     end
 
     private
 
-    def success(response)
-      if response.blank?
-        raise Skip
-      else
-        raise Success, response
-      end
+    # An empty reply stops the chain without answering.
+    def reply(text)
+      text.presence || STOP
     end
 
     def answer(key)
-      result = data[key]
+      pick(data[key])
+    end
 
-      while result.is_a?(Array) do
-        result = result.sample
-      end
-
-      result
+    # Answers can be nested lists; pick one string at random.
+    def pick(value)
+      value = value.sample while value.is_a?(Array)
+      value
     end
 
     def phrases(name, locals = {})

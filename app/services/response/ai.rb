@@ -6,10 +6,8 @@ module Response
       @frame_paths = frame_paths
     end
 
-    def process
-      ai_response = ::Ai.reply_in(@chat, frames_for: @frames_for, frame_paths: @frame_paths)
-      success ai_response
-
+    def call
+      reply(::Ai.reply_in(@chat, frames_for: @frames_for, frame_paths: @frame_paths))
     rescue OpenAI::Errors::RateLimitError
       nil
     end

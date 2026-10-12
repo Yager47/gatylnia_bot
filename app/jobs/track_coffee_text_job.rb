@@ -54,9 +54,8 @@ class TrackCoffeeTextJob < ApplicationJob
   end
 
   def reply_in_character
-    Response::Ai.new(chat: @chat).process
-  rescue Success => e
-    deliver(e.message)
+    text = Response::Ai.new(chat: @chat).call
+    deliver(text) if text.is_a?(String)
   end
 
   def deliver(text)

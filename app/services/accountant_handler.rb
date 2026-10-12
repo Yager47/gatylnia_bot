@@ -14,13 +14,11 @@ class AccountantHandler
     message = record_message
     text = message.content.downcase
 
-    Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).process
-    Response::BotCommand.new(user: @user, text: text, chat: @chat).process
-  rescue Success => e
-    reply = @chat.messages.create!(role: :assistant, content: e.message)
-    @messenger.deliver(reply)
-  rescue Skip
-    nil
+    outcome = Response.first([
+      -> { Response::Reply.new(user: @user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
+      -> { Response::BotCommand.new(user: @user, text: text, chat: @chat).call }
+    ])
+    deliver(outcome) if outcome.is_a?(String)
   end
 
   private
@@ -36,5 +34,10 @@ class AccountantHandler
 
   def set_user
     ChatMembers::Resolver.new(chat: @chat, from: @message[:from]).call
+  end
+
+  def deliver(text)
+    reply = @chat.messages.create!(role: :assistant, content: text)
+    @messenger.deliver(reply)
   end
 end

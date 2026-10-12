@@ -4,12 +4,8 @@ RSpec.describe Response::BotCommand do
   let(:chat) { create(:chat) }
   let(:user) { create(:user, chats: [ chat ]) }
 
-  # Returns the reply text; the handler raises Success to deliver it.
   def stats_for(period)
-    described_class.new(user: user, chat: chat, text: "@test_bot гатуни за #{period}").process
-    nil
-  rescue Success => e
-    e.message
+    described_class.new(user: user, chat: chat, text: "@test_bot гатуни за #{period}").call
   end
 
   describe "гатуни за ..." do
@@ -57,10 +53,7 @@ RSpec.describe Response::BotCommand do
 
   describe "кава / віджимання за ..." do
     def reply_to(text)
-      described_class.new(user: user, chat: chat, text: text).process
-      nil
-    rescue Success => e
-      e.message
+      described_class.new(user: user, chat: chat, text: text).call
     end
 
     it "replies with activity stats in default mode" do
@@ -78,10 +71,7 @@ RSpec.describe Response::BotCommand do
 
   describe "баланс" do
     def reply_to(text)
-      described_class.new(user: user, chat: chat, text: text).process
-      nil
-    rescue Success => e
-      e.message
+      described_class.new(user: user, chat: chat, text: text).call
     end
 
     it "ranks every member by their points in this chat, with 0 for none" do
@@ -118,20 +108,14 @@ RSpec.describe Response::BotCommand do
       user
       allow(YAML).to receive(:load_file).and_call_original
 
-      expect(count_queries { described_class.new(user: user, chat: chat, text: "@test_bot як справи").process }).to eq(0)
+      expect(count_queries { described_class.new(user: user, chat: chat, text: "@test_bot як справи").call }).to eq(0)
       expect(YAML).not_to have_received(:load_file)
     end
 
     it "still answers commands whose replies are lists, picking one" do
       user.update!(username: "ivan")
 
-      reply = begin
-        described_class.new(user: user, chat: chat, text: "@test_bot пошли мене").process
-      rescue Success => e
-        e.message
-      end
-
-      expect(reply).to start_with("@ivan ")
+      expect(described_class.new(user: user, chat: chat, text: "@test_bot пошли мене").call).to start_with("@ivan ")
     end
   end
 

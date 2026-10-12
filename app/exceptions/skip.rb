@@ -1,1 +1,0 @@
-class Skip < StandardError; end

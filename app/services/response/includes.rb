@@ -1,15 +1,10 @@
 module Response
   class Includes < Response::Base
-    def process
-      data.keys.each do |key|
-        if key.is_a?(Array)
-          key.each do |sub_key|
-            success answer(key) if @text.include?(sub_key)
-          end
-        else
-          success answer(key) if @text.include?(key)
-        end
-      end
+    # The first key (or any word of a key list) contained in the text wins. A
+    # nil value stops the chain without replying, so "годин" shields "один".
+    def call
+      match = data.find { |key, _value| Array(key).any? { |word| @text.include?(word) } }
+      reply(pick(match.last)) if match
     end
 
     private
