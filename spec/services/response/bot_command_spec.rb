@@ -76,6 +76,65 @@ RSpec.describe Response::BotCommand do
     end
   end
 
+  describe "баланс" do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).process
+      nil
+    rescue Success => e
+      e.message
+    end
+
+    it "ranks every member by their points in this chat, with 0 for none" do
+      user.update!(first_name: "Іван", last_name: nil)
+      petro = create(:user, first_name: "Петро", last_name: nil, chats: [ chat ])
+      create(:user, first_name: "Ольга", last_name: nil, chats: [ chat ])
+      Point.create!(chat: chat, user: petro, amount: 30)
+      Point.create!(chat: chat, user: petro, amount: -10)
+      Point.create!(chat: chat, user: user, amount: -5)
+      Point.create!(chat: create(:chat), user: user, amount: 1_000)
+
+      expect(reply_to("@test_bot баланс")).to eq("Загальний баланс в чаті: \n\nПетро: 20\nОльга: 0\nІван: -5")
+    end
+
+    it "runs the same number of queries regardless of how many members there are" do
+      user # create the lazy chat and user outside the counted block
+      queries_with_one_member = count_queries { reply_to("@test_bot баланс") }
+
+      3.times { Point.create!(chat: chat, user: create(:user, chats: [ chat ]), amount: 1) }
+      chat.reload
+
+      expect(count_queries { reply_to("@test_bot баланс") }).to eq(queries_with_one_member)
+    end
+
+    it "works in accountant mode too" do
+      chat.update!(mode: :accountant)
+
+      expect(reply_to("@test_bot баланс")).to start_with("Загальний баланс в чаті:")
+    end
+  end
+
+  describe "a mention that isn't a command" do
+    it "builds no command replies: no queries, no YAML" do
+      user
+      allow(YAML).to receive(:load_file).and_call_original
+
+      expect(count_queries { described_class.new(user: user, chat: chat, text: "@test_bot як справи").process }).to eq(0)
+      expect(YAML).not_to have_received(:load_file)
+    end
+
+    it "still answers commands whose replies are lists, picking one" do
+      user.update!(username: "ivan")
+
+      reply = begin
+        described_class.new(user: user, chat: chat, text: "@test_bot пошли мене").process
+      rescue Success => e
+        e.message
+      end
+
+      expect(reply).to start_with("@ivan ")
+    end
+  end
+
   def with_system_time_zone(zone)
     original = ENV["TZ"]
     ENV["TZ"] = zone

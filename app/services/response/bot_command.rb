@@ -105,8 +105,15 @@ module Response
             .join("\n")
     end
 
+    # Only the matching command's reply is built: a mention that isn't a
+    # command loads no YAML and runs no queries here.
     def process_data
-      success answer(@command) if data[@command].present?
+      build_reply = data[@command]
+      return unless build_reply
+
+      reply = build_reply.call
+      reply = reply.sample while reply.is_a?(Array)
+      success reply if reply.present?
     end
 
     def process_bugging
@@ -133,20 +140,15 @@ module Response
       phrases.map { |phrase| "@#{user.username} #{phrase}" }
     end
 
+    # Two queries however many members the chat has: one grouped SUM, one to
+    # load the members. Members without points show 0.
     def balance_all
-      response = "Загальний баланс в чаті: \n"
+      totals = @chat.points.group(:user_id).sum(:amount)
+      lines = @chat.users
+                   .map { |user| [ user.name, totals.fetch(user.id, 0) ] }
+                   .sort_by { |name, balance| [ -balance, name ] }
 
-      balances = @chat.users
-                      .map { |user| { name: user.name, balance: balance(user) } }
-                      .sort { |a, b| b[:balance] <=> a[:balance] }
-
-      balances.each { |b_data| response << "\n#{b_data[:name]}: #{b_data[:balance]}" }
-      response
-    end
-
-    # Not used
-    def balance(user)
-      user.balance(@chat)
+      "Загальний баланс в чаті: \n" + lines.map { |name, balance| "\n#{name}: #{balance}" }.join
     end
 
     def fu_phrases
@@ -166,20 +168,19 @@ module Response
 
     def default_data
       {
-        "підтримай мене" => answers("support", first_name: @user.first_name),
-        "дай ритм" => TimeSignature.call,
-        "пошли мене" => mention_user_in(fu_phrases, @user),
-        "образь мене" => mention_user_in(swear_phrases, @user),
-        "пошли когось" => mention_user_in(fu_phrases, @chat.users.sample),
-        "образь когось" => mention_user_in(swear_phrases, @chat.users.sample),
-        "баланс" => balance_all
-        # "баланс" => "Твій баланс: #{balance(@user)}"
+        "підтримай мене" => -> { answers("support", first_name: @user.first_name) },
+        "дай ритм" => -> { TimeSignature.call },
+        "пошли мене" => -> { mention_user_in(fu_phrases, @user) },
+        "образь мене" => -> { mention_user_in(swear_phrases, @user) },
+        "пошли когось" => -> { mention_user_in(fu_phrases, @chat.users.sample) },
+        "образь когось" => -> { mention_user_in(swear_phrases, @chat.users.sample) },
+        "баланс" => -> { balance_all }
       }
     end
 
     def accountant_data
       {
-        "баланс" => balance_all
+        "баланс" => -> { balance_all }
       }
     end
   end
