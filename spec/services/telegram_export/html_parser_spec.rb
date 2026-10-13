@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe GatoHistory::ExportParser do
+RSpec.describe TelegramExport::HtmlParser do
   let(:messages) { described_class.new(file_fixture("chat_export")).each_message.to_a }
 
   it "reads every file in numeric order, skipping service messages" do

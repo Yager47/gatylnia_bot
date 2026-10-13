@@ -1,4 +1,4 @@
-module GatoHistory
+module TelegramExport
   # Reads a Telegram Desktop HTML chat export (messages.html, messages2.html, …)
   # and yields its regular messages in chronological order.
   #
@@ -9,7 +9,7 @@ module GatoHistory
   #   all and inherit it from the message before;
   # - dates are written in the local time of the computer that made the
   #   export, so they're parsed in the app's time zone.
-  class ExportParser
+  class HtmlParser
     Message = Data.define(:telegram_message_id, :sender_id, :sender_name, :sent_at, :text)
 
     MONTHS = %w[січня лютого березня квітня травня червня липня серпня вересня жовтня листопада грудня].freeze

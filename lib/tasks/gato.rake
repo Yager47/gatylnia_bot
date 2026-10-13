@@ -13,7 +13,7 @@ namespace :gato do
 
     report = GatoHistory::Import.new(
       chat: chat,
-      messages: GatoHistory::ExportParser.new(ENV.fetch("EXPORT_DIR")).each_message,
+      messages: TelegramExport::HtmlParser.new(ENV.fetch("EXPORT_DIR")).each_message,
       from: from,
       to: to,
       dry_run: dry_run

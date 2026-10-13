@@ -14,7 +14,7 @@ RSpec.describe GatoHistory::Import do
   end
 
   def message(text, at:, sender: "555", name: "Петро")
-    GatoHistory::ExportParser::Message.new(
+    TelegramExport::HtmlParser::Message.new(
       telegram_message_id: rand(1..1_000_000), sender_id: sender, sender_name: name, sent_at: at, text: text
     )
   end
