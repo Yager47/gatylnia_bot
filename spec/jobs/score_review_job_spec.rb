@@ -3,13 +3,16 @@ require "rails_helper"
 RSpec.describe ScoreReviewJob do
   let(:review) { create(:review) }
 
-  it "scores the review" do
+  it "scores the review, reacting unless told not to" do
     scoring = instance_double(Camerton::ReviewScoring, call: nil)
-    allow(Camerton::ReviewScoring).to receive(:new).with(review).and_return(scoring)
+    allow(Camerton::ReviewScoring).to receive(:new).and_return(scoring)
 
     described_class.perform_now(review)
+    described_class.perform_now(review, react: false)
 
-    expect(scoring).to have_received(:call)
+    expect(Camerton::ReviewScoring).to have_received(:new).with(review, react: true)
+    expect(Camerton::ReviewScoring).to have_received(:new).with(review, react: false)
+    expect(scoring).to have_received(:call).twice
   end
 
   it "runs one job per review at a time" do

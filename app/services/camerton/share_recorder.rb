@@ -15,20 +15,12 @@ module Camerton
       link = Links.first_in(@message)
       return unless link
 
-      share = record_share(find_or_create_release(link))
+      share = record_share(Release.find_or_create_for(link))
       AnnounceReleaseJob.perform_later(share) unless share.announced_at
       share
     end
 
     private
-
-    def find_or_create_release(link)
-      Release.find_by(platform: link.platform, external_id: link.external_id) ||
-        Release.create_or_find_by!(platform: link.platform, external_id: link.external_id) do |release|
-          release.kind = link.kind
-          release.url = link.url
-        end
-    end
 
     def record_share(release)
       @chat.release_shares.create_or_find_by!(telegram_message_id: @message[:message_id]) do |share|

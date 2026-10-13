@@ -11,4 +11,14 @@ class Release < ApplicationRecord
   # No uniqueness validation: the unique index on [platform, external_id]
   # enforces it, and creation goes through create_or_find_by!.
   validates :platform, :external_id, :url, presence: true
+
+  # The release a Camerton::Link points to, created pending if new. Safe when
+  # two jobs see the same new link at once (create_or_find_by!).
+  def self.find_or_create_for(link)
+    find_by(platform: link.platform, external_id: link.external_id) ||
+      create_or_find_by!(platform: link.platform, external_id: link.external_id) do |release|
+        release.kind = link.kind
+        release.url = link.url
+      end
+  end
 end
