@@ -127,24 +127,37 @@ RSpec.describe "Camerton people stats" do
         Найменше зайшло:
         🎵 Artist — D · 2
         🎵 Artist — E · 4
-        🎵 Artist — F · 6
 
         Найближчий смак: Оля (збіг 93% на 3 спільних релізах)
       TEXT
     end
 
-    it "doesn't repeat favourites with only a few scores, and leaves out a twin without enough in common" do
-      scores(me, a => 8, b => 3)
+    it "keeps bad and mid scores out of the favourites, and leaves out a twin without enough in common" do
+      scores(me, a => 8, b => 2)
       scores(member("Оля"), a => 8)
 
       expect(command("мій смак", user: me)).to eq(<<~TEXT.strip)
         🎧 Смак: Петро
-        2 оцінки, середня 5.5
+        2 оцінки, середня 5
 
         Найбільше зайшло:
         🎵 Artist — A · 8
-        🎵 Artist — B · 3
+
+        Найменше зайшло:
+        🎵 Artist — B · 2
       TEXT
+    end
+
+    it "splits at the good/mid boundary and leaves out an empty list" do
+      scores(me, a => 6, b => 5)
+      expect(command("мій смак", user: me)).to include("Найбільше зайшло:
+🎵 Artist — A · 6
+
+Найменше зайшло:
+🎵 Artist — B · 5")
+
+      Review.where(user: me, release: b).update_all(score: 9)
+      expect(command("мій смак", user: me)).not_to include("Найменше зайшло:")
     end
 
     it "says when I haven't scored anything" do
