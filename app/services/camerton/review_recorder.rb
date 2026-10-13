@@ -27,12 +27,8 @@ module Camerton
 
     private
 
-    # The link message itself or the bot's announcement under it.
     def replied_share
-      replied_id = @message.dig(:reply_to_message, :message_id)
-      return unless replied_id
-
-      @chat.release_shares.replied_to(replied_id).first
+      RepliedShare.find(chat: @chat, reply_to_message: @message[:reply_to_message], replied_at: sent_at)
     end
 
     def media_source

@@ -43,6 +43,12 @@ RSpec.describe Camerton::StatsCommand do
       expect(command("оцінки", reply_to_message: { message_id: 43 })).to start_with("🎵 Queen — Bohemian Rhapsody · пісня")
     end
 
+    it "shows the card when replied to an older link the bot knows only from an import" do
+      old_link = { message_id: 14_210, from: { id: 555, is_bot: false }, text: share.release.url }
+
+      expect(command("оцінки", reply_to_message: old_link.with_indifferent_access)).to start_with("🎵 Queen — Bohemian Rhapsody · пісня")
+    end
+
     it "explains how to use it when it isn't a reply to a release" do
       expect(command("оцінки")).to start_with("Відповідай цією командою")
       expect(command("оцінки", reply_to_message: { message_id: 999 })).to start_with("Відповідай цією командою")

@@ -57,8 +57,7 @@ module Camerton
     end
 
     def release_card
-      replied_id = @reply_to_message&.dig(:message_id)
-      share = @chat.release_shares.replied_to(replied_id).first if replied_id
+      share = RepliedShare.find(chat: @chat, reply_to_message: @reply_to_message)
       return "Відповідай цією командою на посилання з релізом або на мою відповідь під ним." unless share
 
       ReleaseCard.new(share).text
