@@ -8,7 +8,7 @@ class QuietHandler < ChatModeHandler
     return unless @message[:text]
 
     text = record_message.content.downcase
-    outcome = Response::BotCommand.new(user: user, text: text, chat: @chat).call
+    outcome = Response::BotCommand.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call
     deliver(outcome) if outcome.is_a?(String)
   end
 end

@@ -3,9 +3,6 @@ module Camerton
   # link was understood: "🎵 Queen — Bohemian Rhapsody · пісня". A re-share
   # adds when it was first shared here and its average score.
   class ShareAnnouncement
-    ICONS = { "song" => "🎵", "album" => "💿" }.freeze
-    KINDS = { "song" => "пісня", "album" => "альбом" }.freeze
-
     def initialize(share)
       @share = share
       @release = share.release
@@ -29,14 +26,11 @@ module Camerton
     end
 
     def text
-      icon = ICONS.fetch(@release.kind)
-      kind = KINDS.fetch(@release.kind)
-
       text =
         if @release.resolved?
-          "#{icon} #{[ @release.artist, @release.title ].compact.join(' — ')} · #{kind}"
+          "#{Formatting.release(@release)} · #{Formatting.kind(@release)}"
         else
-          "#{icon} #{kind.capitalize}: назву на YouTube не знайшов, але відгуки приймаю."
+          "#{Formatting::ICONS.fetch(@release.kind)} #{Formatting.kind(@release).capitalize}: назву на YouTube не знайшов, але відгуки приймаю."
         end
 
       [ text, history ].compact.join(" · ")
@@ -56,7 +50,7 @@ module Camerton
         .average(:score)
 
       "вже скидали #{first_shared_at.strftime(date_format(first_shared_at))}, " +
-        (average ? "середня #{format('%g', average.round(1))}" : "оцінок ще нема")
+        (average ? "середня #{Formatting.score(average)}" : "оцінок ще нема")
     end
 
     def date_format(time)

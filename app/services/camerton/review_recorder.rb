@@ -18,7 +18,7 @@ module Camerton
 
       if media_source
         enqueue_transcription(share)
-      elsif text.present?
+      elsif text.present? && !bot_command?
         ReviewWriter.new(share: share, user: user)
           .write(telegram_message_id: @message[:message_id], source: :text, text: text, sent_at: sent_at)
         :text
@@ -32,10 +32,7 @@ module Camerton
       replied_id = @message.dig(:reply_to_message, :message_id)
       return unless replied_id
 
-      @chat.release_shares
-        .where(telegram_message_id: replied_id)
-        .or(@chat.release_shares.where(announcement_telegram_message_id: replied_id))
-        .first
+      @chat.release_shares.replied_to(replied_id).first
     end
 
     def media_source
@@ -62,6 +59,11 @@ module Camerton
 
     def text
       @message[:text] || @message[:caption]
+    end
+
+    # "@bot оцінки" in reply to a share asks about it; it isn't feedback.
+    def bot_command?
+      text.downcase.start_with?(BotMention.text)
     end
 
     def sent_at
