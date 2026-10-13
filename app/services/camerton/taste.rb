@@ -4,6 +4,9 @@ module Camerton
   # reviews there are.
   class Taste
     SHOWN = 3
+    # Favourites are good or great reviews; the least liked, bad or mid ones.
+    LIKED = Review::LABELS[:good].min..Review::LABELS[:great].max
+    DISLIKED = Review::LABELS[:bad].min..Review::LABELS[:mid].max
 
     def initialize(chat:, user:)
       @chat = chat
@@ -15,9 +18,8 @@ module Camerton
       count, average = @reviews.pick(Arel.sql("COUNT(*)"), Arel.sql("AVG(score)"))
       return "🎧 #{@user.name}: оцінок ще нема." if count.zero?
 
-      favourites = @reviews.order(score: :desc, scored_at: :desc, id: :desc).includes(:release).limit(SHOWN).to_a
-      # Not the favourites again when there are only a few reviews.
-      least = @reviews.where.not(id: favourites.map(&:id)).order(:score, scored_at: :desc, id: :desc).includes(:release).limit(SHOWN).to_a
+      favourites = @reviews.where(score: LIKED).order(score: :desc, scored_at: :desc, id: :desc).includes(:release).limit(SHOWN).to_a
+      least = @reviews.where(score: DISLIKED).order(:score, scored_at: :desc, id: :desc).includes(:release).limit(SHOWN).to_a
 
       [
         "🎧 Смак: #{@user.name}",
