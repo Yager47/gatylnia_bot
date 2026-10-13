@@ -38,7 +38,7 @@ class DefaultHandler < ChatModeHandler
 
     [
       -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
-      -> { Response::BotCommand.new(user: user, text: text, chat: @chat).call },
+      -> { Response::BotCommand.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call },
       -> { Response::Gato.new(user: user, text: text, original_text: @message[:text], chat: @chat).call unless edited },
       -> { Response::UndoCoffee.new(user: user, text: text, chat: @chat).call unless edited },
       -> { Response::Equals.new(text: text).call },

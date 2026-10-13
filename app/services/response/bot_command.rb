@@ -5,6 +5,7 @@ module Response
 
     MODE_PREFIX = "режим: ".freeze
     CAMERTON_PREFIX = "камертон: ".freeze
+    HELP = %w[рятуй help].freeze
     STATS_PREFIX = "гатуни за ".freeze
 
     # Period word => [Time range method, reply header]
@@ -23,9 +24,12 @@ module Response
       "образь @" => [ 150, :swear_phrases ]
     }.freeze
 
-    def initialize(user:, text:, chat:)
+    # reply_to_message: the Telegram message the command replied to, if any
+    # (Camerton's "оцінки" is about the release in it).
+    def initialize(user:, text:, chat:, reply_to_message: nil)
       @user = user
       @chat = chat
+      @reply_to_message = reply_to_message
       # nil unless the text starts with the mention followed by a command.
       @command = text[/\A#{Regexp.escape(BotMention.text)}\s+(.+)/m, 1]
     end
@@ -33,7 +37,7 @@ module Response
     def call
       return unless @command
 
-      process_mode || process_camerton || mode_reply
+      process_help || process_mode || process_camerton || process_camerton_stats || mode_reply
     end
 
     private
@@ -49,6 +53,11 @@ module Response
 
     def process_rps
       RpsGame.new(user: @user, user_weapon: @command, chat: @chat).call
+    end
+
+    # Every mode.
+    def process_help
+      reply(Help.new(chat: @chat).text) if HELP.include?(@command.strip)
     end
 
     def process_mode
@@ -93,6 +102,12 @@ module Response
         end
 
       reply(text)
+    end
+
+    # Every mode, when Camerton is on in the chat.
+    def process_camerton_stats
+      text = Camerton::StatsCommand.new(command: @command, chat: @chat, reply_to_message: @reply_to_message).call
+      reply(text) if text
     end
 
     def switch_camerton(enabled, already:, switched:)
