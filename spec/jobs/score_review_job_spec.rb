@@ -17,6 +17,9 @@ RSpec.describe ScoreReviewJob do
 
   it "runs one job per review at a time" do
     expect(described_class.new(review).concurrency_key).to eq(described_class.new(Review.find(review.id)).concurrency_key)
+    # The history import enqueues with react: false; Solid Queue computes the
+    # key from every argument (the test adapter never does).
+    expect(described_class.new(review, react: false).concurrency_key).to eq(described_class.new(review).concurrency_key)
     expect(described_class.new(review).concurrency_key).not_to eq(described_class.new(create(:review)).concurrency_key)
     expect(described_class.concurrency_limit).to eq(1)
   end
