@@ -8,7 +8,7 @@ disable-model-invocation: true
 # Ship
 
 The user typing `/ship` approves the current uncommitted changes they've
-reviewed: commit, push, PR, wait for CI, merge, deploy. Don't ask for another
+reviewed: commit, push, PR, merge once CI is green, deploy. Don't ask for another
 confirmation. Do stop at the first failure and report it; never work around a
 red check, and never force-push `main`.
 
@@ -19,6 +19,8 @@ Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6
 - The shell is zsh: write paths out explicitly (`$VARS` don't word-split).
 - Start Ruby commands with `source ~/.rvm/scripts/rvm 2>/dev/null; rvm use "$(cat .ruby-version)" >/dev/null 2>&1;`
   (the version pinned in `.ruby-version`, also used by the Gemfile, CI and Heroku).
+  If `rvm use` fails with "bad file descriptor", export `GEM_HOME`, `GEM_PATH`
+  and `PATH` for `~/.rvm/rubies/ruby-<version>` and its gemsets instead.
 - Production: Heroku app `gatylnia`, deployed with `git push heroku main`.
   Health check: `https://gatylnia-6e3de023de50.herokuapp.com/up`.
 - Local `main` has no upstream: use `git pull --ff-only origin main`.
@@ -46,16 +48,23 @@ Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6
    (imperative, under ~60 chars), plus at most two lines of body and the
    Co-Authored-By trailer. Keep it brief. `git push -u origin <branch>`.
 
-5. **PR, CI, merge.**
+5. **PR, CI, merge.** Don't watch or poll CI (no `gh pr checks --watch`,
+   loops or timed re-checks): GitHub waits instead. The `main requires CI`
+   ruleset requires `test`, `lint` and `scan_ruby`, and the repo allows
+   auto-merge.
    - `gh pr create --base main` with a short Summary and Test plan (what was
      run locally), ending with the "Generated with Claude Code" line.
-   - `gh pr checks <branch> --watch --interval 15`. All of `test`, `lint` and
-     `scan_ruby` must pass. If any fails, stop: report which and why (read the
-     job log with `gh run view --log-failed`), and leave the PR open.
-   - `gh pr merge <number> --merge`, then `git switch main` and
-     `git pull --ff-only origin main`.
+   - Check CI once (`gh pr view <number> --json statusCheckRollup`):
+     - all three green: `gh pr merge <number> --merge`;
+     - any failed: stop, report which and why (`gh run view --log-failed`),
+       and leave the PR open;
+     - still running: enable auto-merge with the `mcp__ccd_pr__set_auto_merge`
+       tool (merge method `merge`). GitHub merges when the checks pass; a
+       failed check leaves the PR open.
+   - Once merged: `git switch main` and `git pull --ff-only origin main`.
 
-6. **Deploy** (skip with `--no-deploy`):
+6. **Deploy** (skip with `--no-deploy`). Only after the merge: if auto-merge
+   is still pending, stop and say so; the user says "deploy" once it merged.
    - `git push heroku main`; note the release number.
    - If the change has migrations, check `heroku releases:output <vN> -a gatylnia`.
    - Verify: `/up` returns 200, and `heroku logs -n 300 -a gatylnia` shows
@@ -66,6 +75,6 @@ Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6
 
 ## Report
 
-A few lines: commit hash and subject, PR link, CI result, release number,
-health check. Mention anything the user should try in the chat, or any
+A few lines: commit hash and subject, PR link, CI result (or "auto-merge
+pending"), release number, health check. Mention anything the user should try in the chat, or any
 warning seen. No command transcripts: the tool rows already show them.
