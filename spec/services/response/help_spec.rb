@@ -57,7 +57,10 @@ RSpec.describe Response::Help do
 
     chat.update!(camerton_enabled: true)
 
-    expect(help).to include("@test_bot топ / дно", "@test_bot оцінки", "(зараз увімкнене)")
+    expect(help).to include(
+      "@test_bot топ / дно", "@test_bot оцінки", "@test_bot критики", "@test_bot камертони",
+      "@test_bot мій смак", "@test_bot смак з @нік", "(зараз увімкнене)"
+    )
   end
 
   it "lists every mode name and the settings commands" do

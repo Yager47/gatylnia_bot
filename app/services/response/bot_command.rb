@@ -106,7 +106,7 @@ module Response
 
     # Every mode, when Camerton is on in the chat.
     def process_camerton_stats
-      text = Camerton::StatsCommand.new(command: @command, chat: @chat, reply_to_message: @reply_to_message).call
+      text = Camerton::StatsCommand.new(command: @command, chat: @chat, user: @user, reply_to_message: @reply_to_message).call
       reply(text) if text
     end
 
