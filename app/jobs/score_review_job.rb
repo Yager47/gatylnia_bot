@@ -4,7 +4,8 @@ class ScoreReviewJob < ApplicationJob
   # One run per review at a time (enforced by Solid Queue, not the test
   # adapter): a run reads all messages when it starts, so two in parallel
   # could let the one that read fewer messages write last.
-  limits_concurrency key: ->(review) { review }, duration: 5.minutes
+  # Solid Queue calls the key with all the job's arguments, keywords included.
+  limits_concurrency key: ->(review, **) { review }, duration: 5.minutes
 
   retry_on OpenAI::Errors::APIConnectionError,
     OpenAI::Errors::InternalServerError,
