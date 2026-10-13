@@ -1,8 +1,10 @@
 namespace :camerton do
   # Imports shares and text reviews from a Telegram Desktop HTML export of a
-  # Camerton chat. Silent; dry run unless DRY_RUN=0.
+  # Camerton chat. Silent; dry run unless DRY_RUN=0. IGNORE_SENDER_IDS skips
+  # senders (comma-separated Telegram ids), e.g. a downloader bot.
   #
-  #   bin/rails camerton:import_history EXPORT_DIR=tmp/music_export CHAT_ID=-1001234567890
+  #   bin/rails camerton:import_history EXPORT_DIR=tmp/music_export CHAT_ID=-1001234567890 \
+  #     IGNORE_SENDER_IDS=1793352182
   desc "Import Camerton shares and text reviews from an HTML chat export"
   task import_history: :environment do
     chat = Chat.find_by!(telegram_id: ENV.fetch("CHAT_ID"))
@@ -11,7 +13,8 @@ namespace :camerton do
     report = Camerton::HistoryImport.new(
       chat: chat,
       messages: TelegramExport::HtmlParser.new(ENV.fetch("EXPORT_DIR")).each_message,
-      dry_run: dry_run
+      dry_run: dry_run,
+      ignored_sender_ids: ENV.fetch("IGNORE_SENDER_IDS", "").split(",").map(&:strip).reject(&:empty?)
     ).call
 
     puts "#{dry_run ? 'DRY RUN, nothing written' : 'Done'}: chat #{chat.title.inspect}#{' (Camerton is off)' unless chat.camerton_enabled?}"
