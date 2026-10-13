@@ -20,6 +20,14 @@ RSpec.describe ChatMessenger do
     expect(fake_telegram.sent_messages.sole[:reply_parameters].to_h).to eq(message_id: 42, allow_sending_without_reply: true)
   end
 
+  it "passes a parse mode for formatted messages" do
+    message = chat.messages.create!(role: :assistant, content: "<b>Ало</b>")
+
+    described_class.new(chat: chat).deliver(message, parse_mode: "HTML")
+
+    expect(fake_telegram.sent_messages.sole).to eq(chat_id: chat.telegram_id, text: "<b>Ало</b>", parse_mode: "HTML")
+  end
+
   it "sends nothing for a blank message" do
     described_class.new(chat: chat).deliver(chat.messages.build(role: :assistant, content: ""))
 

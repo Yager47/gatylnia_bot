@@ -1,0 +1,93 @@
+require "erb"
+
+module Camerton
+  # The daily nudge in a Camerton chat: each member who hasn't scored a
+  # release shared in the last week, with links to those releases.
+  #   🎧 Хто ще не оцінив свіже:
+  #
+  #   @olya — 🎵 Queen — Bohemian Rhapsody, 💿 Eminem — Revival
+  # The sharer isn't reminded of their own release, and a reply that wasn't
+  # a review doesn't count as one. Four queries however many members and
+  # releases there are.
+  class ReminderDigest
+    WINDOW = 7.days
+    PER_MEMBER = 5
+
+    def initialize(chat, now: Time.current)
+      @chat = chat
+      @now = now
+    end
+
+    # Sends at most once per Kyiv day. The chat row lock makes a parallel or
+    # repeated run wait and then see the date; if sending fails, the date
+    # and the assistant message roll back so a retry starts clean.
+    def deliver
+      today = @now.to_date
+
+      @chat.with_lock do
+        next unless @chat.camerton_enabled?
+        next if @chat.camerton_digest_sent_on == today
+
+        if (body = text)
+          reply = @chat.messages.create!(role: :assistant, content: body)
+          ChatMessenger.new(chat: @chat).deliver(reply, parse_mode: "HTML")
+        end
+        @chat.update!(camerton_digest_sent_on: today)
+      end
+    end
+
+    # HTML for Telegram, or nil when nobody has anything to score.
+    def text
+      lines = pending_by_member.map do |member, shares|
+        shown = shares.first(PER_MEMBER).map { |share| release_link(share) }
+        shown << "і ще #{shares.size - PER_MEMBER}" if shares.size > PER_MEMBER
+        "#{mention(member)} — #{shown.join(', ')}"
+      end
+      return if lines.empty?
+
+      [ "🎧 Хто ще не оцінив свіже:", "", *lines, "", "Відповідайте на реліз текстом, голосовим чи кружечком." ].join("\n")
+    end
+
+    private
+
+    # [[member, [latest share of each release they should score]], ...]
+    def pending_by_member
+      latest_shares = @chat.release_shares.where(shared_at: (@now - WINDOW)..@now)
+        .includes(:release).order(:shared_at, :id).index_by(&:release_id)
+      return [] if latest_shares.empty?
+
+      release_ids = latest_shares.keys
+      sharers = @chat.release_shares.where(release_id: release_ids).distinct.pluck(:release_id, :user_id).to_set
+      reviewed = Review.where(chat: @chat, release_id: release_ids).where.not(score: nil).pluck(:release_id, :user_id).to_set
+      newest_first = latest_shares.values.reverse
+
+      @chat.users.order(:id).filter_map do |member|
+        pending = newest_first.reject do |share|
+          sharers.include?([ share.release_id, member.id ]) || reviewed.include?([ share.release_id, member.id ])
+        end
+        [ member, pending ] if pending.any?
+      end
+    end
+
+    # @username notifies by itself; without one, a mention link does.
+    def mention(user)
+      return "@#{user.username}" if user.username.present?
+
+      %(<a href="tg://user?id=#{user.telegram_id}">#{escape(user.name)}</a>)
+    end
+
+    # A link to the shared message, so a tap jumps to it. Only supergroups
+    # (ids starting with -100) have t.me/c links.
+    def release_link(share)
+      name = escape(Formatting.release(share.release))
+      internal_id = @chat.telegram_id.to_s.delete_prefix("-100")
+      return name if internal_id == @chat.telegram_id.to_s
+
+      %(<a href="https://t.me/c/#{internal_id}/#{share.telegram_message_id}">#{name}</a>)
+    end
+
+    def escape(text)
+      ERB::Util.html_escape(text)
+    end
+  end
+end

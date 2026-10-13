@@ -8,10 +8,12 @@ class ChatMessenger
 
   # reply_to: a Telegram message id to answer in a thread. Still sent if that
   # message was deleted in the meantime.
-  def deliver(message, reply_to: nil)
+  # parse_mode: "HTML" when the content is Telegram HTML (links, mentions).
+  def deliver(message, reply_to: nil, parse_mode: nil)
     return if message.content.blank?
 
     params = { chat_id: @chat.telegram_id, text: message.content }
+    params[:parse_mode] = parse_mode if parse_mode
     if reply_to
       params[:reply_parameters] = Telegram::Bot::Types::ReplyParameters.new(message_id: reply_to, allow_sending_without_reply: true)
     end
