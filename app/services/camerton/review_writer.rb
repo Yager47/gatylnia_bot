@@ -8,8 +8,9 @@ module Camerton
       @user = user
     end
 
-    # Returns the ReviewMessage.
-    def write(telegram_message_id:, source:, text:, sent_at:)
+    # Returns the ReviewMessage. score: false leaves scoring to the caller
+    # (an import scores each review once, after all its messages).
+    def write(telegram_message_id:, source:, text:, sent_at:, score: true)
       review = find_or_create_review
       review_message = find_or_create_message(review, telegram_message_id, source, text, sent_at)
       unless review_message.previously_new_record?
@@ -18,7 +19,7 @@ module Camerton
         review_message.update!(text: text)
       end
 
-      ScoreReviewJob.perform_later(review)
+      ScoreReviewJob.perform_later(review) if score
       review_message
     end
 

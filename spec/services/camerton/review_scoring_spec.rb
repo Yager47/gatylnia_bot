@@ -29,6 +29,16 @@ RSpec.describe Camerton::ReviewScoring do
     expect(params[:reaction].map(&:emoji)).to eq([ "🤬" ])
   end
 
+  it "scores without reacting when told not to" do
+    create(:review_message, review: review)
+    allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: true, score: 9, summary: "топ"))
+
+    described_class.new(review, analyzer: analyzer, react: false).call
+
+    expect(review.reload.score).to eq(9)
+    expect(fake_telegram.calls).to be_empty
+  end
+
   it "clears the score when the messages turn out not to be a review" do
     review.update!(score: 7, summary: "старе")
     create(:review_message, review: review, text: "де знайшов?")

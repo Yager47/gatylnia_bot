@@ -1,4 +1,4 @@
-module GatoHistory
+module TelegramExport
   # Reads a Telegram Desktop HTML chat export (messages.html, messages2.html, …)
   # and yields its regular messages in chronological order.
   #
@@ -9,8 +9,18 @@ module GatoHistory
   #   all and inherit it from the message before;
   # - dates are written in the local time of the computer that made the
   #   export, so they're parsed in the app's time zone.
-  class ExportParser
-    Message = Data.define(:telegram_message_id, :sender_id, :sender_name, :sent_at, :text)
+  #
+  # reply_to_message_id is the id of the message replied to, and link_urls
+  # the targets of the links in the text (a link can hide behind any words).
+  class HtmlParser
+    Message = Data.define(:telegram_message_id, :sender_id, :sender_name, :sent_at, :text, :reply_to_message_id, :link_urls) do
+      def initialize(reply_to_message_id: nil, link_urls: [], **attributes)
+        super
+      end
+    end
+
+    # "#go_to_message123", or "messages2.html#go_to_message123" across files.
+    REPLY_TARGET = /go_to_message(\d+)/
 
     MONTHS = %w[січня лютого березня квітня травня червня липня серпня вересня жовтня листопада грудня].freeze
     DATE = /\A(\d{1,2}) (\S+) (\d{4}), (\d{2}):(\d{2}):(\d{2})\z/
@@ -50,7 +60,9 @@ module GatoHistory
           sender_id: sender[:id],
           sender_name: sender[:name],
           sent_at: parse_time(node.at_css(".date.details")["title"]),
-          text: text_of(node)
+          text: text_of(node),
+          reply_to_message_id: node.at_css(".reply_to a")&.[]("href").to_s[REPLY_TARGET, 1]&.to_i,
+          link_urls: node.css(".text a[href]").map { |link| link["href"] }
         )
       end
     end

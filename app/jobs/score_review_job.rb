@@ -14,7 +14,7 @@ class ScoreReviewJob < ApplicationJob
 
   discard_on ActiveJob::DeserializationError
 
-  def perform(review)
-    Camerton::ReviewScoring.new(review).call
+  def perform(review, react: true)
+    Camerton::ReviewScoring.new(review, react: react).call
   end
 end

@@ -2,9 +2,11 @@ module Camerton
   # Re-derives a review's score and summary from all of its messages, then
   # reacts to the latest one with the result.
   class ReviewScoring
-    def initialize(review, analyzer: nil)
+    # react: false scores silently (history imports).
+    def initialize(review, analyzer: nil, react: true)
       @review = review
       @analyzer = analyzer
+      @react = react
     end
 
     def call
@@ -13,7 +15,7 @@ module Camerton
 
       result = analyzer.call(release: @review.release, messages: messages)
       @review.update!(score: result.score, summary: result.summary, scored_at: Time.current)
-      ReviewReaction.new(@review).call
+      ReviewReaction.new(@review).call if @react
     end
 
     private
