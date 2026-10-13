@@ -93,6 +93,51 @@ RSpec.describe "Camerton people stats" do
       expect(command("камертони")).to eq("🎛 Камертони:\n\nЩе ніхто нічого не скинув.")
     end
 
+    describe "a release every member scored as bad" do
+      let(:petro) { member("Петро") }
+      let(:olya) { member("Оля") }
+      let!(:ivan) { member("Іван") } # a member from the start, scored or not
+
+      before do
+        create(:release_share, chat: chat, release: a, user: petro)
+        create(:release_share, chat: chat, release: b, user: petro)
+        scores(olya, b => 8)
+      end
+
+      it "is left out of the sharer's stats, and the reply says so" do
+        scores(petro, a => 2)
+        scores(olya, a => 1)
+        scores(ivan, a => 3)
+
+        expect(command("камертони")).to eq(<<~TEXT.strip)
+          🎛 Камертони (чиї релізи заходять найкраще):
+
+          Петро: 1 реліз, середня 8 (1 оцінка)
+
+          Без 1 релізу, які не зайшли нікому, навіть тому, хто скинув.
+        TEXT
+      end
+
+      it "still counts when a member hasn't scored it, or anyone liked it even a little" do
+        scores(petro, a => 2)
+        scores(olya, a => 1)
+        expect(command("камертони")).to include("Петро: 2 релізи, середня 3.7 (3 оцінки)")
+
+        scores(ivan, a => 4)
+        expect(command("камертони")).to include("Петро: 2 релізи, середня 3.8 (4 оцінки)")
+        expect(command("камертони")).not_to include("Без ")
+      end
+
+      it "ignores scores from other chats and from people who aren't members" do
+        scores(petro, a => 2)
+        scores(olya, a => 1)
+        create(:review, release: a, user: ivan, score: 1) # Іван's score in another chat
+        create(:review, chat: chat, release: a, user: create(:user), score: 1) # not a member
+
+        expect(command("камертони")).to include("Петро: 2 релізи")
+      end
+    end
+
     it "runs the same number of queries however many shares there are" do
       create(:release_share, chat: chat, release: a, user: member("Петро"))
       queries_for_one = count_queries { command("камертони") }
@@ -123,6 +168,8 @@ RSpec.describe "Camerton people stats" do
         🎵 Artist — A · 10
         🎵 Artist — B · 9
         🎵 Artist — C · 8
+        🎵 Artist — G · 7
+        🎵 Artist — F · 6
 
         Найменше зайшло:
         🎵 Artist — D · 2
@@ -158,6 +205,16 @@ RSpec.describe "Camerton people stats" do
 
       Review.where(user: me, release: b).update_all(score: 9)
       expect(command("мій смак", user: me)).not_to include("Найменше зайшло:")
+    end
+
+    it "shows ten releases at most in each list" do
+      12.times { |index| scores(me, release("Liked #{index}") => 8) }
+      12.times { |index| scores(me, release("Disliked #{index}") => 2) }
+
+      text = command("мій смак", user: me)
+
+      expect(text.scan("Liked ").size).to eq(10)
+      expect(text.scan("Disliked ").size).to eq(10)
     end
 
     it "says when I haven't scored anything" do
