@@ -59,7 +59,7 @@ RSpec.describe Response::Help do
 
     expect(help).to include(
       "@test_bot топ / дно", "@test_bot оцінки", "@test_bot критики", "@test_bot камертони",
-      "@test_bot мій смак", "@test_bot смак з @нік", "(зараз увімкнене)"
+      "@test_bot мій смак", "@test_bot смак з @нік", "щодня о 09:00 нагадую", "(зараз увімкнене)"
     )
   end
 

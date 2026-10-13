@@ -16,3 +16,7 @@ production:
   cleanup_telegram_updates:
     class: CleanupTelegramUpdatesJob
     schedule: every day at 4am
+  # Fugit reads times as UTC (the dyno's clock) unless a zone is given.
+  camerton_reminders:
+    class: CamertonRemindersJob
+    schedule: every day at 9am Europe/Kyiv
