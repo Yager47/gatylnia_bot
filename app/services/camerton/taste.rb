@@ -3,7 +3,7 @@ module Camerton
   # favourites, and whose taste is closest. Seven queries however many
   # reviews there are.
   class Taste
-    SHOWN = 3
+    SHOWN = 10
     # Favourites are good or great reviews; the least liked, bad or mid ones.
     LIKED = Review::LABELS[:good].min..Review::LABELS[:great].max
     DISLIKED = Review::LABELS[:bad].min..Review::LABELS[:mid].max
