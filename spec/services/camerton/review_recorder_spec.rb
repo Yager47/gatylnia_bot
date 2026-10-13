@@ -50,6 +50,16 @@ RSpec.describe Camerton::ReviewRecorder do
     expect(Review.sole.messages.order(:id).map(&:release_share)).to eq([ share, reshare ])
   end
 
+  it "counts a reply to an older link the bot knows only from an import, by the link it replies to" do
+    imported = create(:release_share, chat: chat, release: release, telegram_message_id: 900_001, shared_at: 1.year.ago)
+    old_link = { message_id: 14_210, from: telegram_from, text: "заціни #{release.url}" }
+
+    dispatch(message_update(text: "7/10, досі слухаю", message_id: 100, reply_to_message: old_link))
+
+    expect(ReviewMessage.sole).to have_attributes(release_share: imported, text: "7/10, досі слухаю")
+    expect(ScoreReviewJob).to have_been_enqueued.with(Review.sole)
+  end
+
   it "keeps separate reviews per chat" do
     other_chat = create(:chat, telegram_id: "-100777", camerton_enabled: true, mode: :quiet)
     create(:release_share, chat: other_chat, release: release, telegram_message_id: 42)
