@@ -53,6 +53,15 @@ RSpec.describe Camerton::HistoryImport do
     expect(report.skipped).to eq(not_text: 1, bot_messages: 1, bot_commands: 1)
   end
 
+  it "ignores the given senders' shares and replies" do
+    report = described_class.new(chat: chat, messages: messages, dry_run: false, ignored_sender_ids: [ 777 ]).call
+
+    expect(chat.release_shares.pluck(:telegram_message_id)).to eq([ 500 ]) # Оля's album share is gone
+    expect(User.where(telegram_id: "777")).to be_empty
+    expect(Review.joins(:user).pluck("users.telegram_id")).to eq([ "999" ])
+    expect(report.skipped).to include(ignored_senders: 3)
+  end
+
   it "matches a sender without a userpic by name, and reports one it can't match" do
     ivan.update!(last_name: "Інший")
 
@@ -78,6 +87,21 @@ RSpec.describe Camerton::HistoryImport do
     expect(User.where(telegram_id: %w[555 777])).to be_empty
     expect(ResolveReleaseJob).not_to have_been_enqueued
     expect(ScoreReviewJob).not_to have_been_enqueued
+    expect(report).to have_attributes(shares_created: 2, replies_created: 3, reviews_to_score: 2)
+  end
+
+  it "rolls a dry run back even inside the caller's transaction" do
+    ActiveRecord::Base.transaction(joinable: true) do
+      import(dry_run: true)
+
+      expect([ Release.count, ReleaseShare.count, Review.count ]).to eq([ 0, 0, 0 ])
+    end
+  end
+
+  it "leaves nothing behind for the next run after a dry run on the same chat" do
+    import(dry_run: true)
+    report = import(dry_run: true)
+
     expect(report).to have_attributes(shares_created: 2, replies_created: 3, reviews_to_score: 2)
   end
 

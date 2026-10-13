@@ -13,16 +13,23 @@ module Camerton
     Report = Data.define(:shares_created, :shares_existing, :releases_created, :replies_created, :replies_updated,
       :reviews_to_score, :skipped)
 
-    def initialize(chat:, messages:, dry_run: true)
+    # ignored_sender_ids: Telegram ids whose messages are neither shares nor
+    # feedback, such as a downloader bot that answers every link with the
+    # same link.
+    def initialize(chat:, messages:, dry_run: true, ignored_sender_ids: [])
       @chat = chat
       @messages = messages.to_a
       @dry_run = dry_run
+      @ignored_sender_ids = ignored_sender_ids.map(&:to_s).to_set
       @skipped = Hash.new(0)
     end
 
     def call
       report = nil
-      ActiveRecord::Base.transaction do
+      # requires_new: a savepoint, so a dry run rolls back even when the
+      # caller is already in a transaction (where a plain block would join it
+      # and swallow the Rollback).
+      ActiveRecord::Base.transaction(requires_new: true) do
         report = import
         raise ActiveRecord::Rollback if @dry_run
       end
@@ -50,8 +57,11 @@ module Camerton
     # Returns {telegram message id => share} for every share in the export
     # (and the chat's existing shares, so replies to them count too), the
     # number created, and the releases created.
+    # Plain queries rather than @chat's associations: an association caches
+    # what it creates, and after a dry run's rollback the cache would still
+    # hold the rolled-back shares.
     def import_shares
-      shares = @chat.release_shares.index_by(&:telegram_message_id)
+      shares = ReleaseShare.where(chat: @chat).index_by(&:telegram_message_id)
       created = 0
       new_releases = []
 
@@ -64,8 +74,8 @@ module Camerton
         release_existed = Release.exists?(platform: link.platform, external_id: link.external_id)
         release = Release.find_or_create_for(link)
         new_releases << release unless release_existed
-        shares[message.telegram_message_id] = @chat.release_shares.create!(
-          release: release, user: user, telegram_message_id: message.telegram_message_id, shared_at: message.sent_at
+        shares[message.telegram_message_id] = ReleaseShare.create!(
+          chat: @chat, release: release, user: user, telegram_message_id: message.telegram_message_id, shared_at: message.sent_at
         )
         created += 1
       end
@@ -118,6 +128,7 @@ module Camerton
     # senders without a userpic (no id), by a unique name among the members.
     def sender(message)
       return skip(:bot_messages) if message.sender_id && message.sender_id == bot_id
+      return skip(:ignored_senders) if @ignored_sender_ids.include?(message.sender_id)
 
       if message.sender_id
         ChatMembers::Resolver.new(chat: @chat, from: { id: message.sender_id, first_name: message.sender_name }).call
@@ -128,7 +139,7 @@ module Camerton
     end
 
     def members_by_name
-      @members_by_name ||= @chat.users.group_by(&:name)
+      @members_by_name ||= User.where(id: ChatUser.where(chat: @chat).select(:user_id)).group_by(&:name)
     end
 
     # The shape Camerton::Links reads: hidden links as text_link entities.
