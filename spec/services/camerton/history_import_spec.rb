@@ -62,6 +62,17 @@ RSpec.describe Camerton::HistoryImport do
     expect(report.skipped).to include(ignored_senders: 3)
   end
 
+  it "imports only links shared before the cutoff, but replies to them from any time" do
+    # After 501 (1 Oct 20:05), before 502 (20:06), 600 (2 Oct) and the album share 601.
+    cutoff = Time.zone.local(2026, 10, 1, 20, 5, 30)
+
+    report = described_class.new(chat: chat, messages: messages, dry_run: false, shares_before: cutoff).call
+
+    expect(chat.release_shares.pluck(:telegram_message_id)).to eq([ 500 ])
+    expect(ReviewMessage.order(:telegram_message_id).pluck(:telegram_message_id)).to eq([ 501, 502, 600 ])
+    expect(report.skipped).to include(shares_after_cutoff: 1)
+  end
+
   it "matches a sender without a userpic by name, and reports one it can't match" do
     ivan.update!(last_name: "Інший")
 

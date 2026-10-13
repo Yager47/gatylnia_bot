@@ -16,11 +16,18 @@ module Camerton
     # ignored_sender_ids: Telegram ids whose messages are neither shares nor
     # feedback, such as a downloader bot that answers every link with the
     # same link.
-    def initialize(chat:, messages:, dry_run: true, ignored_sender_ids: [])
+    #
+    # shares_before: only links shared before this time become shares;
+    # replies to them count whenever they were written. Set it to when
+    # Camerton went live in the chat: the bot already recorded what came
+    # after, and in a basic group the export numbers messages differently
+    # from the bot (per account), so those can't be matched by id.
+    def initialize(chat:, messages:, dry_run: true, ignored_sender_ids: [], shares_before: nil)
       @chat = chat
       @messages = messages.to_a
       @dry_run = dry_run
       @ignored_sender_ids = ignored_sender_ids.map(&:to_s).to_set
+      @shares_before = shares_before
       @skipped = Hash.new(0)
     end
 
@@ -69,6 +76,7 @@ module Camerton
         link = Links.first_in(as_telegram_message(message))
         next unless link
         next if shares.key?(message.telegram_message_id)
+        next skip(:shares_after_cutoff) if @shares_before && message.sent_at >= @shares_before
 
         user = sender(message) or next
         release_existed = Release.exists?(platform: link.platform, external_id: link.external_id)
