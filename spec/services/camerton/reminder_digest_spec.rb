@@ -29,8 +29,11 @@ RSpec.describe Camerton::ReminderDigest do
       expect(digest).to eq(<<~HTML.strip)
         🎧 Хто ще не оцінив свіже:
 
-        @petro — <a href="https://t.me/c/1234567890/42">💿 Artist — B</a>
-        @olya — <a href="https://t.me/c/1234567890/41">🎵 Artist — A</a>
+        @petro
+        <a href="https://t.me/c/1234567890/42">💿 Artist — B</a>
+
+        @olya
+        <a href="https://t.me/c/1234567890/41">🎵 Artist — A</a>
 
         Відповідайте на реліз текстом, голосовим чи кружечком.
       HTML
@@ -54,7 +57,7 @@ RSpec.describe Camerton::ReminderDigest do
       release = shared("Again", by: petro, at: now - 20.days, message_id: 10)
       create(:release_share, chat: chat, release: release, user: olya, shared_at: now - 2.days, telegram_message_id: 11)
 
-      expect(digest.lines.map(&:strip).grep(/—/)).to eq([ %(@ivan — <a href="https://t.me/c/1234567890/11">🎵 Artist — Again</a>) ])
+      expect(digest).to include(%(@ivan\n<a href="https://t.me/c/1234567890/11">🎵 Artist — Again</a>))
       expect(digest).not_to include("@petro", "@olya")
     end
 
@@ -63,7 +66,7 @@ RSpec.describe Camerton::ReminderDigest do
       member("<Іван & Co>", username: nil).update!(telegram_id: "777")
       shared("Rock & <Roll>", by: sharer)
 
-      expect(digest).to include(%(<a href="tg://user?id=777">&lt;Іван &amp; Co&gt;</a> — <a href="https://t.me/c/1234567890/))
+      expect(digest).to include(%(<a href="tg://user?id=777">&lt;Іван &amp; Co&gt;</a>\n<a href="https://t.me/c/1234567890/))
       expect(digest).to include("🎵 Artist — Rock &amp; &lt;Roll&gt;</a>")
     end
 
@@ -72,9 +75,8 @@ RSpec.describe Camerton::ReminderDigest do
       member("Olya")
       7.times { |index| shared("R#{index}", by: sharer, at: now - index.hours) }
 
-      line = digest.lines.find { |l| l.start_with?("@olya") }
-      expect(line.scan("<a ").size).to eq(5)
-      expect(line.strip).to end_with(", і ще 2")
+      block = digest.split("\n\n").find { |b| b.start_with?("@olya") }
+      expect(block.lines.map(&:strip)).to match([ "@olya", *Array.new(5, /\A<a href=.*R\d<\/a>\z/), "і ще 2" ])
     end
 
     it "names releases without links in a basic group, which has no t.me/c links" do
@@ -83,7 +85,7 @@ RSpec.describe Camerton::ReminderDigest do
       member("Olya")
       shared("A", by: sharer)
 
-      expect(digest).to include("@olya — 🎵 Artist — A")
+      expect(digest).to include("@olya\n🎵 Artist — A")
       expect(digest).not_to include("t.me")
     end
 

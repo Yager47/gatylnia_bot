@@ -20,6 +20,23 @@ RSpec.describe Camerton::Formatting do
     end
   end
 
+  describe ".release_link" do
+    let(:share) { build(:release_share, release: build(:release, :resolved, artist: "Tom & <Jerry>"), telegram_message_id: 42) }
+
+    it "links an escaped name to the shared message in a supergroup" do
+      chat = build(:chat, telegram_id: "-1001234567890")
+
+      expect(described_class.release_link(share, chat))
+        .to eq(%(<a href="https://t.me/c/1234567890/42">🎵 Tom &amp; &lt;Jerry&gt; — Bohemian Rhapsody</a>))
+    end
+
+    it "leaves just the escaped name in a basic group, which has no t.me/c links" do
+      chat = build(:chat, telegram_id: "-123456", telegram_type: "group")
+
+      expect(described_class.release_link(share, chat)).to eq("🎵 Tom &amp; &lt;Jerry&gt; — Bohemian Rhapsody")
+    end
+  end
+
   describe ".release" do
     it "shows the icon with the artist and title, the title alone, or the link" do
       expect(described_class.release(build(:release, :resolved))).to eq("🎵 Queen — Bohemian Rhapsody")
