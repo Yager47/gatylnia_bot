@@ -5,6 +5,7 @@ module Response
 
     MODE_PREFIX = "режим: ".freeze
     CAMERTON_PREFIX = "камертон: ".freeze
+    NOTES_PREFIX = "замітки: ".freeze
     HELP = %w[рятуй help].freeze
     STATS_PREFIX = "гатуни за ".freeze
 
@@ -37,7 +38,7 @@ module Response
     def call
       return unless @command
 
-      process_help || process_mode || process_camerton || process_camerton_stats || mode_reply
+      process_help || process_mode || process_camerton || process_notes_toggle || process_camerton_stats || mode_reply
     end
 
     private
@@ -102,6 +103,30 @@ module Response
         end
 
       reply(text)
+    end
+
+    # Works in every mode, like Camerton: notes on demo tracks sent as audio.
+    def process_notes_toggle
+      return unless @command.start_with?(NOTES_PREFIX)
+
+      text =
+        case @command.delete_prefix(NOTES_PREFIX)
+        when "увімкни", "вкл"
+          switch_notes(true, already: "Замітки вже увімкнені.", switched: "Замітки увімкнено.")
+        when "вимкни", "викл"
+          switch_notes(false, already: "Замітки вже вимкнені.", switched: "Замітки вимкнено.")
+        else
+          "Замітки: увімкни або вимкни?"
+        end
+
+      reply(text)
+    end
+
+    def switch_notes(enabled, already:, switched:)
+      return already if @chat.notes_enabled == enabled
+
+      @chat.update!(notes_enabled: enabled)
+      switched
     end
 
     # Every mode, when Camerton is on in the chat.
