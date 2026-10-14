@@ -10,8 +10,15 @@ RSpec.describe Response::Ai do
 
   before { allow(Ai).to receive(:reply_in).and_return("Нічим") }
 
-  it "answers the latest message" do
+  it "answers the latest message, telling the model which one it is" do
     expect(answer).to eq("Нічим")
+    expect(Ai).to have_received(:reply_in).with(chat, target: trigger, frame_paths: [])
+  end
+
+  it "stays silent when the model decides the message isn't for it" do
+    allow(Ai).to receive(:reply_in).and_return(" skip. ")
+
+    expect(answer).to eq(Response::STOP)
   end
 
   it "doesn't ask the model when someone has written since" do

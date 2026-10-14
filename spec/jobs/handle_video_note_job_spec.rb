@@ -113,16 +113,29 @@ RSpec.describe HandleVideoNoteJob do
     classify_as
     allow_any_instance_of(described_class).to receive(:rand).and_return(0.1)
     received = nil
-    allow(Ai).to receive(:reply_in) do |_chat, frames_for:, frame_paths:|
-      received = { frames_for: frames_for, frames: frame_paths.map { |path| File.basename(path) } }
+    allow(Ai).to receive(:reply_in) do |_chat, target:, frame_paths:|
+      received = { target: target, frames: frame_paths.map { |path| File.basename(path) } }
       "Шо ти там бубониш"
     end
 
     perform
 
     expect(Activity.count).to eq(0)
-    expect(received).to eq(frames_for: message, frames: %w[frame_0.jpg frame_1.jpg frame_2.jpg])
+    expect(received).to eq(target: message, frames: %w[frame_0.jpg frame_1.jpg frame_2.jpg])
     expect(sent_texts).to eq([ "Шо ти там бубониш" ])
+    expect(fake_telegram.sent_messages.sole).not_to have_key(:reply_parameters)
+  end
+
+  it "threads the reply to the video when someone wrote after it" do
+    classify_as
+    allow_any_instance_of(described_class).to receive(:rand).and_return(0.1)
+    allow(Ai).to receive(:reply_in).and_return("Шо ти там бубониш")
+    message
+    create(:message, chat: chat, role: :assistant, user: nil, telegram_message_id: 43)
+
+    perform
+
+    expect(fake_telegram.sent_messages.sole[:reply_parameters].message_id).to eq(42)
   end
 
   it "replies in character without asking the classifier when the analysis failed" do
@@ -134,7 +147,7 @@ RSpec.describe HandleVideoNoteJob do
     perform
 
     expect(Activities::VideoNoteClassifier).not_to have_received(:new)
-    expect(Ai).to have_received(:reply_in).with(chat, frames_for: message, frame_paths: [])
+    expect(Ai).to have_received(:reply_in).with(chat, target: message, frame_paths: [])
   end
 
   it "removes the frames when it's done, even after an error" do

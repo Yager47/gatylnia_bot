@@ -1,22 +1,30 @@
 class Ai
   CONTEXT_LIMIT = 20
+  # What the model answers when a message isn't for it and it has nothing to add.
+  SKIP = "SKIP".freeze
 
   class << self
-    # frames_for: the video note message the frames belong to. They're attached
-    # to that message, not to whatever was said last, and the reply is aimed
-    # at it even if others wrote in the meantime.
-    def reply_in(chat, frames_for: nil, frame_paths: [])
+    # target: the message being answered. The model is told which one it is
+    # and whom it's addressed to, instead of guessing from the history.
+    # frame_paths: a video note's frames, attached to the target message.
+    def reply_in(chat, target: nil, frame_paths: [])
       response = OpenAiClient.build.chat.completions.create(
         model: "gpt-5-mini",
-        messages: messages(chat, frames_for: frames_for, frame_paths: frame_paths)
+        verbosity: :low,
+        messages: messages(chat, target: target, frame_paths: frame_paths)
       )
 
       response.choices.first.message.content
     end
 
+    # Tolerates the model adding punctuation or spaces around the word.
+    def skip?(text)
+      text.to_s.strip.match?(/\A#{SKIP}\W*\z/i)
+    end
+
     private
 
-    def messages(chat, frames_for:, frame_paths:)
+    def messages(chat, target:, frame_paths:)
       result = [
         { role: "system", content: prompt },
         { role: "system", content: examples }
@@ -28,14 +36,14 @@ class Ai
                     .last(CONTEXT_LIMIT)
 
       history.each do |message|
-        if frame_paths.any? && message.id == frames_for&.id
+        if frame_paths.any? && message.id == target&.id
           result << vision_message(message.ai_context, frame_paths)
         else
           result << { role: message.role, content: message.ai_context }
         end
       end
 
-      result << { role: "system", content: video_target(frames_for) } if frames_for
+      result << { role: "system", content: target_note(target) } if target
       result
     end
 
@@ -50,8 +58,20 @@ class Ai
       }
     end
 
-    def video_target(message)
-      "Зараз відповідай саме на відео від #{message.user&.name || 'когось'}, а не на інші повідомлення."
+    # A mention or a reply to the bot must be answered; anything else may be
+    # people talking to each other, which the model can stay out of.
+    def target_note(message)
+      addressee =
+        if AiReplyGate.new(message).decision == :always
+          "Воно адресоване тобі, тож відповідай."
+        else
+          "Воно не адресоване тобі напряму. Якшо там є \"ти\", це скоріше про того, з ким людина говорить. " \
+            "Якшо це розмова між людьми і тобі нема шо додати, напиши рівно #{SKIP}."
+        end
+
+      "Ти відповідаєш на повідомлення від #{message.user&.name || 'когось'}: " \
+        "\"#{message.content.to_s.truncate(200)}\". #{addressee} " \
+        "Відповідь: одне коротке речення, до 15 слів."
     end
 
     def prompt
