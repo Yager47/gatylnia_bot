@@ -2,16 +2,35 @@ module Response
   class Ai
     include Responder
 
-    def initialize(chat:, frames_for: nil, frame_paths: [])
+    # trigger: the message being answered. If someone writes again before the
+    # reply is sent, the reply is dropped: the newer message gets its own turn
+    # with the full context, instead of the bot answering both. A message that
+    # mentions the bot is always answered.
+    def initialize(chat:, trigger: nil, frames_for: nil, frame_paths: [])
       @chat = chat
+      @trigger = trigger
       @frames_for = frames_for
       @frame_paths = frame_paths
     end
 
     def call
-      reply(::Ai.reply_in(@chat, frames_for: @frames_for, frame_paths: @frame_paths))
+      return STOP if superseded?
+
+      text = ::Ai.reply_in(@chat, frames_for: @frames_for, frame_paths: @frame_paths)
+      # Checked again: the model takes seconds, the likeliest time for a new message.
+      return STOP if superseded?
+
+      reply(text)
     rescue OpenAI::Errors::RateLimitError
       nil
+    end
+
+    private
+
+    def superseded?
+      return false if @trigger.nil? || @trigger.content.to_s.downcase.include?(BotMention.text)
+
+      @chat.messages.user.exists?([ "telegram_message_id > ?", @trigger.telegram_message_id ])
     end
   end
 end
