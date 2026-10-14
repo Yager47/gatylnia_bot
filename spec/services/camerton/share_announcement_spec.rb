@@ -26,6 +26,26 @@ RSpec.describe Camerton::ShareAnnouncement do
       expect(described_class.new(build(:release_share, release: release)).text).to eq("🎵 Щось без автора · пісня")
     end
 
+    it "adds a song's album and year, then two styles" do
+      release = build(:release, :resolved, album_title: "A Night At The Opera", year: 1975, genres: [ "Rock" ], styles: [ "Hard Rock", "Art Rock", "Prog Rock" ])
+
+      expect(described_class.new(build(:release_share, release: release)).text)
+        .to eq("🎵 Queen — Bohemian Rhapsody · пісня · A Night At The Opera, 1975 · Hard Rock, Art Rock")
+    end
+
+    it "adds an album's year, and genres when there are no styles" do
+      release = build(:release, :album, status: :resolved, artist: "Althea & Donna", title: "Uptown Top Ranking", year: 1978, genres: [ "Reggae" ], styles: [])
+
+      expect(described_class.new(build(:release_share, release: release)).text)
+        .to eq("💿 Althea & Donna — Uptown Top Ranking · альбом · 1978 · Reggae")
+    end
+
+    it "adds just the year when Discogs knows nothing else" do
+      release = build(:release, :resolved, year: 1975)
+
+      expect(described_class.new(build(:release_share, release: release)).text).to eq("🎵 Queen — Bohemian Rhapsody · пісня · 1975")
+    end
+
     it "says when the name wasn't found" do
       release = build(:release, :album, status: :unresolvable)
 

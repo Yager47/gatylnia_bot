@@ -3,6 +3,8 @@ require "rails_helper"
 RSpec.describe AnnounceReleaseJob do
   let(:share) { create(:release_share, release: create(:release)) }
 
+  before { allow_any_instance_of(Camerton::Discogs).to receive(:search_masters).and_return([]) }
+
   it "looks the release up, then announces it" do
     allow(Camerton::Platforms::YoutubeMusic).to receive(:source_metadata)
       .and_return(Camerton::SourceMetadata.new(title: "Never Gonna Give You Up", author: "Rick Astley - Topic"))
@@ -13,6 +15,29 @@ RSpec.describe AnnounceReleaseJob do
 
     expect(share.release.reload).to be_resolved
     expect(fake_telegram.sent_messages.sole[:text]).to eq("🎵 Rick Astley — Never Gonna Give You Up · пісня")
+  end
+
+  it "adds Discogs' album, year and styles to the announcement" do
+    share.release.update!(status: :resolved, artist: "Queen", title: "Bohemian Rhapsody")
+    allow_any_instance_of(Camerton::Discogs).to receive_messages(
+      search_masters: [ { "id" => 7, "year" => "1975", "format" => [ "Vinyl", "LP", "Album" ] } ],
+      master: { "id" => 7, "title" => "A Night At The Opera", "year" => 1975, "genres" => [ "Rock" ], "styles" => [ "Hard Rock", "Art Rock", "Prog Rock" ] }
+    )
+
+    described_class.perform_now(share)
+
+    expect(fake_telegram.sent_messages.sole[:text])
+      .to eq("🎵 Queen — Bohemian Rhapsody · пісня · A Night At The Opera, 1975 · Hard Rock, Art Rock")
+  end
+
+  it "announces without Discogs details when Discogs fails" do
+    share.release.update!(status: :resolved, artist: "Queen", title: "Bohemian Rhapsody")
+    allow_any_instance_of(Camerton::Discogs).to receive(:search_masters).and_raise(Camerton::Discogs::TransientError, "Discogs answered 503")
+
+    described_class.perform_now(share)
+
+    expect(fake_telegram.sent_messages.sole[:text]).to eq("🎵 Queen — Bohemian Rhapsody · пісня")
+    expect(described_class).not_to have_been_enqueued
   end
 
   it "retries without announcing when YouTube is temporarily unavailable" do

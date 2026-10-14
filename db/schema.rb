@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_14_104201) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_14_115528) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -135,6 +135,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_104201) do
     t.string "source_author"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "discogs_master_id"
+    t.integer "year"
+    t.string "album_title"
+    t.string "genres", array: true
+    t.string "styles", array: true
+    t.datetime "discogs_checked_at"
     t.index ["platform", "external_id"], name: "index_releases_on_platform_and_external_id", unique: true
   end
 

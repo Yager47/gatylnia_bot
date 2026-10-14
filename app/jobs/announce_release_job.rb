@@ -19,6 +19,7 @@ class AnnounceReleaseJob < ApplicationJob
 
   def perform(share)
     Camerton::ReleaseResolver.new(share.release).call
+    Camerton::DiscogsDetails.new(share.release).call
     Camerton::ShareAnnouncement.new(share).deliver
   end
 end
