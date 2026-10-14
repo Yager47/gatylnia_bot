@@ -54,6 +54,36 @@ RSpec.describe DefaultHandler do
     end
   end
 
+  describe "whom the AI answers" do
+    before { allow(Ai).to receive(:reply_in).and_return("…") }
+
+    def sent_texts
+      fake_telegram.sent_messages.map { |params| params[:text] }
+    end
+
+    def reply_to(message_id, from: { id: 999, is_bot: false, first_name: "Artem" })
+      { message_id: message_id, date: Time.current.to_i, chat: telegram_chat, from: from, text: "раніше" }
+    end
+
+    it "stays out of a reply to someone else, random line included" do
+      allow_any_instance_of(DefaultHandler).to receive(:chance).and_return(true)
+
+      dispatch(message_update(text: "а тобі напевно жопа", reply_to_message: reply_to(5)))
+
+      expect(Ai).not_to have_received(:reply_in)
+      expect(sent_texts).to be_empty
+    end
+
+    it "answers a reply to the bot without rolling the dice" do
+      allow_any_instance_of(DefaultHandler).to receive(:chance).and_return(false)
+      create(:message, chat: create(:chat, telegram_id: telegram_chat[:id]), role: :assistant, user: nil, telegram_message_id: 5)
+
+      dispatch(message_update(text: "сам такий", reply_to_message: reply_to(5, from: { id: 1, is_bot: true, first_name: "Гатильня" })))
+
+      expect(sent_texts).to eq([ "…" ])
+    end
+  end
+
   describe "coffee messages" do
     it "hands a possible coffee message to the job and replies nothing itself" do
       freeze_time do

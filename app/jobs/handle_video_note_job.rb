@@ -2,7 +2,8 @@
 require "telegram/bot"
 
 # Analyzes a video note outside the webhook transaction: a coffee or push-up
-# video gets the short confirmation, anything else the in-character AI reply.
+# video gets the short confirmation, anything else maybe an in-character AI
+# reply (see AiReplyGate).
 class HandleVideoNoteJob < ApplicationJob
   queue_as :default
 
@@ -70,6 +71,8 @@ class HandleVideoNoteJob < ApplicationJob
   end
 
   def reply_in_character(frame_paths)
+    return unless AiReplyGate.new(@message).answer?(rand)
+
     text = Response::Ai.new(chat: @chat, frames_for: @message, frame_paths: frame_paths).call
     deliver(text) if text.is_a?(String)
   end

@@ -32,7 +32,6 @@ class DefaultHandler < ChatModeHandler
   def text_responders
     message = record_message
     text = message.content.downcase
-    bot_mentioned = text.include?(BotMention.text)
     # Telegram delivers an edit as a new update: don't count or undo twice.
     edited = @message[:edit_date].present?
 
@@ -43,9 +42,17 @@ class DefaultHandler < ChatModeHandler
       -> { Response::UndoCoffee.new(user: user, text: text, chat: @chat).call unless edited },
       -> { Response::Equals.new(text: text).call },
       -> { track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text) },
-      -> { Response::Includes.new(user: user, text: text).call if chance(0.2) },
-      -> { Response::Ai.new(chat: @chat, trigger: message).call if bot_mentioned || chance(0.8) }
+      -> { Response::Includes.new(user: user, text: text).call if chance(0.1) },
+      -> { answer_with_ai(message) }
     ]
+  end
+
+  # A reply to someone else gets no random line either: not the bot's business.
+  def answer_with_ai(message)
+    gate = AiReplyGate.new(message)
+    return Response::STOP if gate.decision == :never
+
+    Response::Ai.new(chat: @chat, trigger: message).call if gate.decision == :always || chance(AiReplyGate::CHANCE)
   end
 
   # A possible coffee message gets no other reply here: the job either

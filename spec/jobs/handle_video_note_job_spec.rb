@@ -85,8 +85,33 @@ RSpec.describe HandleVideoNoteJob do
     expect(sent_texts).to eq([ "☕💪 Петро: 1 кава, 1 підхід відтискань за сьогодні" ])
   end
 
+  context "when the video shows neither coffee nor push-ups" do
+    before { classify_as }
+
+    it "stays silent when the chance doesn't hit" do
+      allow_any_instance_of(described_class).to receive(:rand).and_return(0.9)
+      allow(Ai).to receive(:reply_in)
+
+      perform
+
+      expect(Ai).not_to have_received(:reply_in)
+      expect(sent_texts).to be_empty
+    end
+
+    it "always answers a video replying to the bot" do
+      allow_any_instance_of(described_class).to receive(:rand).and_return(0.9)
+      allow(Ai).to receive(:reply_in).and_return("Шо треба")
+      message.update!(reply_to: create(:message, chat: chat, role: :assistant, user: nil))
+
+      perform
+
+      expect(sent_texts).to eq([ "Шо треба" ])
+    end
+  end
+
   it "replies in character with all frames, tied to this video, when it shows neither" do
     classify_as
+    allow_any_instance_of(described_class).to receive(:rand).and_return(0.1)
     received = nil
     allow(Ai).to receive(:reply_in) do |_chat, frames_for:, frame_paths:|
       received = { frames_for: frames_for, frames: frame_paths.map { |path| File.basename(path) } }
@@ -103,6 +128,7 @@ RSpec.describe HandleVideoNoteJob do
   it "replies in character without asking the classifier when the analysis failed" do
     analysis_returns(transcript: nil, frames: 0)
     allow(Activities::VideoNoteClassifier).to receive(:new)
+    allow_any_instance_of(described_class).to receive(:rand).and_return(0.1)
     allow(Ai).to receive(:reply_in).and_return("Нічо не видно")
 
     perform
