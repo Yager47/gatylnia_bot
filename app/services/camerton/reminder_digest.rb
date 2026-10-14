@@ -2,10 +2,13 @@ require "erb"
 
 module Camerton
   # The daily nudge in a Camerton chat: each member who hasn't scored a
-  # release shared in the last week, with links to those releases.
+  # release shared in the last week, with links to those releases, one per
+  # line.
   #   🎧 Хто ще не оцінив свіже:
   #
-  #   @olya — 🎵 Queen — Bohemian Rhapsody, 💿 Eminem — Revival
+  #   @olya
+  #   🎵 Queen — Bohemian Rhapsody
+  #   💿 Eminem — Revival
   # The sharer isn't reminded of their own release, and a reply that wasn't
   # a review doesn't count as one. Four queries however many members and
   # releases there are.
@@ -38,14 +41,14 @@ module Camerton
 
     # HTML for Telegram, or nil when nobody has anything to score.
     def text
-      lines = pending_by_member.map do |member, shares|
-        shown = shares.first(PER_MEMBER).map { |share| release_link(share) }
-        shown << "і ще #{shares.size - PER_MEMBER}" if shares.size > PER_MEMBER
-        "#{mention(member)} — #{shown.join(', ')}"
+      blocks = pending_by_member.map do |member, shares|
+        lines = shares.first(PER_MEMBER).map { |share| Formatting.release_link(share, @chat) }
+        lines << "і ще #{shares.size - PER_MEMBER}" if shares.size > PER_MEMBER
+        [ mention(member), *lines ].join("\n")
       end
-      return if lines.empty?
+      return if blocks.empty?
 
-      [ "🎧 Хто ще не оцінив свіже:", "", *lines, "", "Відповідайте на реліз текстом, голосовим чи кружечком." ].join("\n")
+      [ "🎧 Хто ще не оцінив свіже:", *blocks, "Відповідайте на реліз текстом, голосовим чи кружечком." ].join("\n\n")
     end
 
     private
@@ -74,16 +77,6 @@ module Camerton
       return "@#{user.username}" if user.username.present?
 
       %(<a href="tg://user?id=#{user.telegram_id}">#{escape(user.name)}</a>)
-    end
-
-    # A link to the shared message, so a tap jumps to it. Only supergroups
-    # (ids starting with -100) have t.me/c links.
-    def release_link(share)
-      name = escape(Formatting.release(share.release))
-      internal_id = @chat.telegram_id.to_s.delete_prefix("-100")
-      return name if internal_id == @chat.telegram_id.to_s
-
-      %(<a href="https://t.me/c/#{internal_id}/#{share.telegram_message_id}">#{name}</a>)
     end
 
     def escape(text)

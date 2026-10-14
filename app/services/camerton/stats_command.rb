@@ -1,7 +1,7 @@
 module Camerton
   # Camerton's commands in chats with it on: "топ", "дно" (optionally "за
   # тиждень/місяць/рік"), "оцінки" in reply to a shared release, "критики",
-  # "камертони", "мій смак" and "смак з @нік".
+  # "камертони", "мій смак", "смак з @нік" and "що послухати [@нік]".
   class StatsCommand
     # Period word => [Time range method, label for the reply header]
     PERIODS = {
@@ -12,6 +12,7 @@ module Camerton
 
     RANKING = /\A(топ|дно)(?: за (#{PERIODS.keys.join('|')}))?\z/
     TASTE_MATCH = /\Aсмак з @(\w+)\z/
+    TO_LISTEN = /\Aщо послухати(?: @(\w+))?\z/
 
     def initialize(command:, chat:, user: nil, reply_to_message: nil)
       @command = command.strip
@@ -20,7 +21,8 @@ module Camerton
       @reply_to_message = reply_to_message
     end
 
-    # Returns the reply text, or nil when the command isn't Camerton's.
+    # Returns the reply text (a Response::Html for "що послухати"), or nil
+    # when the command isn't Camerton's.
     # Expects the command already lowercased, without the bot mention.
     def call
       return unless @chat.camerton_enabled?
@@ -29,6 +31,8 @@ module Camerton
         ranking(*match.captures)
       elsif (match = TASTE_MATCH.match(@command))
         taste_match(match[1])
+      elsif (match = TO_LISTEN.match(@command))
+        to_listen(match[1])
       else
         case @command
         when "оцінки" then release_card
@@ -47,13 +51,24 @@ module Camerton
       Ranking.new(chat: @chat, best: word == "топ", range: range, label: label || "весь час").text
     end
 
-    # Usernames are case-insensitive in Telegram; the command is lowercased.
     def taste_match(username)
-      other = @chat.users.find_by("LOWER(users.username) = ?", username)
+      other = find_member(username)
       return "Не знайшов @#{username} у цьому чаті." unless other
       return "Із собою збіг завжди 100%." if other == @user
 
       TasteMatch.new(chat: @chat, user: @user, other: other).text
+    end
+
+    def to_listen(username)
+      member = username ? find_member(username) : @user
+      return "Не знайшов @#{username} у цьому чаті." unless member
+
+      Response::Html.new(text: ToListen.new(chat: @chat, user: member).text)
+    end
+
+    # Usernames are case-insensitive in Telegram; the command is lowercased.
+    def find_member(username)
+      @chat.users.find_by("LOWER(users.username) = ?", username)
     end
 
     def release_card

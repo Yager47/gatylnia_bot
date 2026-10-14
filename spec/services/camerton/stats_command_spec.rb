@@ -35,6 +35,27 @@ RSpec.describe Camerton::StatsCommand do
     expect(command("топ")).to be_nil
   end
 
+  describe "що послухати" do
+    let(:me) { create(:user, first_name: "Me", last_name: nil, chats: [ chat ]) }
+    let(:olya) { create(:user, first_name: "Olya", last_name: nil, username: "Olya", chats: [ chat ]) }
+
+    before { create(:release_share, chat: chat, release: create(:release, :resolved), shared_at: 1.hour.ago) }
+
+    def ask(text)
+      described_class.new(command: text, chat: chat, user: me).call
+    end
+
+    it "lists the asker's releases to score, or another member's by @username, as HTML" do
+      olya
+      expect(ask("що послухати")).to be_a(Response::Html).and have_attributes(text: start_with("🎧 Що ще послухати — Me:"))
+      expect(ask("що послухати @olya").text).to start_with("🎧 Що ще послухати — Olya:")
+    end
+
+    it "says when the username isn't in the chat" do
+      expect(ask("що послухати @nobody")).to eq("Не знайшов @nobody у цьому чаті.")
+    end
+  end
+
   describe "оцінки" do
     let!(:share) { create(:release_share, chat: chat, release: create(:release, :resolved), telegram_message_id: 42, announcement_telegram_message_id: 43) }
 

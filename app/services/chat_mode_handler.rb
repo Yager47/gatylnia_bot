@@ -26,10 +26,16 @@ class ChatModeHandler
     MessageRecorder.new(chat: @chat, telegram_message: @message, user: user, role: :user, content: content).record
   end
 
-  # outcome: a String, or a Response::Threaded to answer a given message.
+  # outcome: a String, a Response::Threaded to answer a given message, or a
+  # Response::Html.
   def deliver(outcome)
-    text, reply_to = outcome.is_a?(Response::Threaded) ? [ outcome.text, outcome.reply_to ] : [ outcome, nil ]
+    text, reply_to, parse_mode =
+      case outcome
+      when Response::Threaded then [ outcome.text, outcome.reply_to, nil ]
+      when Response::Html then [ outcome.text, nil, "HTML" ]
+      else [ outcome, nil, nil ]
+      end
     reply = @chat.messages.create!(role: :assistant, content: text)
-    ChatMessenger.new(chat: @chat).deliver(reply, reply_to: reply_to)
+    ChatMessenger.new(chat: @chat).deliver(reply, reply_to: reply_to, parse_mode: parse_mode)
   end
 end

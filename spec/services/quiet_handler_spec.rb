@@ -33,6 +33,15 @@ RSpec.describe QuietHandler do
     expect(chat.reload.camerton_enabled).to be(true)
   end
 
+  it "sends an HTML command reply with the HTML parse mode" do
+    chat.update!(camerton_enabled: true)
+    create(:release_share, chat: chat, release: create(:release, :resolved), telegram_message_id: 7)
+
+    dispatch(message_update(text: "@test_bot що послухати"))
+
+    expect(fake_telegram.sent_messages.sole).to include(parse_mode: "HTML", text: include(%(<a href="https://t.me/c/1234567890/7">)))
+  end
+
   it "can switch back to another mode" do
     dispatch(message_update(text: "@test_bot режим: звичайний"))
 

@@ -1,3 +1,5 @@
+require "erb"
+
 module Camerton
   # How Camerton writes releases, scores and counts in its messages.
   module Formatting
@@ -11,6 +13,17 @@ module Camerton
     def release(release)
       name = release.resolved? ? [ release.artist, release.title ].compact.join(" — ") : release.url
       "#{ICONS.fetch(release.kind)} #{name}"
+    end
+
+    # Telegram HTML: the release as a link to the shared message, so a tap
+    # jumps to it. Only supergroups (ids starting with -100) have t.me/c
+    # links; in a basic group it's just the escaped name.
+    def release_link(share, chat)
+      name = ERB::Util.html_escape(release(share.release))
+      internal_id = chat.telegram_id.to_s.delete_prefix("-100")
+      return name if internal_id == chat.telegram_id.to_s
+
+      %(<a href="https://t.me/c/#{internal_id}/#{share.telegram_message_id}">#{name}</a>)
     end
 
     def kind(release)
