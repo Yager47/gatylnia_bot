@@ -7,6 +7,8 @@ class User < ApplicationRecord
   has_many :messages, dependent: :destroy
   has_many :release_shares, dependent: :destroy
   has_many :reviews, dependent: :destroy
+  has_many :audio_tracks, dependent: :destroy
+  has_many :track_notes, dependent: :destroy
 
   validates :telegram_id, presence: true
 

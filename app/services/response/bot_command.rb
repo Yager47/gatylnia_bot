@@ -38,7 +38,7 @@ module Response
     def call
       return unless @command
 
-      process_help || process_mode || process_camerton || process_notes_toggle || process_camerton_stats || mode_reply
+      process_help || process_mode || process_camerton || process_notes_toggle || process_notes || process_camerton_stats || mode_reply
     end
 
     private
@@ -122,6 +122,12 @@ module Response
       reply(text)
     end
 
+    # Every mode, when notes are on in the chat.
+    def process_notes
+      text = Notes::Command.new(command: @command, chat: @chat, user: @user, reply_to_message: @reply_to_message).call
+      reply(text) if text
+    end
+
     def switch_notes(enabled, already:, switched:)
       return already if @chat.notes_enabled == enabled
 
@@ -184,7 +190,8 @@ module Response
       return unless prefix
 
       @user.points.create!(chat: @chat, amount: -fee, reason: @command)
-      target_user = @chat.users.find_by(username: @command.delete_prefix(prefix))
+      # The command arrives lowercased; usernames are stored as written.
+      target_user = @chat.users.find_by("LOWER(users.username) = ?", @command.delete_prefix(prefix))
       return reply("Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
 
       reply("#{@user.first_name} за #{fee} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
