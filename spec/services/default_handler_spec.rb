@@ -164,6 +164,18 @@ RSpec.describe DefaultHandler do
     end
   end
 
+  describe "counting a gato" do
+    it "adds an AI comment to the confirmation when the roll hits" do
+      allow_any_instance_of(DefaultHandler).to receive(:chance).and_return(true)
+      allow(Ai).to receive(:reply_in).and_return("Йди мий руки.")
+
+      dispatch(message_update(text: "Погатив", message_id: 5))
+
+      expect(fake_telegram.sent_messages.map { |params| params[:text] }).to eq([ "Гатіння зараховано. Йди мий руки." ])
+      expect(Ai).to have_received(:reply_in).with(Chat.sole, target: Message.find_by!(telegram_message_id: 5), note: Response::Gato::AI_NOTE)
+    end
+  end
+
   describe "gato on edited messages" do
     before { allow(Ai).to receive(:reply_in).and_return("…") }
 

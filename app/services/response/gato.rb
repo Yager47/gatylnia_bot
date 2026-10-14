@@ -5,12 +5,22 @@ module Response
     REMOVE_PHRASE = "видали гатіння".freeze
     # A chat this new still gets told how to log a gato properly.
     ONBOARDING_PERIOD = 1.week
+    # How often a counted gato gets an AI comment instead of a canned line
+    # (rolled by the caller).
+    AI_CHANCE = 0.4
+    COUNTED = "Гатіння зараховано.".freeze
+    AI_NOTE = "Це гатіння вже зараховано, і твоя відповідь почнеться з \"#{COUNTED}\". " \
+      "Допиши після цього один короткий підкол про це гатіння, не повторюючи \"#{COUNTED}\".".freeze
 
-    def initialize(user:, text:, original_text:, chat:)
+    # comment_with_ai: answer a counted gato with COUNTED plus an AI comment
+    # on message (the recorded Message) instead of a canned line.
+    def initialize(user:, text:, original_text:, chat:, message: nil, comment_with_ai: false)
       @user = user
       @text = text
       @original_text = original_text
       @chat = chat
+      @message = message
+      @comment_with_ai = comment_with_ai
     end
 
     def call
@@ -27,7 +37,21 @@ module Response
 
     def add_entry
       @user.entries.create!(chat: @chat, message: @original_text)
-      reply(gato_response)
+      reply(ai_comment || gato_response)
+    end
+
+    # nil (so the canned line is used) when not asked for, when the model
+    # skips or when OpenAI fails: the gato is counted either way, no retry needed.
+    def ai_comment
+      return unless @comment_with_ai && @message
+
+      text = ::Ai.reply_in(@chat, target: @message, note: AI_NOTE)
+      # The model sometimes starts with the prefix anyway.
+      text = text.to_s.strip.delete_prefix(COUNTED).strip
+      "#{COUNTED} #{text}" unless text.empty? || ::Ai.skip?(text)
+    rescue OpenAI::Errors::Error => e
+      Rails.logger.warn("[Response::Gato] AI comment failed: #{e.class}: #{e.message}")
+      nil
     end
 
     def remove_entry

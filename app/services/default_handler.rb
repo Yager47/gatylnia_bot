@@ -10,7 +10,7 @@ class DefaultHandler < ChatModeHandler
 
     outcome = Response.first(responders)
     # A random line only when nothing answered or stopped the chain.
-    outcome = Response::Chance.new.call if outcome.nil? && chance(0.2)
+    outcome = Response::Chance.new.call if outcome.nil? && chance(0.1)
     deliver(outcome) if outcome.is_a?(String)
   end
 
@@ -38,13 +38,20 @@ class DefaultHandler < ChatModeHandler
     [
       -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
       -> { Response::BotCommand.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call },
-      -> { Response::Gato.new(user: user, text: text, original_text: @message[:text], chat: @chat).call unless edited },
+      -> { gato(message, text) unless edited },
       -> { Response::UndoCoffee.new(user: user, text: text, chat: @chat).call unless edited },
       -> { Response::Equals.new(text: text).call },
       -> { track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text) },
       -> { Response::Includes.new(user: user, text: text).call if chance(0.1) },
       -> { answer_with_ai(message) }
     ]
+  end
+
+  def gato(message, text)
+    Response::Gato.new(
+      user: user, text: text, original_text: @message[:text], chat: @chat,
+      message: message, comment_with_ai: chance(Response::Gato::AI_CHANCE)
+    ).call
   end
 
   # A reply to someone else gets no random line either: not the bot's business.
