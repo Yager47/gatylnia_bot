@@ -74,11 +74,17 @@ class HandleVideoNoteJob < ApplicationJob
     return unless AiReplyGate.new(@message).answer?(rand)
 
     text = Response::Ai.new(chat: @chat, frames_for: @message, frame_paths: frame_paths).call
-    deliver(text) if text.is_a?(String)
+    deliver(text, reply_to: (@message.telegram_message_id unless latest?)) if text.is_a?(String)
   end
 
-  def deliver(text)
+  # Analysis takes a while: if anything was said since the video, the reply
+  # is threaded to it so it's clear what the bot is answering.
+  def latest?
+    !@chat.messages.exists?([ "telegram_message_id > ?", @message.telegram_message_id ])
+  end
+
+  def deliver(text, reply_to: nil)
     reply = @chat.messages.create!(role: :assistant, content: text)
-    ChatMessenger.new(chat: @chat).deliver(reply)
+    ChatMessenger.new(chat: @chat).deliver(reply, reply_to: reply_to)
   end
 end

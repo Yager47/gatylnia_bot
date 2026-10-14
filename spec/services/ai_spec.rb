@@ -16,6 +16,17 @@ RSpec.describe Ai do
       allow(described_class).to receive(:reply_in).and_call_original # the client is stubbed above
 
       expect(described_class.reply_in(create(:chat))).to eq("Ок")
+      expect(completions).to have_received(:create).with(hash_including(model: "gpt-5-mini", verbosity: :low))
+    end
+  end
+
+  describe ".skip?" do
+    it "recognizes the skip word with stray case, spaces or punctuation" do
+      expect([ "SKIP", " skip. ", "Skip!" ].map { |text| described_class.skip?(text) }).to all(be(true))
+    end
+
+    it "doesn't treat a real reply or nothing as a skip" do
+      expect([ "Skip it, Сергію", "Ні", nil ].map { |text| described_class.skip?(text) }).to all(be(false))
     end
   end
 
@@ -43,7 +54,7 @@ RSpec.describe Ai do
     end
 
     it "attaches the frames to the video message even when someone wrote after it" do
-      result = messages(frames_for: video, frame_paths: [ frame("a.jpg", "one") ])
+      result = messages(target: video, frame_paths: [ frame("a.jpg", "one") ])
 
       with_images = result.select { |message| message[:content].is_a?(Array) }
       expect(with_images.size).to eq(1)
@@ -51,13 +62,25 @@ RSpec.describe Ai do
       expect(result).to include({ role: "user", content: later_text.ai_context })
     end
 
-    it "ends with a note to answer that video" do
-      expect(messages(frames_for: video, frame_paths: [ frame("a.jpg", "one") ]).last)
-        .to eq({ role: "system", content: "Зараз відповідай саме на відео від Петро, а не на інші повідомлення." })
+    it "ends with a note naming the target, which may be skipped when it isn't for the bot" do
+      note = messages(target: video, frame_paths: [ frame("a.jpg", "one") ]).last
+
+      expect(note[:role]).to eq("system")
+      expect(note[:content]).to start_with("Ти відповідаєш на повідомлення від Петро: \"Петро записав відео 10s.\". Воно не адресоване тобі")
+      expect(note[:content]).to include("напиши рівно SKIP").and end_with("до 15 слів.")
     end
 
-    it "sends plain text history without a video" do
-      result = messages(frames_for: nil, frame_paths: [])
+    it "says a message addressed to the bot must be answered, with no skip" do
+      mention = create(:message, chat: chat, user: petro, content: "@test_bot ти де")
+
+      content = messages(target: mention, frame_paths: []).last[:content]
+
+      expect(content).to include("Воно адресоване тобі, тож відповідай.")
+      expect(content).not_to include("SKIP")
+    end
+
+    it "sends plain text history without a target" do
+      result = messages(target: nil, frame_paths: [])
 
       expect(result.map { |message| message[:content] }).to all(be_a(String))
       expect(result.last).to eq({ role: "user", content: later_text.ai_context })
