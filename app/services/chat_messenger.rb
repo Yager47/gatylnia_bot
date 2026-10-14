@@ -35,6 +35,23 @@ class ChatMessenger
     end
 
     extract_message_id(@bot.api.send_message(**params))
+  rescue Telegram::Bot::Exceptions::ResponseError => e
+    raise unless (migrated = migrate(e))
+
+    @chat = migrated
+    retry
+  end
+
+  # Telegram rejects a send to a group that became a supergroup, naming the
+  # new id. Migrates the chat (see ChatMigration) and returns it, or nil if
+  # that isn't the error or the chat couldn't be migrated. Another process
+  # may have migrated it already, leaving @chat stale.
+  def migrate(error)
+    new_id = error.data.dig("parameters", "migrate_to_chat_id")
+    return unless new_id && new_id.to_s != @chat.telegram_id.to_s
+
+    ChatMigration.new(from: @chat.telegram_id, to: new_id).call ||
+      Chat.find_by(id: @chat.id, telegram_id: new_id.to_s)
   end
 
   def chunks(text)

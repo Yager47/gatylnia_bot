@@ -19,6 +19,8 @@ module TelegramUpdates
         MessageReactionHandler.new(@update[:message_reaction_count], count_mode: true).call
       elsif @update[:message] && @update[:message][:new_chat_title].present?
         NewChatTitle.new(@update[:message]).call
+      elsif (migration = chat_migration)
+        migration.call
       elsif not_from_a_person?
         return false
       elsif command
@@ -41,6 +43,22 @@ module TelegramUpdates
     def group_chat?
       source = message || @update[:message_reaction] || @update[:message_reaction_count]
       GROUP_CHAT_TYPES.include?(source&.dig(:chat, :type))
+    end
+
+    # The group → supergroup service messages: migrate_to_chat_id in the old
+    # group (from the admin who upgraded it), migrate_from_chat_id in the new
+    # supergroup (from GroupAnonymousBot, with sender_chat, so it must be
+    # routed before not_from_a_person?).
+    def chat_migration
+      service = @update[:message]
+      return unless service
+
+      chat_id = service.dig(:chat, :id)
+      if service[:migrate_to_chat_id].present?
+        ChatMigration.new(from: chat_id, to: service[:migrate_to_chat_id])
+      elsif service[:migrate_from_chat_id].present?
+        ChatMigration.new(from: service[:migrate_from_chat_id], to: chat_id)
+      end
     end
 
     # Messages sent on behalf of a chat carry sender_chat: anonymous admins
