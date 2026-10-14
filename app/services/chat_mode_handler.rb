@@ -26,8 +26,10 @@ class ChatModeHandler
     MessageRecorder.new(chat: @chat, telegram_message: @message, user: user, role: :user, content: content).record
   end
 
-  def deliver(text)
+  # outcome: a String, or a Response::Threaded to answer a given message.
+  def deliver(outcome)
+    text, reply_to = outcome.is_a?(Response::Threaded) ? [ outcome.text, outcome.reply_to ] : [ outcome, nil ]
     reply = @chat.messages.create!(role: :assistant, content: text)
-    ChatMessenger.new(chat: @chat).deliver(reply)
+    ChatMessenger.new(chat: @chat).deliver(reply, reply_to: reply_to)
   end
 end

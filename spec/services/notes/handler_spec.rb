@@ -158,4 +158,20 @@ RSpec.describe Notes::Handler do
     expect(AudioTrack.sole).to have_attributes(telegram_message_id: 77, user: User.find_by!(telegram_id: "999"), sent_at: sent_at - 1.hour)
     expect(TrackNote.sole.text).to eq("вокал тихий")
   end
+
+  it "points at the latest track when asked, in any mode" do
+    dispatch(audio_update(message_id: 42))
+    dispatch(audio_update(message_id: 60))
+
+    Chat.modes.each_key do |mode|
+      chat.update!(mode: mode)
+      fake_telegram.sent_messages.clear
+
+      dispatch(message_update(text: "@test_bot останнє аудіо", message_id: 70 + Chat.modes[mode]))
+
+      sent = fake_telegram.sent_messages.sole
+      expect(sent[:text]).to eq("осьо")
+      expect(sent[:reply_parameters].message_id).to eq(60)
+    end
+  end
 end
