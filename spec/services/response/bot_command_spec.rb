@@ -286,6 +286,12 @@ RSpec.describe Response::BotCommand do
       expect(Point.sole).to have_attributes(user: user, chat: chat, amount: -100, reason: "пошли @olga")
     end
 
+    it "finds a target whose username has capitals, mentioning it as written" do
+      create(:user, username: "Olga_K", chats: [ chat ])
+
+      expect(reply_to("@test_bot пошли @olga_k")).to start_with("Іван за 100 замовив: \n\n@Olga_K ")
+    end
+
     it "uses the bigger fee and the swear list for образь" do
       create(:user, username: "olga", chats: [ chat ])
 

@@ -190,7 +190,8 @@ module Response
       return unless prefix
 
       @user.points.create!(chat: @chat, amount: -fee, reason: @command)
-      target_user = @chat.users.find_by(username: @command.delete_prefix(prefix))
+      # The command arrives lowercased; usernames are stored as written.
+      target_user = @chat.users.find_by("LOWER(users.username) = ?", @command.delete_prefix(prefix))
       return reply("Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
 
       reply("#{@user.first_name} за #{fee} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
