@@ -4,10 +4,6 @@ require "telegram/bot"
 class TrackCoffeeTextJob < ApplicationJob
   queue_as :default
 
-  # The default handler sends coffee candidates here without replying, so a
-  # message that turns out not to be coffee gets the reply it would have got.
-  IN_CHARACTER_REPLY_CHANCE = 0.8
-
   retry_on OpenAI::Errors::APIConnectionError,
     OpenAI::Errors::InternalServerError,
     OpenAI::Errors::RateLimitError,
@@ -30,7 +26,9 @@ class TrackCoffeeTextJob < ApplicationJob
 
     if verdict.coffee
       record_and_confirm(verdict, sent_at)
-    elsif bot_mentioned? || rand < IN_CHARACTER_REPLY_CHANCE
+    # The default handler sends coffee candidates here without replying, so a
+    # message that turns out not to be coffee gets the reply it would have got.
+    elsif AiReplyGate.new(message).answer?(rand)
       reply_in_character
     end
   end
@@ -61,9 +59,5 @@ class TrackCoffeeTextJob < ApplicationJob
   def deliver(text)
     reply = @chat.messages.create!(role: :assistant, content: text)
     ChatMessenger.new(chat: @chat).deliver(reply)
-  end
-
-  def bot_mentioned?
-    @message.content.downcase.include?(BotMention.text)
   end
 end

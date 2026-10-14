@@ -4,8 +4,8 @@ module Response
 
     # trigger: the message being answered. If someone writes again before the
     # reply is sent, the reply is dropped: the newer message gets its own turn
-    # with the full context, instead of the bot answering both. A message that
-    # mentions the bot is always answered.
+    # with the full context, instead of the bot answering both. A message
+    # addressed to the bot (AiReplyGate's :always) is always answered.
     def initialize(chat:, trigger: nil, frames_for: nil, frame_paths: [])
       @chat = chat
       @trigger = trigger
@@ -28,7 +28,7 @@ module Response
     private
 
     def superseded?
-      return false if @trigger.nil? || @trigger.content.to_s.downcase.include?(BotMention.text)
+      return false if @trigger.nil? || AiReplyGate.new(@trigger).decision == :always
 
       @chat.messages.user.exists?([ "telegram_message_id > ?", @trigger.telegram_message_id ])
     end
