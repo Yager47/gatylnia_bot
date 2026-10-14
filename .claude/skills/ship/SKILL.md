@@ -1,18 +1,20 @@
 ---
 name: ship
-description: Commit the reviewed changes, open and merge a PR once CI is green, and deploy to Heroku in one go. Only when the user types /ship.
-argument-hint: "[commit subject] [--no-deploy]"
+description: Commit the reviewed changes, open a PR and merge it once CI is green; deploy to Heroku only with --deploy. Only when the user types /ship.
+argument-hint: "[commit subject] [--deploy]"
 disable-model-invocation: true
 ---
 
 # Ship
 
 The user typing `/ship` approves the current uncommitted changes they've
-reviewed: commit, push, PR, merge once CI is green, deploy. Don't ask for another
-confirmation. Do stop at the first failure and report it; never work around a
-red check, and never force-push `main`.
+reviewed: commit, push, PR, merge once CI is green, and deploy only when asked
+with `--deploy`. Don't ask for another confirmation. Do stop at the first
+failure and report it; never work around a red check, and never force-push
+`main`.
 
-Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6.
+Arguments (`$ARGUMENTS`): an optional commit subject; `--deploy` runs step 6.
+Without it, stop after the merge.
 
 ## Environment
 
@@ -63,7 +65,7 @@ Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6
        failed check leaves the PR open.
    - Once merged: `git switch main` and `git pull --ff-only origin main`.
 
-6. **Deploy** (skip with `--no-deploy`). Only after the merge: if auto-merge
+6. **Deploy** (only with `--deploy`). Only after the merge: if auto-merge
    is still pending, stop and say so; the user says "deploy" once it merged.
    - `git push heroku main`; note the release number.
    - If the change has migrations, check `heroku releases:output <vN> -a gatylnia`.
@@ -76,5 +78,6 @@ Arguments (`$ARGUMENTS`): an optional commit subject; `--no-deploy` skips step 6
 ## Report
 
 A few lines: commit hash and subject, PR link, CI result (or "auto-merge
-pending"), release number, health check. Mention anything the user should try in the chat, or any
-warning seen. No command transcripts: the tool rows already show them.
+pending"), and with `--deploy` the release number and health check; without
+it, say it isn't deployed yet. Mention anything the user should try in the
+chat, or any warning seen. No command transcripts: the tool rows already show them.
