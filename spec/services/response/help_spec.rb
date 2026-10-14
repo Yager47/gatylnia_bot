@@ -69,7 +69,7 @@ RSpec.describe Response::Help do
     chat.update!(notes_enabled: true)
 
     expect(help).to include(
-      "Замітки 📝:", "@test_bot замітки (відповіддю на аудіо)", "@test_bot замітки @нік / мої замітки", "@test_bot видали замітки"
+      "Замітки 📝:", "текстом, голосовим чи кружечком — твоя замітка", "@test_bot замітки (відповіддю на аудіо)", "@test_bot замітки @нік / мої замітки", "@test_bot видали замітки"
     )
   end
 

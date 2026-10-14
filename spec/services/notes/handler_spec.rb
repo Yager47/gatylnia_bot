@@ -94,6 +94,15 @@ RSpec.describe Notes::Handler do
       expect(TrackNote.sole.text).to eq("бас тихий, і бочка теж")
     end
 
+    it "marks a new note with ✍, once" do
+      dispatch(note_update(text: "бас тихий"))
+      dispatch(note_update(text: "бас тихий"))
+      dispatch(note_update(text: "бас тихий!", edit: true))
+
+      reactions = fake_telegram.calls.select { |method, _| method == :set_message_reaction }
+      expect(reactions.map { |_, params| [ params[:message_id], params[:reaction].map(&:emoji) ] }).to eq([ [ 100, [ "✍" ] ] ])
+    end
+
     it "doesn't take the notes command for a note" do
       dispatch(note_update(text: "@test_bot замітки"))
 
@@ -104,6 +113,35 @@ RSpec.describe Notes::Handler do
       dispatch(message_update(text: "ага", message_id: 101, reply_to_message: telegram_message(text: "привіт", message_id: 50)))
 
       expect(TrackNote.count).to eq(0)
+    end
+
+    it "has a voice reply transcribed into a note, silently" do
+      dispatch(note_update(text: nil, voice: { file_id: "voice-1", duration: 12 }, caption: "приспів"))
+
+      expect(TranscribeNoteJob).to have_been_enqueued.with(
+        AudioTrack.sole, sender, telegram_message_id: 100, file_id: "voice-1", source: "voice", caption: "приспів", sent_at: sent_at
+      )
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "has a video note reply transcribed, without the usual video analysis" do
+      dispatch(note_update(text: nil, video_note: { file_id: "video-1", duration: 9, length: 400 }))
+
+      expect(TranscribeNoteJob).to have_been_enqueued.with(AudioTrack.sole, sender, hash_including(file_id: "video-1", source: "video_note"))
+      expect(HandleVideoNoteJob).not_to have_been_enqueued
+    end
+
+    it "doesn't transcribe a voice note again when Telegram re-sends it as an edit" do
+      dispatch(note_update(text: nil, voice: { file_id: "voice-1", duration: 12 }, edit: true))
+
+      expect(TranscribeNoteJob).not_to have_been_enqueued
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "leaves a voice message that isn't a reply to a track to the mode" do
+      dispatch(message_update(text: nil, message_id: 101, voice: { file_id: "voice-2", duration: 3 }))
+
+      expect(TranscribeNoteJob).not_to have_been_enqueued
     end
 
     it "ignores a reply to a note: that's discussion" do
