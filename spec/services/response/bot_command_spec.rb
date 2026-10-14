@@ -197,6 +197,38 @@ RSpec.describe Response::BotCommand do
     end
   end
 
+  describe "замітки: ..." do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).call
+    end
+
+    it "turns notes on and off" do
+      expect(reply_to("@test_bot замітки: увімкни")).to eq("Замітки увімкнено.")
+      expect(chat.reload.notes_enabled).to be(true)
+
+      expect(reply_to("@test_bot замітки: викл")).to eq("Замітки вимкнено.")
+      expect(chat.reload.notes_enabled).to be(false)
+    end
+
+    it "says when notes are already in that state" do
+      expect(reply_to("@test_bot замітки: вимкни")).to eq("Замітки вже вимкнені.")
+    end
+
+    it "asks again on an unknown argument without changing anything" do
+      expect(reply_to("@test_bot замітки: може")).to eq("Замітки: увімкни або вимкни?")
+      expect(chat.reload.notes_enabled).to be(false)
+    end
+
+    it "works in every mode, independently of Camerton" do
+      Chat.modes.each_key do |mode|
+        chat.update!(mode: mode, notes_enabled: false)
+
+        expect(reply_to("@test_bot замітки: вкл")).to eq("Замітки увімкнено.")
+        expect(chat.reload).to have_attributes(mode: mode, notes_enabled: true, camerton_enabled: false)
+      end
+    end
+  end
+
   describe "quiet mode" do
     it "answers no other commands" do
       chat.update!(mode: :quiet)

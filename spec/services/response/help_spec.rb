@@ -63,6 +63,14 @@ RSpec.describe Response::Help do
     )
   end
 
+  it "always says how to switch notes, with their state" do
+    expect(help).to include("@test_bot замітки: увімкни|вимкни — замітки до наших треків (зараз вимкнені)")
+
+    chat.update!(notes_enabled: true)
+
+    expect(help).to include("(зараз увімкнені)")
+  end
+
   it "lists every mode name and the settings commands" do
     described_class::MODE_NAMES.each_value { |name| expect(help).to include(name) }
     expect(Chat.modes.keys).to match_array(described_class::MODE_NAMES.keys)
