@@ -63,6 +63,16 @@ RSpec.describe Response::Help do
     )
   end
 
+  it "lists the notes commands only when they're on" do
+    expect(help).not_to include("@test_bot замітки (відповіддю на аудіо)")
+
+    chat.update!(notes_enabled: true)
+
+    expect(help).to include(
+      "Замітки 📝:", "@test_bot замітки (відповіддю на аудіо)", "@test_bot замітки @нік / мої замітки", "@test_bot видали замітки"
+    )
+  end
+
   it "always says how to switch notes, with their state" do
     expect(help).to include("@test_bot замітки: увімкни|вимкни — замітки до наших треків (зараз вимкнені)")
 

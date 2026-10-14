@@ -38,7 +38,7 @@ module Response
     def call
       return unless @command
 
-      process_help || process_mode || process_camerton || process_notes_toggle || process_camerton_stats || mode_reply
+      process_help || process_mode || process_camerton || process_notes_toggle || process_notes || process_camerton_stats || mode_reply
     end
 
     private
@@ -120,6 +120,12 @@ module Response
         end
 
       reply(text)
+    end
+
+    # Every mode, when notes are on in the chat.
+    def process_notes
+      text = Notes::Command.new(command: @command, chat: @chat, user: @user, reply_to_message: @reply_to_message).call
+      reply(text) if text
     end
 
     def switch_notes(enabled, already:, switched:)

@@ -229,6 +229,31 @@ RSpec.describe Response::BotCommand do
     end
   end
 
+  describe "замітки" do
+    let(:audio_message) { { message_id: 42, audio: { file_id: "f1" } }.with_indifferent_access }
+
+    def ask(reply_to_message: audio_message)
+      described_class.new(user: user, chat: chat, text: "@test_bot замітки", reply_to_message: reply_to_message).call
+    end
+
+    it "lists the replied-to track's notes in every mode when notes are on" do
+      chat.update!(notes_enabled: true)
+      create(:track_note, audio_track: create(:audio_track, chat: chat, telegram_message_id: 42), text: "бас тихий")
+
+      Chat.modes.each_key do |mode|
+        chat.update!(mode: mode)
+
+        expect(ask).to include("• бас тихий")
+      end
+    end
+
+    it "isn't a command while notes are off" do
+      chat.update!(mode: :quiet)
+
+      expect(ask).to be_nil
+    end
+  end
+
   describe "quiet mode" do
     it "answers no other commands" do
       chat.update!(mode: :quiet)

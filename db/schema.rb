@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_14_103840) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_14_104201) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,6 +28,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_103840) do
     t.index ["chat_id", "kind", "occurred_at"], name: "index_activities_on_chat_id_and_kind_and_occurred_at"
     t.index ["chat_id", "telegram_message_id", "kind"], name: "index_activities_on_chat_id_and_telegram_message_id_and_kind", unique: true
     t.index ["user_id"], name: "index_activities_on_user_id"
+  end
+
+  create_table "audio_tracks", force: :cascade do |t|
+    t.bigint "chat_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "telegram_message_id", null: false
+    t.string "title"
+    t.string "performer"
+    t.string "file_name"
+    t.text "caption"
+    t.integer "duration"
+    t.datetime "sent_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "telegram_message_id"], name: "index_audio_tracks_on_chat_id_and_telegram_message_id", unique: true
+    t.index ["user_id"], name: "index_audio_tracks_on_user_id"
   end
 
   create_table "chat_users", force: :cascade do |t|
@@ -285,6 +301,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_103840) do
     t.index ["update_id"], name: "index_telegram_updates_on_update_id", unique: true
   end
 
+  create_table "track_notes", force: :cascade do |t|
+    t.bigint "audio_track_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "telegram_message_id", null: false
+    t.integer "source", null: false
+    t.text "text", null: false
+    t.datetime "sent_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["audio_track_id", "telegram_message_id"], name: "index_track_notes_on_audio_track_id_and_telegram_message_id", unique: true
+    t.index ["user_id"], name: "index_track_notes_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "telegram_id", null: false
     t.string "username"
@@ -297,6 +326,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_103840) do
 
   add_foreign_key "activities", "chats"
   add_foreign_key "activities", "users"
+  add_foreign_key "audio_tracks", "chats"
+  add_foreign_key "audio_tracks", "users"
   add_foreign_key "chat_users", "chats"
   add_foreign_key "chat_users", "users"
   add_foreign_key "entries", "chats"
@@ -320,4 +351,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_103840) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "track_notes", "audio_tracks"
+  add_foreign_key "track_notes", "users"
 end
