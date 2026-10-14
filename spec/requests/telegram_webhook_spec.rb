@@ -360,6 +360,46 @@ RSpec.describe "Telegram webhook", type: :request do
     end
   end
 
+  describe "group upgraded to a supergroup" do
+    # Shaped like the real updates from 14 Oct 2026: the new supergroup's
+    # message comes from GroupAnonymousBot on behalf of the chat, the old
+    # group's from the admin who upgraded it.
+    let(:old_group) { telegram_chat(id: -4_828_587_211, type: "group") }
+    let(:supergroup) { telegram_chat(id: chat_telegram_id) }
+    let(:anonymous_admin) { telegram_from(id: 1_087_968_824, first_name: "Group", last_name: nil, username: "GroupAnonymousBot").merge(is_bot: true) }
+    let!(:chat) { create(:chat, telegram_id: "-4828587211", telegram_type: "group", mode: :quiet, camerton_enabled: true) }
+
+    def migrate_from_update(update_id: 1)
+      message_update(update_id: update_id, text: nil, message_id: 1, chat: supergroup, from: anonymous_admin, sender_chat: supergroup,
+        migrate_from_chat_id: -4_828_587_211)
+    end
+
+    def migrate_to_update(update_id: 2)
+      message_update(update_id: update_id, text: nil, message_id: 15_174, chat: old_group, migrate_to_chat_id: chat_telegram_id)
+    end
+
+    it "points the chat at the supergroup, from either service message, without recording one" do
+      post_update(migrate_from_update)
+
+      expect(chat.reload).to have_attributes(telegram_id: chat_telegram_id.to_s, telegram_type: "supergroup", camerton_enabled: true)
+      expect(TelegramUpdate.sole).to be_processed
+
+      post_update(migrate_to_update)
+
+      expect(Chat.sole).to eq(chat)
+      expect([ Message.count, User.count ]).to eq([ 0, 0 ])
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "migrates on the old group's message alone, and later messages land on the same chat" do
+      post_update(migrate_to_update)
+      post_update(message_update(update_id: 3, text: "Ало", message_id: 2, chat: supergroup))
+
+      expect(chat.reload.telegram_id).to eq(chat_telegram_id.to_s)
+      expect(Chat.sole.messages.sole.content).to eq("Ало")
+    end
+  end
+
   describe "new_chat_title" do
     it "renames a known chat without recording a message" do
       chat = create(:chat, telegram_id: chat_telegram_id.to_s, title: "Стара назва")
