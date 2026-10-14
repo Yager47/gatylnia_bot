@@ -44,7 +44,7 @@ class DefaultHandler < ChatModeHandler
       -> { Response::Equals.new(text: text).call },
       -> { track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text) },
       -> { Response::Includes.new(user: user, text: text).call if chance(0.2) },
-      -> { Response::Ai.new(chat: @chat).call if bot_mentioned || chance(0.8) }
+      -> { Response::Ai.new(chat: @chat, trigger: message).call if bot_mentioned || chance(0.8) }
     ]
   end
 
