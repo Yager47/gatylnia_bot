@@ -7,11 +7,12 @@ class Ai
     # target: the message being answered. The model is told which one it is
     # and whom it's addressed to, instead of guessing from the history.
     # frame_paths: a video note's frames, attached to the target message.
-    def reply_in(chat, target: nil, frame_paths: [])
+    # note: what to do with the target, instead of judging whom it's for.
+    def reply_in(chat, target: nil, frame_paths: [], note: nil)
       response = OpenAiClient.build.chat.completions.create(
         model: "gpt-5-mini",
         verbosity: :low,
-        messages: messages(chat, target: target, frame_paths: frame_paths)
+        messages: messages(chat, target: target, frame_paths: frame_paths, note: note)
       )
 
       response.choices.first.message.content
@@ -24,7 +25,7 @@ class Ai
 
     private
 
-    def messages(chat, target:, frame_paths:)
+    def messages(chat, target:, frame_paths:, note: nil)
       result = [
         { role: "system", content: prompt },
         { role: "system", content: examples }
@@ -43,7 +44,7 @@ class Ai
         end
       end
 
-      result << { role: "system", content: target_note(target) } if target
+      result << { role: "system", content: target_note(target, note) } if target
       result
     end
 
@@ -60,9 +61,11 @@ class Ai
 
     # A mention or a reply to the bot must be answered; anything else may be
     # people talking to each other, which the model can stay out of.
-    def target_note(message)
+    def target_note(message, note)
       addressee =
-        if AiReplyGate.new(message).decision == :always
+        if note
+          note
+        elsif AiReplyGate.new(message).decision == :always
           "Воно адресоване тобі, тож відповідай."
         else
           "Воно не адресоване тобі напряму. Якшо там є \"ти\", це скоріше про того, з ким людина говорить. " \

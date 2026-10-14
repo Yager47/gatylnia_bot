@@ -79,6 +79,13 @@ RSpec.describe Ai do
       expect(content).not_to include("SKIP")
     end
 
+    it "lets a note say what to do with the target instead" do
+      content = messages(target: video, frame_paths: [], note: "Підколи його.").last[:content]
+
+      expect(content).to include("\"Петро записав відео 10s.\". Підколи його. Відповідь:")
+      expect(content).not_to include("SKIP")
+    end
+
     it "sends plain text history without a target" do
       result = messages(target: nil, frame_paths: [])
 
