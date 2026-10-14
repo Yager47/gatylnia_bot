@@ -1,5 +1,6 @@
 # A basic group upgraded to a supergroup gets a new Telegram id. Points the
-# chat's row at the new id, so everything stored for the chat stays with it.
+# chat's row at the new id, so everything stored for the chat stays with it,
+# and notes when, since older messages keep the old group's ids.
 #
 # Telegram announces it twice, in the old chat (migrate_to_chat_id) and in
 # the new one (migrate_from_chat_id), in either order and possibly in
@@ -26,7 +27,7 @@ class ChatMigration
         next
       end
 
-      chat.update!(telegram_id: @to, telegram_type: "supergroup")
+      chat.update!(telegram_id: @to, telegram_type: "supergroup", supergroup_since: Time.current)
       chat
     end
   end
