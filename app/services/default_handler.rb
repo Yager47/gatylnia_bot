@@ -10,7 +10,7 @@ class DefaultHandler < ChatModeHandler
 
     outcome = Response.first(responders)
     # A random line only when nothing answered or stopped the chain.
-    outcome = Response::Chance.new.call if outcome.nil? && chance(0.2)
+    outcome = Response::Chance.new.call if outcome.nil? && chance(0.1)
     deliver(outcome) if outcome.is_a?(String)
   end
 
