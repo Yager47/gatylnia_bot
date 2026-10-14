@@ -17,11 +17,13 @@ module Camerton
 
     # Telegram HTML: the release as a link to the shared message, so a tap
     # jumps to it. Only supergroups (ids starting with -100) have t.me/c
-    # links; in a basic group it's just the escaped name.
+    # links, and only for messages posted after the chat became one: earlier
+    # ones keep the old basic group's ids. Otherwise just the escaped name.
     def release_link(share, chat)
       name = ERB::Util.html_escape(release(share.release))
       internal_id = chat.telegram_id.to_s.delete_prefix("-100")
       return name if internal_id == chat.telegram_id.to_s
+      return name if chat.supergroup_since && share.shared_at < chat.supergroup_since
 
       %(<a href="https://t.me/c/#{internal_id}/#{share.telegram_message_id}">#{name}</a>)
     end

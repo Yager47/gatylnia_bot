@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_14_115528) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_14_143000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -65,6 +65,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_115528) do
     t.boolean "camerton_enabled", default: false, null: false
     t.date "camerton_digest_sent_on"
     t.boolean "notes_enabled", default: false, null: false
+    t.datetime "supergroup_since"
     t.index ["telegram_id"], name: "index_chats_on_telegram_id", unique: true
   end
 

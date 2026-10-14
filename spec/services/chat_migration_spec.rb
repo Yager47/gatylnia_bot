@@ -7,9 +7,12 @@ RSpec.describe ChatMigration do
     described_class.new(from: -4_828_587_211, to: -1_004_499_357_183).call
   end
 
-  it "points the chat at the new id and type, keeping everything else" do
-    expect(migrate).to eq(chat)
-    expect(chat.reload).to have_attributes(telegram_id: "-1004499357183", telegram_type: "supergroup", title: "Камертон", mode: "quiet")
+  it "points the chat at the new id and type, noting when, and keeps everything else" do
+    freeze_time do
+      expect(migrate).to eq(chat)
+      expect(chat.reload).to have_attributes(telegram_id: "-1004499357183", telegram_type: "supergroup", supergroup_since: Time.current,
+        title: "Камертон", mode: "quiet")
+    end
   end
 
   it "does nothing the second time" do

@@ -30,6 +30,16 @@ RSpec.describe Camerton::Formatting do
         .to eq(%(<a href="https://t.me/c/1234567890/42">🎵 Tom &amp; &lt;Jerry&gt; — Bohemian Rhapsody</a>))
     end
 
+    it "links only shares posted after a basic group became the supergroup" do
+      chat = build(:chat, telegram_id: "-1001234567890", supergroup_since: Time.zone.parse("2026-10-14 16:00"))
+
+      share.shared_at = Time.zone.parse("2026-10-14 15:59")
+      expect(described_class.release_link(share, chat)).to eq("🎵 Tom &amp; &lt;Jerry&gt; — Bohemian Rhapsody")
+
+      share.shared_at = Time.zone.parse("2026-10-14 16:00")
+      expect(described_class.release_link(share, chat)).to start_with(%(<a href="https://t.me/c/1234567890/42">))
+    end
+
     it "leaves just the escaped name in a basic group, which has no t.me/c links" do
       chat = build(:chat, telegram_id: "-123456", telegram_type: "group")
 
