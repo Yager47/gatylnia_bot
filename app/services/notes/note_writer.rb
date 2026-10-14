@@ -1,6 +1,7 @@
 module Notes
-  # Stores one reply as a note on a track. Writing the same text again is a
-  # no-op (a redelivery); different text replaces it (an edit).
+  # Stores one reply as a note on a track and marks it with the bot's
+  # reaction. Writing the same text again is a no-op (a redelivery);
+  # different text replaces it (an edit), keeping the reaction already there.
   class NoteWriter
     def initialize(track:, user:)
       @track = track
@@ -15,7 +16,11 @@ module Notes
           new_note.text = text
           new_note.sent_at = sent_at
         end
-      note.update!(text: text) unless note.previously_new_record? || note.text == text
+      if note.previously_new_record?
+        NoteReaction.new(note).call
+      elsif note.text != text
+        note.update!(text: text)
+      end
       note
     end
   end

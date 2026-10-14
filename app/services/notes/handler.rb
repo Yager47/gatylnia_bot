@@ -1,7 +1,11 @@
 module Notes
   # The notes part of a message in a chat with notes on, run before the mode
   # handler: audio becomes a track, and a direct reply to it becomes a note.
+  # Text is stored as written right away; a voice or video note is
+  # transcribed in the background first (TranscribeNoteJob).
   class Handler
+    MEDIA_SOURCES = %i[voice video_note].freeze
+
     def initialize(message:, chat:)
       @message = message
       @chat = chat
@@ -18,13 +22,43 @@ module Notes
     private
 
     def record_note
-      return if text.blank? || bot_command?
+      return unless media_source || (text.present? && !bot_command?)
 
       track = TrackRecorder.new(chat: @chat).record(@message[:reply_to_message])
       return unless track
 
-      NoteWriter.new(track: track, user: user)
-        .write(telegram_message_id: @message[:message_id], source: :text, text: text, sent_at: Time.zone.at(@message[:date]))
+      if media_source
+        enqueue_transcription(track)
+      else
+        NoteWriter.new(track: track, user: user)
+          .write(telegram_message_id: @message[:message_id], source: :text, text: text, sent_at: sent_at)
+      end
+    end
+
+    def media_source
+      MEDIA_SOURCES.find { |source| @message[source].present? }
+    end
+
+    # Voice and video notes can't be edited by their author; an edited one is
+    # Telegram re-sending it, so it isn't transcribed again (but is still a
+    # note, which keeps the mode handler off it).
+    def enqueue_transcription(track)
+      unless @message[:edit_date].present?
+        TranscribeNoteJob.perform_later(
+          track, user,
+          telegram_message_id: @message[:message_id],
+          file_id: @message[media_source][:file_id],
+          source: media_source.to_s,
+          caption: @message[:caption],
+          sent_at: sent_at
+        )
+      end
+
+      media_source
+    end
+
+    def sent_at
+      Time.zone.at(@message[:date])
     end
 
     def text
