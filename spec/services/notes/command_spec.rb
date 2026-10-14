@@ -65,6 +65,24 @@ RSpec.describe Notes::Command do
     end
   end
 
+  describe "останнє аудіо" do
+    it "answers осьо under the latest track, with no reply needed" do
+      create(:audio_track, chat: chat, telegram_message_id: 90, sent_at: 1.hour.ago)
+      create(:audio_track, chat: create(:chat), telegram_message_id: 500)
+
+      [ "останнє аудіо", "аудіо" ].each do |command|
+        expect(run(command, reply_to_message: nil)).to eq(Response::Threaded.new(text: "осьо", reply_to: 90))
+      end
+    end
+
+    it "says when there's no audio yet" do
+      TrackNote.delete_all
+      AudioTrack.delete_all
+
+      expect(run("аудіо", reply_to_message: nil)).to eq("Тут ще нема аудіо.")
+    end
+  end
+
   it "answers nothing while notes are off, or for other commands" do
     expect(run("баланс")).to be_nil
 
@@ -72,6 +90,7 @@ RSpec.describe Notes::Command do
 
     expect(run("замітки")).to be_nil
     expect(run("видали замітки")).to be_nil
+    expect(run("аудіо")).to be_nil
     expect(TrackNote.count).to eq(2)
   end
 end
