@@ -54,10 +54,11 @@ module TelegramUpdates
       return unless service
 
       chat_id = service.dig(:chat, :id)
+      at = service[:date] ? Time.zone.at(service[:date]) : Time.current
       if service[:migrate_to_chat_id].present?
-        ChatMigration.new(from: chat_id, to: service[:migrate_to_chat_id])
+        ChatMigration.new(from: chat_id, to: service[:migrate_to_chat_id], at: at)
       elsif service[:migrate_from_chat_id].present?
-        ChatMigration.new(from: service[:migrate_from_chat_id], to: chat_id)
+        ChatMigration.new(from: service[:migrate_from_chat_id], to: chat_id, at: at)
       end
     end
 

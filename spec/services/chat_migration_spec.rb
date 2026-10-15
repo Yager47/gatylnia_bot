@@ -15,11 +15,21 @@ RSpec.describe ChatMigration do
     end
   end
 
+  it "notes the given time as when it happened, and renumbers the old messages in the background" do
+    at = Time.zone.local(2026, 10, 14, 16, 0)
+
+    described_class.new(from: -4_828_587_211, to: -1_004_499_357_183, at: at).call
+
+    expect(chat.reload.supergroup_since).to eq(at)
+    expect(NegatePreSupergroupMessageIdsJob).to have_been_enqueued.with(chat).once
+  end
+
   it "does nothing the second time" do
     migrate
 
     expect(migrate).to be_nil
     expect(Chat.sole.telegram_id).to eq("-1004499357183")
+    expect(NegatePreSupergroupMessageIdsJob).to have_been_enqueued.once
   end
 
   it "does nothing for a chat the bot doesn't know" do
@@ -34,5 +44,6 @@ RSpec.describe ChatMigration do
     expect(migrate).to be_nil
     expect([ chat.reload.telegram_id, other.reload.telegram_id ]).to eq([ "-4828587211", "-1004499357183" ])
     expect(Rails.logger).to have_received(:error).with(/already has its own row/)
+    expect(NegatePreSupergroupMessageIdsJob).not_to have_been_enqueued
   end
 end

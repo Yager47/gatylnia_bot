@@ -391,6 +391,16 @@ RSpec.describe "Telegram webhook", type: :request do
       expect(fake_telegram.sent_messages).to be_empty
     end
 
+    it "dates the migration by the service message and renumbers the old group's messages" do
+      upgraded_at = 10.minutes.ago.change(usec: 0)
+      old_share = create(:release_share, chat: chat, telegram_message_id: 15_000, shared_at: 1.hour.ago)
+
+      post_update(migrate_from_update.deep_merge(message: { date: upgraded_at.to_i }))
+
+      expect(chat.reload.supergroup_since).to eq(upgraded_at)
+      expect(old_share.reload.telegram_message_id).to eq(-15_000)
+    end
+
     it "migrates on the old group's message alone, and later messages land on the same chat" do
       post_update(migrate_to_update)
       post_update(message_update(update_id: 3, text: "Ало", message_id: 2, chat: supergroup))

@@ -7,6 +7,8 @@ module Camerton
   #
   # Safe to run again: shares and review messages already stored (by Telegram
   # message id) are kept; a reply whose text changed since is updated.
+  # Messages from before the chat became a supergroup are matched and stored
+  # by their negated ids (see PreSupergroupMessageIds).
   # A dry run does everything in a transaction, enqueues no jobs, and rolls
   # it back.
   class HistoryImport
@@ -75,15 +77,16 @@ module Camerton
       @messages.each do |message|
         link = Links.first_in(as_telegram_message(message))
         next unless link
-        next if shares.key?(message.telegram_message_id)
+        id = stored_id(message.telegram_message_id, message)
+        next if shares.key?(id)
         next skip(:shares_after_cutoff) if @shares_before && message.sent_at >= @shares_before
 
         user = sender(message) or next
         release_existed = Release.exists?(platform: link.platform, external_id: link.external_id)
         release = Release.find_or_create_for(link)
         new_releases << release unless release_existed
-        shares[message.telegram_message_id] = ReleaseShare.create!(
-          chat: @chat, release: release, user: user, telegram_message_id: message.telegram_message_id, shared_at: message.sent_at
+        shares[id] = ReleaseShare.create!(
+          chat: @chat, release: release, user: user, telegram_message_id: id, shared_at: message.sent_at
         )
         created += 1
       end
@@ -100,12 +103,15 @@ module Camerton
       created = updated = 0
 
       @messages.each do |message|
-        share = shares[message.reply_to_message_id] || by_announcement[message.reply_to_message_id]
+        # A reply is in the same chat as what it answers, so sent before the
+        # upgrade if that was.
+        reply_to = stored_id(message.reply_to_message_id, message)
+        share = shares[reply_to] || by_announcement[reply_to]
         next unless share && feedback?(message)
 
         user = sender(message) or next
         review_message = ReviewWriter.new(share: share, user: user).write(
-          telegram_message_id: message.telegram_message_id, source: :text, text: message.text, sent_at: message.sent_at,
+          telegram_message_id: stored_id(message.telegram_message_id, message), source: :text, text: message.text, sent_at: message.sent_at,
           score: false
         )
         if review_message.previously_new_record?
@@ -156,6 +162,10 @@ module Camerton
         text: message.text,
         entities: message.link_urls.map { |url| { type: "text_link", url: url } }
       }.with_indifferent_access
+    end
+
+    def stored_id(id, message)
+      PreSupergroupMessageIds.stored(@chat, id, message.sent_at)
     end
 
     # The bot's id is the number before the colon in its token.
