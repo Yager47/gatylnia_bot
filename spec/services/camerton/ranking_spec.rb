@@ -3,8 +3,8 @@ require "rails_helper"
 RSpec.describe Camerton::Ranking do
   let(:chat) { create(:chat) }
 
-  def release_scored(name, *scores, chat: self.chat, shared_at: Time.current)
-    release = create(:release, :resolved, artist: "Artist", title: name)
+  def release_scored(name, *scores, chat: self.chat, shared_at: Time.current, kind: :song)
+    release = create(:release, :resolved, kind: kind, artist: "Artist", title: name)
     create(:release_share, chat: chat, release: release, shared_at: shared_at)
     scores.each { |score| create(:review, chat: chat, release: release, score: score) }
     release
@@ -54,6 +54,16 @@ RSpec.describe Camerton::Ranking do
 
     expect(ranking(range: Time.current.all_month, label: "поточний місяць")).to eq(
       "🏆 Топ за поточний місяць:\n\n1. 🎵 Artist — New · 6.5 (2 оцінки)"
+    )
+  end
+
+  it "limits to albums or songs, saying which in the header" do
+    release_scored("Song", 9, 9)
+    release_scored("Album", 6, 7, kind: :album)
+
+    expect(ranking(kind: "album")).to eq("🏆 Топ альбомів за весь час:\n\n1. 💿 Artist — Album · 6.5 (2 оцінки)")
+    expect(ranking(best: false, kind: "song", range: Time.current.all_week, label: "поточний тиждень")).to eq(
+      "🗑 Дно пісень за поточний тиждень:\n\n1. 🎵 Artist — Song · 9 (2 оцінки)"
     )
   end
 

@@ -14,6 +14,12 @@ RSpec.describe Camerton::StatsCommand do
     expect(command("дно за рік")).to start_with("🗑 Дно за поточний рік:")
   end
 
+  it "answers топ and дно for albums or songs, with or without a period" do
+    expect(command("топ альбоми")).to start_with("🏆 Топ альбомів за весь час:")
+    expect(command("дно пісні за місяць")).to start_with("🗑 Дно пісень за поточний місяць:")
+    expect(command("топ за рік альбоми")).to be_nil
+  end
+
   it "uses the Kyiv calendar for periods" do
     release = create(:release, :resolved)
     create(:release_share, chat: chat, release: release, shared_at: Time.zone.local(2026, 10, 1, 0, 30))
@@ -49,6 +55,19 @@ RSpec.describe Camerton::StatsCommand do
       olya
       expect(ask("що послухати")).to be_a(Response::Html).and have_attributes(text: start_with("🎧 Що ще послухати — Me:"))
       expect(ask("що послухати @olya").text).to start_with("🎧 Що ще послухати — Olya:")
+    end
+
+    it "passes albums or songs, a genre and a @username through, in that order" do
+      olya
+      expect(ask("що послухати альбоми").text).to start_with("🎧 Me (альбоми): усе вже оцінено.")
+      expect(ask("що послухати пісні").text).to start_with("🎧 Що ще послухати — Me (пісні):")
+      expect(ask("що послухати hip hop").text).to eq("🎧 Не знайшов у чаті релізів з жанром «hip hop».")
+      expect(ask("що послухати альбоми jazz @olya").text).to eq("🎧 Не знайшов у чаті альбомів з жанром «jazz».")
+      expect(ask("що послухати пісні rock @olya").text).to start_with("🎧 Не знайшов у чаті пісень з жанром «rock».")
+    end
+
+    it "leaves a genre with an @ in the middle to others" do
+      expect(ask("що послухати rock @olya ще щось")).to be_nil
     end
 
     it "says when the username isn't in the chat" do

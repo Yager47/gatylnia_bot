@@ -5,19 +5,19 @@ RSpec.describe Camerton::ToListen do
   let(:olya) { create(:user, first_name: "Olya", last_name: nil, username: "olya", chats: [ chat ]) }
   let(:sharer) { create(:user, chats: [ chat ]) }
 
-  def shared(title, at:, kind: :resolved, by: sharer, **share)
-    release = create(:release, kind, status: :resolved, artist: "Artist", title: title)
+  def shared(title, at:, kind: :resolved, by: sharer, genres: nil, styles: nil, **share)
+    release = create(:release, kind, status: :resolved, artist: "Artist", title: title, genres: genres, styles: styles)
     create(:release_share, chat: chat, release: release, user: by, shared_at: at, **share)
     release
   end
 
-  def to_listen(user = olya)
-    described_class.new(chat: chat, user: user).text
+  def to_listen(user = olya, **filters)
+    described_class.new(chat: chat, user: user, **filters).text
   end
 
   # The release lines without their links.
-  def names
-    to_listen.lines.map { |line| line.strip.gsub(/<[^>]+>/, "") }[2..]
+  def names(**filters)
+    to_listen(**filters).lines.map { |line| line.strip.gsub(/<[^>]+>/, "") }[2..]
   end
 
   it "lists unscored releases of any age, newest first, each linking to its share" do
@@ -66,6 +66,43 @@ RSpec.describe Camerton::ToListen do
     expect(to_listen).to eq("🎧 Olya: усе вже оцінено.")
   end
 
+  describe "filters" do
+    before do
+      shared("Rock song", at: 1.hour.ago, genres: [ "Rock" ], styles: [ "Post-Punk" ])
+      shared("Rock album", at: 2.hours.ago, kind: :album, genres: [ "Rock" ])
+      shared("Jazz album", at: 3.hours.ago, kind: :album, genres: [ "Jazz" ])
+      shared("Unknown album", at: 4.hours.ago, kind: :album)
+    end
+
+    it "lists only albums or songs, naming the filter" do
+      expect(to_listen(kind: "album").lines.first.strip).to eq("🎧 Що ще послухати — Olya (альбоми):")
+      expect(names(kind: "album")).to eq([ "💿 Artist — Rock album", "💿 Artist — Jazz album", "💿 Artist — Unknown album" ])
+      expect(names(kind: "song")).to eq([ "🎵 Artist — Rock song" ])
+    end
+
+    it "lists only a genre or style, alone or with a kind" do
+      expect(to_listen(genre: "rock").lines.first.strip).to eq("🎧 Що ще послухати — Olya (rock):")
+      expect(names(genre: "rock")).to eq([ "🎵 Artist — Rock song", "💿 Artist — Rock album" ])
+      expect(names(genre: "post-punk")).to eq([ "🎵 Artist — Rock song" ])
+      expect(to_listen(kind: "album", genre: "rock").lines.first.strip).to eq("🎧 Що ще послухати — Olya (альбоми, rock):")
+      expect(names(kind: "album", genre: "rock")).to eq([ "💿 Artist — Rock album" ])
+    end
+
+    it "counts the rest within the filter" do
+      11.times { |index| shared("More jazz #{index}", at: 1.day.ago, kind: :album, genres: [ "Jazz" ]) }
+
+      expect(names(genre: "jazz").last).to eq("і ще 2")
+    end
+
+    it "tells all scored apart from a genre nobody shared, escaping it" do
+      create(:review, chat: chat, release: Release.find_by!(title: "Jazz album"), user: olya, score: 7)
+
+      expect(to_listen(genre: "jazz")).to eq("🎧 Olya (jazz): усе вже оцінено.")
+      expect(to_listen(kind: "song", genre: "jazz")).to eq("🎧 Не знайшов у чаті пісень з жанром «jazz».")
+      expect(to_listen(genre: "<b>polka</b>")).to eq("🎧 Не знайшов у чаті релізів з жанром «&lt;b&gt;polka&lt;/b&gt;».")
+    end
+  end
+
   it "runs the same number of queries however many releases there are" do
     olya
     shared("A", at: 1.day.ago)
@@ -74,6 +111,7 @@ RSpec.describe Camerton::ToListen do
     12.times { |index| shared("More #{index}", at: index.hours.ago) }
 
     expect(count_queries { to_listen }).to eq(queries_for_few).and eq(3)
+    expect(count_queries { to_listen(kind: "song") }).to eq(3)
   end
 
   def count_queries(&block)
