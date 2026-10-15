@@ -7,7 +7,7 @@ module Response
     ONBOARDING_PERIOD = 1.week
     # How often a counted gato gets an AI comment instead of a canned line
     # (rolled by the caller).
-    AI_CHANCE = 0.4
+    AI_CHANCE = 0.9
     COUNTED = "Гатіння зараховано.".freeze
     AI_NOTE = "Це гатіння вже зараховано, і твоя відповідь почнеться з \"#{COUNTED}\". " \
       "Допиши після цього один короткий підкол про це гатіння, не повторюючи \"#{COUNTED}\".".freeze
