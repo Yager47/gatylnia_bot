@@ -129,6 +129,18 @@ RSpec.describe Camerton::HistoryImport do
     expect(ResolveReleaseJob).not_to have_been_enqueued
   end
 
+  it "stores messages from before the chat became a supergroup under negated ids, and finds them again" do
+    # After 600 (2 Oct 09:00), before the album share 601 (10:00).
+    chat.update!(supergroup_since: Time.zone.local(2026, 10, 2, 9, 30))
+
+    import
+    report = import
+
+    expect(chat.release_shares.order(:shared_at).pluck(:telegram_message_id)).to eq([ -500, 601 ])
+    expect(ReviewMessage.order(:sent_at).pluck(:telegram_message_id)).to eq([ -501, -502, -600 ])
+    expect(report).to have_attributes(shares_created: 0, shares_existing: 2, replies_created: 0)
+  end
+
   it "counts replies to a share or announcement already in the chat, and keeps known releases" do
     release = create(:release, :resolved, external_id: "lYBUbBu4W08")
     create(:release_share, chat: chat, release: release, telegram_message_id: 400, announcement_telegram_message_id: 401)
