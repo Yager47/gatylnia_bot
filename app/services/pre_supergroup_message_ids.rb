@@ -31,7 +31,7 @@ class PreSupergroupMessageIds
 
     ApplicationRecord.transaction do
       columns.to_h do |column|
-        [ column.label, old(column).update_all("#{column.id_column} = -#{column.id_column}") ]
+        [ column.label, old(column).update_all(column.id_column => Arel::Nodes::UnaryOperation.new("-", attribute(column))) ]
       end
     end
   end
@@ -65,6 +65,10 @@ class PreSupergroupMessageIds
     ]
   end
 
+  def attribute(column)
+    column.scope.arel_table[column.id_column]
+  end
+
   def positive(column)
     column.scope.where(column.id_column => 1..)
   end
@@ -78,7 +82,7 @@ class PreSupergroupMessageIds
   end
 
   def summary(scope, column)
-    count, min, max = scope.pick(Arel.sql("count(*)"), Arel.sql("min(#{column.id_column})"), Arel.sql("max(#{column.id_column})"))
+    count, min, max = scope.pick(attribute(column).count, attribute(column).minimum, attribute(column).maximum)
     [ count, (min..max if count.positive?) ]
   end
 end
