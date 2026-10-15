@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_14_143000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_15_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -142,6 +142,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_143000) do
     t.string "genres", array: true
     t.string "styles", array: true
     t.datetime "discogs_checked_at"
+    t.bigint "merged_into_id"
+    t.index ["merged_into_id"], name: "index_releases_on_merged_into_id"
     t.index ["platform", "external_id"], name: "index_releases_on_platform_and_external_id", unique: true
   end
 
@@ -347,6 +349,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_14_143000) do
   add_foreign_key "release_shares", "chats"
   add_foreign_key "release_shares", "releases"
   add_foreign_key "release_shares", "users"
+  add_foreign_key "releases", "releases", column: "merged_into_id"
   add_foreign_key "review_messages", "release_shares"
   add_foreign_key "review_messages", "reviews"
   add_foreign_key "reviews", "chats"

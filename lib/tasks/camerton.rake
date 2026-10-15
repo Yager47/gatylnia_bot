@@ -27,4 +27,30 @@ namespace :camerton do
     puts "Replies: #{report.replies_created} new, #{report.replies_updated} updated; reviews to score: #{report.reviews_to_score}"
     puts "Skipped: #{report.skipped.inspect}" if report.skipped.any?
   end
+
+  # Merges releases resolved before ReleaseMerge existed: each one with the
+  # same kind, artist and title as an older release. Newest first, so all of
+  # a name's duplicates merge into its oldest release. Dry run unless DRY_RUN=0.
+  #
+  #   bin/rails camerton:merge_duplicate_releases DRY_RUN=0
+  desc "Merge Camerton releases that are the same song or album"
+  task merge_duplicate_releases: :environment do
+    dry_run = ENV.fetch("DRY_RUN", "1") != "0"
+    merged = 0
+
+    Release.resolved.where(merged_into_id: nil).find_each(order: :desc) do |release|
+      merge = Camerton::ReleaseMerge.new(release)
+      # Only into an older release: the oldest one of a name stays (in a dry
+      # run nothing is marked merged, so it would see a newer one as target).
+      target = merge.target
+      next unless target && target.id < release.id
+
+      moving = "#{release.shares.count} shares, #{release.reviews.count} reviews"
+      merge.call unless dry_run
+      merged += 1
+      puts "#{release.id} → #{target.id}: #{Camerton::Formatting.release(target)} (#{moving})"
+    end
+
+    puts "#{dry_run ? 'DRY RUN, nothing written' : 'Done'}: #{merged} releases #{dry_run ? "to merge" : "merged"}"
+  end
 end
