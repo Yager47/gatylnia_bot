@@ -16,6 +16,14 @@ class Release < ApplicationRecord
   # enforces it, and creation goes through create_or_find_by!.
   validates :platform, :external_id, :url, presence: true
 
+  # Releases with a Discogs genre or style containing the text, in any case:
+  # "rock" matches Rock, Post-Rock and Punk Rock. Releases Discogs didn't
+  # match have neither, so they never match.
+  scope :with_genre, ->(text) {
+    pattern = "%#{sanitize_sql_like(text)}%"
+    where("EXISTS (SELECT 1 FROM unnest(releases.genres || releases.styles) AS tag WHERE tag ILIKE ?)", pattern)
+  }
+
   # The release a Camerton::Link points to, created pending if new. Safe when
   # two jobs see the same new link at once (create_or_find_by!).
   def self.find_or_create_for(link)

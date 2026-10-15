@@ -1,7 +1,8 @@
 module Camerton
-  # Camerton's commands in chats with it on: "топ", "дно" (optionally "за
-  # тиждень/місяць/рік"), "оцінки" in reply to a shared release, "критики",
-  # "камертони", "мій смак", "смак з @нік" and "що послухати [@нік]".
+  # Camerton's commands in chats with it on: "топ", "дно" (optionally
+  # "альбоми"/"пісні", then "за тиждень/місяць/рік"), "оцінки" in reply to a
+  # shared release, "критики", "камертони", "мій смак", "смак з @нік" and
+  # "що послухати [альбоми|пісні] [жанр] [@нік]".
   class StatsCommand
     # Period word => [Time range method, label for the reply header]
     PERIODS = {
@@ -10,9 +11,13 @@ module Camerton
       "рік" => [ :all_year, "поточний рік" ]
     }.freeze
 
-    RANKING = /\A(топ|дно)(?: за (#{PERIODS.keys.join('|')}))?\z/
+    KINDS = { "альбоми" => "album", "пісні" => "song" }.freeze
+
+    RANKING = /\A(топ|дно)(?: (#{KINDS.keys.join('|')}))?(?: за (#{PERIODS.keys.join('|')}))?\z/
     TASTE_MATCH = /\Aсмак з @(\w+)\z/
-    TO_LISTEN = /\Aщо послухати(?: @(\w+))?\z/
+    # The genre is whatever is left before an optional @нік; it can't hold
+    # an @, so "що послухати rock @olya ще щось" isn't ours.
+    TO_LISTEN = /\Aщо послухати(?: (#{KINDS.keys.join('|')}))?(?: ([^@]+?))?(?: @(\w+))?\z/
 
     def initialize(command:, chat:, user: nil, reply_to_message: nil)
       @command = command.strip
@@ -32,7 +37,7 @@ module Camerton
       elsif (match = TASTE_MATCH.match(@command))
         taste_match(match[1])
       elsif (match = TO_LISTEN.match(@command))
-        to_listen(match[1])
+        to_listen(*match.captures)
       else
         case @command
         when "оцінки" then release_card
@@ -45,10 +50,10 @@ module Camerton
 
     private
 
-    def ranking(word, period)
+    def ranking(word, kind, period)
       range_method, label = PERIODS[period]
       range = Time.current.public_send(range_method) if range_method
-      Ranking.new(chat: @chat, best: word == "топ", range: range, label: label || "весь час").text
+      Ranking.new(chat: @chat, best: word == "топ", kind: KINDS[kind], range: range, label: label || "весь час").text
     end
 
     def taste_match(username)
@@ -59,11 +64,11 @@ module Camerton
       TasteMatch.new(chat: @chat, user: @user, other: other).text
     end
 
-    def to_listen(username)
+    def to_listen(kind, genre, username)
       member = username ? find_member(username) : @user
       return "Не знайшов @#{username} у цьому чаті." unless member
 
-      Response::Html.new(text: ToListen.new(chat: @chat, user: member).text)
+      Response::Html.new(text: ToListen.new(chat: @chat, user: member, kind: KINDS[kind], genre: genre&.strip).text)
     end
 
     # Usernames are case-insensitive in Telegram; the command is lowercased.

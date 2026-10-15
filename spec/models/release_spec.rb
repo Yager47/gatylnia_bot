@@ -13,4 +13,25 @@ RSpec.describe Release do
 
     expect { share.release.destroy }.to raise_error(ActiveRecord::DeleteRestrictionError)
   end
+
+  describe ".with_genre" do
+    it "matches a substring of a genre or style in any case, and never releases without them" do
+      rock = create(:release, genres: [ "Rock" ], styles: [ "Post-Punk" ])
+      post_rock = create(:release, genres: [ "Electronic" ], styles: [ "Post-Rock" ])
+      styles_only = create(:release, genres: nil, styles: [ "Punk Rock" ])
+      jazz = create(:release, genres: [ "Jazz" ], styles: [])
+      create(:release, genres: nil, styles: nil)
+
+      expect(described_class.with_genre("rock")).to contain_exactly(rock, post_rock, styles_only)
+      expect(described_class.with_genre("POST-PUNK")).to contain_exactly(rock)
+      expect(described_class.with_genre("jazz")).to contain_exactly(jazz)
+    end
+
+    it "treats LIKE wildcards in the text literally" do
+      create(:release, genres: [ "Rock" ])
+
+      expect(described_class.with_genre("%")).to be_empty
+      expect(described_class.with_genre("r_ck")).to be_empty
+    end
+  end
 end
