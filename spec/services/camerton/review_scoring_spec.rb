@@ -39,14 +39,26 @@ RSpec.describe Camerton::ReviewScoring do
     expect(fake_telegram.calls).to be_empty
   end
 
-  it "clears the score when the messages turn out not to be a review" do
+  it "keeps an existing score, without reacting, when the messages turn out not to be a review" do
     review.update!(score: 7, summary: "старе")
     create(:review_message, review: review, text: "де знайшов?")
     allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: false, score: nil, summary: nil))
 
     described_class.new(review, analyzer: analyzer).call
 
-    expect(review.reload).to have_attributes(score: nil, summary: nil)
+    expect(review.reload).to have_attributes(score: 7, summary: "старе")
+    expect(fake_telegram.calls).to be_empty
+  end
+
+  it "records an unscored review when the messages aren't a review" do
+    create(:review_message, review: review, text: "де знайшов?")
+    allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: false, score: nil, summary: nil))
+
+    freeze_time do
+      described_class.new(review, analyzer: analyzer).call
+
+      expect(review.reload).to have_attributes(score: nil, summary: nil, scored_at: Time.current)
+    end
   end
 
   it "doesn't ask the model about a review without messages" do

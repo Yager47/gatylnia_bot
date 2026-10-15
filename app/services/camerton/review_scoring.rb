@@ -1,6 +1,8 @@
 module Camerton
   # Re-derives a review's score and summary from all of its messages, then
-  # reacts to the latest one with the result.
+  # reacts to the latest one with the result. Messages that aren't a review
+  # never clear an existing score: it may have come from outside the chat
+  # (a spreadsheet import), with no messages behind it.
   class ReviewScoring
     # react: false scores silently (history imports).
     def initialize(review, analyzer: nil, react: true)
@@ -14,6 +16,8 @@ module Camerton
       return if messages.empty?
 
       result = analyzer.call(release: @review.release, messages: messages)
+      return if result.score.nil? && @review.score
+
       @review.update!(score: result.score, summary: result.summary, scored_at: Time.current)
       ReviewReaction.new(@review).call if @react
     end
