@@ -1,5 +1,7 @@
 module Camerton
-  # Fills in a pending release's artist and title from its platform.
+  # Fills in a pending release's artist and title from its platform, then
+  # merges it into another release of the same name, if there is one
+  # (ReleaseMerge): its shares then belong to that release.
   class ReleaseResolver
     def initialize(release, cleaner: nil)
       @release = release
@@ -22,6 +24,7 @@ module Camerton
         source_title: source.title,
         source_author: source.author
       )
+      ReleaseMerge.new(@release).call
     end
 
     private

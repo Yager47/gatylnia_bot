@@ -21,7 +21,7 @@ module Camerton
       return if replied.dig(:from, :is_bot)
 
       link = Links.first_in(replied)
-      release = link && Release.find_by(platform: link.platform, external_id: link.external_id)
+      release = link && Release.find_for(link)
       return unless release
 
       chat.release_shares.where(release: release, shared_at: ..replied_at).order(shared_at: :desc, id: :desc).first

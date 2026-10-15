@@ -22,6 +22,18 @@ RSpec.describe Camerton::ReleaseResolver do
     )
   end
 
+  it "merges the release into an earlier one with the same name" do
+    earlier = create(:release, :resolved)
+    share = create(:release_share, release: release)
+    allow(Camerton::Platforms::YoutubeMusic).to receive(:source_metadata).and_return(source)
+    allow(cleaner).to receive(:call).and_return(Camerton::ReleaseNameCleaner::Result.new(artist: "Queen", title: "Bohemian Rhapsody"))
+
+    resolve
+
+    expect(release.reload.merged_into).to eq(earlier)
+    expect(share.reload.release).to eq(earlier)
+  end
+
   it "falls back to the raw title and no artist when the model returns blanks" do
     allow(Camerton::Platforms::YoutubeMusic).to receive(:source_metadata).and_return(source)
     allow(cleaner).to receive(:call).and_return(Camerton::ReleaseNameCleaner::Result.new(artist: "", title: ""))

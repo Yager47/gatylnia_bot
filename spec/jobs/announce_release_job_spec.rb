@@ -17,6 +17,20 @@ RSpec.describe AnnounceReleaseJob do
     expect(fake_telegram.sent_messages.sole[:text]).to eq("🎵 Rick Astley — Never Gonna Give You Up · пісня")
   end
 
+  it "announces a duplicate link as the release it was merged into, with its history" do
+    earlier = create(:release, :resolved, artist: "Rick Astley", title: "Never Gonna Give You Up")
+    create(:release_share, chat: share.chat, release: earlier, shared_at: Time.zone.local(2026, 3, 12))
+    allow(Camerton::Platforms::YoutubeMusic).to receive(:source_metadata)
+      .and_return(Camerton::SourceMetadata.new(title: "Never Gonna Give You Up (Lyrics)", author: "Lyrics Channel"))
+    allow_any_instance_of(Camerton::ReleaseNameCleaner).to receive(:call)
+      .and_return(Camerton::ReleaseNameCleaner::Result.new(artist: "Rick Astley", title: "Never Gonna Give You Up"))
+
+    described_class.perform_now(share)
+
+    expect(share.reload.release).to eq(earlier)
+    expect(fake_telegram.sent_messages.sole[:text]).to include("вже скидали 12.03")
+  end
+
   it "adds Discogs' album, year and styles to the announcement" do
     share.release.update!(status: :resolved, artist: "Queen", title: "Bohemian Rhapsody")
     allow_any_instance_of(Camerton::Discogs).to receive_messages(
