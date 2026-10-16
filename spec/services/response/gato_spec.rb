@@ -86,10 +86,18 @@ RSpec.describe Response::Gato do
       expect(Entry.count).to eq(1)
     end
 
-    it "doesn't repeat the confirmation when the model writes it too" do
-      allow(Ai).to receive(:reply_in).and_return(" Гатіння зараховано. Йди мий руки.")
+    it "doesn't repeat the confirmation when the model writes it too, in any form" do
+      [ " Гатіння зараховано. Йди мий руки.", "гатіння зараховано! Йди мий руки.", "Йди мий руки. Гатіння  зараховано" ].each do |echo|
+        allow(Ai).to receive(:reply_in).and_return(echo)
 
-      expect(count_gato(comment_with_ai: true)).to eq("Гатіння зараховано. Йди мий руки.")
+        expect(count_gato(comment_with_ai: true)).to eq("Гатіння зараховано. Йди мий руки.")
+      end
+    end
+
+    it "falls back to a canned line when the model writes only the confirmation" do
+      allow(Ai).to receive(:reply_in).and_return("Гатіння зараховано.")
+
+      expect(count_gato(comment_with_ai: true)).not_to start_with("Гатіння зараховано.")
     end
 
     it "falls back to a canned line when the model skips" do

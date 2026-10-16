@@ -86,6 +86,18 @@ RSpec.describe Ai do
       expect(content).not_to include("SKIP")
     end
 
+    it "names the bot's latest replies in the note so it doesn't repeat them" do
+      replies = [ "Король параші", "Тіряйся", "Йди мий руки", "Закрий єбало" ].map.with_index do |content, i|
+        create(:message, chat: chat, role: :assistant, content: content, created_at: (50 - i).seconds.ago)
+      end
+
+      content = messages(target: later_text, frame_paths: []).last[:content]
+
+      expect(content).to include(%(Твої останні відповіді: "Тіряйся", "Йди мий руки", "Закрий єбало". Не повторюй))
+      expect(content).not_to include(replies.first.content)
+      expect(content).to end_with("до 15 слів.")
+    end
+
     it "sends plain text history without a target" do
       result = messages(target: nil, frame_paths: [])
 

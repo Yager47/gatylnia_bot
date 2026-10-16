@@ -2,6 +2,8 @@ class Ai
   CONTEXT_LIMIT = 20
   # What the model answers when a message isn't for it and it has nothing to add.
   SKIP = "SKIP".freeze
+  # How many of its own latest replies the model is told not to repeat.
+  RECENT_REPLIES = 3
 
   class << self
     # target: the message being answered. The model is told which one it is
@@ -44,7 +46,8 @@ class Ai
         end
       end
 
-      result << { role: "system", content: target_note(target, note) } if target
+      recent_replies = history.select(&:assistant?).last(RECENT_REPLIES).map(&:content)
+      result << { role: "system", content: target_note(target, note, recent_replies) } if target
       result
     end
 
@@ -61,7 +64,9 @@ class Ai
 
     # A mention or a reply to the bot must be answered; anything else may be
     # people talking to each other, which the model can stay out of.
-    def target_note(message, note)
+    # recent_replies are named outright: the prompt's general "don't repeat
+    # yourself" didn't stop it reusing a jab from one message earlier.
+    def target_note(message, note, recent_replies = [])
       addressee =
         if note
           note
@@ -73,8 +78,14 @@ class Ai
             "напиши рівно #{SKIP}. Якшо це для всього чату, відповідай."
         end
 
+      repeats =
+        if recent_replies.any?
+          "Твої останні відповіді: #{recent_replies.map { |reply| "\"#{reply.truncate(200)}\"" }.join(', ')}. " \
+            "Не повторюй з них слів, образів і підколів. "
+        end
+
       "Ти відповідаєш на повідомлення від #{message.user&.name || 'когось'}: " \
-        "\"#{message.content.to_s.truncate(200)}\". #{addressee} " \
+        "\"#{message.content.to_s.truncate(200)}\". #{addressee} #{repeats}" \
         "Відповідь: одне коротке речення, до 15 слів."
     end
 
