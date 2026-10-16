@@ -34,6 +34,19 @@ RSpec.describe Camerton::ReleaseResolver do
     expect(share.reload.release).to eq(earlier)
   end
 
+  it "merges a shared remaster into the album it remasters" do
+    album = create(:release, :album)
+    original = create(:release, :resolved, :album, artist: "The Beatles", title: "Revolver")
+    share = create(:release_share, release: album)
+    allow(Camerton::Platforms::YoutubeMusic).to receive(:source_metadata).and_return(source)
+    allow(cleaner).to receive(:call).and_return(Camerton::ReleaseNameCleaner::Result.new(artist: "The Beatles", title: "Revolver (Remastered 2009)"))
+
+    described_class.new(album, cleaner: cleaner).call
+
+    expect(album.reload.merged_into).to eq(original)
+    expect(share.reload.release).to eq(original)
+  end
+
   it "falls back to the raw title and no artist when the model returns blanks" do
     allow(Camerton::Platforms::YoutubeMusic).to receive(:source_metadata).and_return(source)
     allow(cleaner).to receive(:call).and_return(Camerton::ReleaseNameCleaner::Result.new(artist: "", title: ""))

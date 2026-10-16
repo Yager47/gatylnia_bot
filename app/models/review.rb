@@ -7,6 +7,10 @@ class Review < ApplicationRecord
   belongs_to :user
   has_many :messages, class_name: "ReviewMessage", dependent: :destroy
 
+  # telegram: scored from replies in the chat. spreadsheet: a score from a
+  # member's ratings file (Camerton::RatingsImport), usually with no messages.
+  enum :source, { telegram: 0, spreadsheet: 1 }, validate: true
+
   # Nil until scored, and when nothing said so far is about the music.
   validates :score, numericality: { only_integer: true, in: 1..10 }, allow_nil: true
 

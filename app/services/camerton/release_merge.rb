@@ -3,11 +3,29 @@ module Camerton
   # video) are one release. Once a release is resolved, it merges into the
   # oldest other release of the same kind, artist and title (ignoring case
   # and surrounding spaces): its shares and reviews move there, and it stays
-  # behind only to map its link (merged_into).
+  # behind only to map its link (merged_into). A remaster or a dated remix
+  # of the album is the same release: "Revolver (Remastered 2009)" and
+  # "Let It Be (2021 Mix)" match "Revolver" and "Let It Be", while
+  # "(Some DJ Mix)" stays a release of its own.
   #
   # A member who reviewed both keeps one review: the messages are joined and
   # the review is re-scored from all of them, silently.
   class ReleaseMerge
+    # A trailing "(…)", "[…]" or " - …" note on a title.
+    TITLE_NOTE = /\s*(?:\((?<note>[^()]*)\)|\[(?<note>[^\[\]]*)\]|\s-\s(?<note>[^-]+))\z/
+    # Notes that only mark another edition: "Remastered 2009", "2009
+    # Remaster", "Remastered Version", "2021 Mix", "2021 Remix".
+    EDITION_NOTE = /\A(?:(?:\d{4}\s+)?(?:digital(?:ly)?\s+)?remaster(?:ed)?(?:\s+\d{4})?(?:\s+(?:version|edition))?|\d{4}\s+(?:re-?)?mix)\z/i
+
+    # The title without edition notes, for comparing.
+    def self.base_title(title)
+      title = title.to_s.strip
+      while (match = TITLE_NOTE.match(title)) && EDITION_NOTE.match?(match[:note].strip)
+        title = match.pre_match.strip
+      end
+      title.downcase
+    end
+
     def initialize(release)
       @release = release
     end
@@ -16,11 +34,13 @@ module Camerton
     def target
       return unless @release.resolved? && @release.merged_into_id.nil? && @release.artist.present? && @release.title.present?
 
+      # Same artist in SQL, then the titles here: an artist has few releases.
+      title = self.class.base_title(@release.title)
       Release.where(kind: @release.kind, status: :resolved, merged_into_id: nil)
         .where.not(id: @release.id)
-        .where("LOWER(TRIM(artist)) = ? AND LOWER(TRIM(title)) = ?", normalized(@release.artist), normalized(@release.title))
+        .where("LOWER(TRIM(artist)) = ?", normalized(@release.artist))
         .order(:id)
-        .first
+        .find { |release| self.class.base_title(release.title) == title }
     end
 
     # Returns the release merged into, or nil when there was nothing to merge.
@@ -62,7 +82,7 @@ module Camerton
     end
 
     def lock_name
-      key = [ "camerton_release", @release.kind, normalized(@release.artist), normalized(@release.title) ].join(":")
+      key = [ "camerton_release", @release.kind, normalized(@release.artist), self.class.base_title(@release.title) ].join(":")
       Release.connection.execute(Release.sanitize_sql_array([ "SELECT pg_advisory_xact_lock(hashtext(?))", key ]))
     end
 
