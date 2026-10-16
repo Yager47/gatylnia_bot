@@ -51,6 +51,40 @@ RSpec.describe Camerton::ReleaseMerge do
     expect(ScoreReviewJob).not_to have_been_enqueued
   end
 
+  it "treats a remaster or a dated remix as the same release, either way round" do
+    remaster = create(:release, :resolved, artist: "Nickelback", title: "Follow You Home (Remastered 2009)")
+    plain_album = create(:release, :resolved, :album, artist: "The Beatles", title: "Let It Be")
+    remix = create(:release, :resolved, :album, artist: "The Beatles", title: "Let It Be (2021 Mix)")
+
+    expect(merge(remaster)).to eq(original)
+    expect(merge(remix)).to eq(plain_album)
+
+    older_remaster = create(:release, :resolved, :album, artist: "Can", title: "Ege Bamyasi - Remastered Version")
+    expect(merge(create(:release, :resolved, :album, artist: "Can", title: "Ege Bamyasi"))).to eq(older_remaster)
+  end
+
+  it "keeps other versions apart" do
+    [ "Follow You Home (Some DJ Mix)", "Follow You Home (Remix)", "Follow You Home (Live)", "Follow You Home (Deluxe Edition)" ]
+      .each { |title| expect(merge(create(:release, :resolved, artist: "Nickelback", title: title))).to be_nil }
+  end
+
+  describe ".base_title" do
+    it "drops edition notes at the end, in any bracket style" do
+      {
+        "Revolver (Remastered 2009)" => "revolver",
+        "Revolver (2009 Remaster)" => "revolver",
+        "Revolver [Remastered]" => "revolver",
+        "Revolver - Remastered 2009" => "revolver",
+        "Let It Be (2021 Mix)" => "let it be",
+        "Abbey Road (2019 Remix) (Remastered)" => "abbey road",
+        "Tago Mago (Digitally Remastered Version)" => "tago mago",
+        "Let It Be (Some DJ Mix)" => "let it be (some dj mix)",
+        "Remaster" => "remaster",
+        "Grotesque (After the Gramme)" => "grotesque (after the gramme)"
+      }.each { |title, base| expect(described_class.base_title(title)).to eq(base), title }
+    end
+  end
+
   it "leaves a song and an album of the same name apart" do
     album = create(:release, :resolved, :album, artist: "Nickelback", title: "Follow You Home")
 
