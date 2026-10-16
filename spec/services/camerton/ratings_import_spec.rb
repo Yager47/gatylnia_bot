@@ -35,9 +35,20 @@ RSpec.describe Camerton::RatingsImport do
 
     report = import(rating("OLAK5uy_known"))
 
-    expect(Review.sole).to have_attributes(release: release, score: 8)
+    expect(Review.sole).to have_attributes(release: release, score: 8, source: "spreadsheet")
     expect(Release.count).to eq(1)
     expect(report.releases_created).to eq(0)
+  end
+
+  it "keeps the telegram source for a release the chat shared" do
+    release = create(:release, :album, :resolved, external_id: "OLAK5uy_shared")
+    create(:release_share, chat: chat, release: release)
+    create(:release, :album, :resolved, external_id: "OLAK5uy_elsewhere").tap { |other| create(:release_share, release: other) }
+
+    import(rating("OLAK5uy_shared"), rating("OLAK5uy_elsewhere", title: "Shared In Another Chat"))
+
+    expect(Review.order(:id).map { |review| [ review.release.external_id, review.source ] })
+      .to eq([ [ "OLAK5uy_shared", "telegram" ], [ "OLAK5uy_elsewhere", "spreadsheet" ] ])
   end
 
   it "scores the chat's release of the same name when the link is another edition" do
@@ -57,7 +68,7 @@ RSpec.describe Camerton::RatingsImport do
 
     report = import(rating("OLAK5uy_replied", score: 6))
 
-    expect(review.reload).to have_attributes(score: 6, source: "spreadsheet")
+    expect(review.reload).to have_attributes(score: 6, source: "telegram")
     expect(review.messages.count).to eq(1)
     expect(report).to have_attributes(reviews_created: 0, reviews_filled: 1)
   end
