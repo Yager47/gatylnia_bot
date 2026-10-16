@@ -41,8 +41,8 @@ RSpec.describe AiReplyGate do
     it "answers a :maybe message only when the roll is under the chance" do
       gate = described_class.new(message)
 
-      expect(gate.answer?(0.39)).to be(true)
-      expect(gate.answer?(0.4)).to be(false)
+      expect(gate.answer?(0.59)).to be(true)
+      expect(gate.answer?(0.6)).to be(false)
     end
 
     it "ignores the roll otherwise" do

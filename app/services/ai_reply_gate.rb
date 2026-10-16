@@ -4,7 +4,7 @@
 #   :never  - it replies to someone else: their conversation, not the bot's
 #   :maybe  - addressed to no one in particular; answered with CHANCE
 class AiReplyGate
-  CHANCE = 0.4
+  CHANCE = 0.6
 
   def initialize(message)
     @message = message
