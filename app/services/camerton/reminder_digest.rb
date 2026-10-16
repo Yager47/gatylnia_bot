@@ -1,5 +1,3 @@
-require "erb"
-
 module Camerton
   # The daily nudge in a Camerton chat: each member who hasn't scored a
   # release shared in the last week, with links to those releases, one per
@@ -44,7 +42,7 @@ module Camerton
       blocks = pending_by_member.map do |member, shares|
         lines = shares.first(PER_MEMBER).map { |share| Formatting.release_link(share, @chat) }
         lines << "і ще #{shares.size - PER_MEMBER}" if shares.size > PER_MEMBER
-        [ mention(member), *lines ].join("\n")
+        [ Formatting.mention(member), *lines ].join("\n")
       end
       return if blocks.empty?
 
@@ -70,17 +68,6 @@ module Camerton
         end
         [ member, pending ] if pending.any?
       end
-    end
-
-    # @username notifies by itself; without one, a mention link does.
-    def mention(user)
-      return "@#{user.username}" if user.username.present?
-
-      %(<a href="tg://user?id=#{user.telegram_id}">#{escape(user.name)}</a>)
-    end
-
-    def escape(text)
-      ERB::Util.html_escape(text)
     end
   end
 end
