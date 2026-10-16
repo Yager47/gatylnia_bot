@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Checks that a commit's Heroku deploy came up healthy. Run after the push by
+# the CI deploy job, or by hand: bin/post-deploy-check <commit sha>
+#
+# 1. its release finished, and the release phase (migrations) succeeded;
+# 2. the new web dyno started Solid Queue's Worker (jobs run in-process);
+# 3. /up answers 200;
+# 4. after a short settle, no boot timeout, memory error or crash in the
+#    platform logs since the release.
+# Needs the Heroku CLI logged in, or HEROKU_API_KEY set. Exits non-zero with
+# the reason, so a failed check turns the CI run red.
+set -euo pipefail
+
+app="${HEROKU_APP:-gatylnia}"
+health_url="${HEALTH_URL:-https://gatylnia-6e3de023de50.herokuapp.com/up}"
+sha="${1:?usage: bin/post-deploy-check <commit sha>}"
+timeout="${CHECK_TIMEOUT:-300}"
+settle="${SETTLE_SECONDS:-30}"
+
+fail() {
+  echo "::error::Deploy check failed: $*"
+  exit 1
+}
+
+deadline=$((SECONDS + timeout))
+wait_or_fail() {
+  ((SECONDS < deadline)) || fail "$1"
+  sleep 5
+}
+
+# Heroku names a git deploy's release "Deploy <first 8 characters of the sha>".
+release=""
+until [[ -n "$release" && "$(jq -r .status <<<"$release")" != "pending" ]]; do
+  [[ -n "$release" ]] && wait_or_fail "release for ${sha:0:8} still pending after ${timeout}s"
+  release="$(heroku releases -a "$app" -n 10 --json |
+    jq -c --arg description "Deploy ${sha:0:8}" 'first(.[] | select(.description == $description)) // empty')"
+  [[ -z "$release" ]] && wait_or_fail "no release for ${sha:0:8}"
+done
+
+version="$(jq -r .version <<<"$release")"
+status="$(jq -r .status <<<"$release")"
+if [[ "$status" != "succeeded" ]]; then
+  heroku releases:output "v$version" -a "$app" || true
+  fail "release v$version $status (release phase output above)"
+fi
+echo "Release v$version succeeded."
+
+logs_since_release() {
+  heroku logs -n 1500 -a "$app" | sed -n "/Release v$version created/,\$p"
+}
+
+until logs_since_release | grep "Started Worker" >/dev/null; do
+  wait_or_fail "Solid Queue Worker didn't start after v$version"
+done
+echo "Solid Queue Worker started."
+
+until [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$health_url")" == "200" ]]; do
+  wait_or_fail "$health_url didn't return 200"
+done
+echo "$health_url returned 200."
+
+# R10 boot timeout, R14/R15 memory, H10 app crashed, or a dyno crash.
+sleep "$settle"
+if problems="$(logs_since_release | grep -E 'Error R1[0-9]|code=H10|State changed from [a-z]+ to crashed')"; then
+  echo "$problems"
+  fail "platform errors since v$version (above)"
+fi
+echo "No platform errors since v$version. Deploy of ${sha:0:8} is healthy."
