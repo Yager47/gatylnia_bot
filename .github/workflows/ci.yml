@@ -71,3 +71,31 @@ jobs:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/gatylnia_bot_test
         run: bin/rails db:test:prepare && bundle exec rspec
+
+  # Every push to main that passes CI goes to production, then
+  # bin/post-deploy-check confirms it came up healthy; a failure turns the run
+  # red. One deploy at a time; a newer push waits for the running one.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [ scan_ruby, lint, test ]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Heroku's git endpoint needs the full history
+
+      - name: Install the Heroku CLI
+        run: npm install --global heroku@10.0.0
+
+      - name: Push to Heroku
+        run: git push "https://heroku:${HEROKU_API_KEY}@git.heroku.com/gatylnia.git" "HEAD:refs/heads/main"
+
+      - name: Check the deploy
+        run: bin/post-deploy-check "$GITHUB_SHA"
