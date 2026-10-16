@@ -28,6 +28,14 @@ module Camerton
       %(<a href="https://t.me/c/#{internal_id}/#{share.telegram_message_id}">#{name}</a>)
     end
 
+    # Telegram HTML: @username notifies by itself; without one, a mention
+    # link does.
+    def mention(user)
+      return "@#{user.username}" if user.username.present?
+
+      %(<a href="tg://user?id=#{user.telegram_id}">#{ERB::Util.html_escape(user.name)}</a>)
+    end
+
     def kind(release)
       KINDS.fetch(release.kind)
     end

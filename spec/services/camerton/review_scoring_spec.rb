@@ -24,7 +24,7 @@ RSpec.describe Camerton::ReviewScoring do
 
     described_class.new(review, analyzer: analyzer).call
 
-    _name, params = fake_telegram.calls.sole
+    _name, params = fake_telegram.calls.find { |name, _| name == :set_message_reaction }
     expect(params).to include(message_id: 100)
     expect(params[:reaction].map(&:emoji)).to eq([ "🤬" ])
   end
@@ -37,6 +37,48 @@ RSpec.describe Camerton::ReviewScoring do
 
     expect(review.reload.score).to eq(9)
     expect(fake_telegram.calls).to be_empty
+  end
+
+  describe "telling the sharer" do
+    let(:sharer) { create(:user, username: "olya") }
+    let(:share) { create(:release_share, chat: review.chat, release: review.release, user: sharer) }
+
+    before { create(:review_message, review: review, release_share: share) }
+
+    def score_as(score)
+      allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: true, score: score, summary: "ok"))
+      described_class.new(review, analyzer: analyzer).call
+    end
+
+    it "posts the first score" do
+      score_as(7)
+
+      expect(fake_telegram.sent_messages.sole[:text]).to eq("@olya, твій реліз оцінили на 7/10 👍")
+    end
+
+    it "posts again when the score changes" do
+      review.update!(score: 5)
+
+      score_as(8)
+
+      expect(fake_telegram.sent_messages.sole[:text]).to include("8/10")
+    end
+
+    it "stays quiet when a re-run keeps the score" do
+      review.update!(score: 7)
+
+      score_as(7)
+
+      expect(fake_telegram.sent_messages).to be_empty
+    end
+
+    it "stays quiet when scoring silently" do
+      allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: true, score: 7, summary: "ok"))
+
+      described_class.new(review, analyzer: analyzer, react: false).call
+
+      expect(fake_telegram.sent_messages).to be_empty
+    end
   end
 
   it "keeps an existing score, without reacting, when the messages turn out not to be a review" do
