@@ -28,6 +28,28 @@ namespace :camerton do
     puts "Skipped: #{report.skipped.inspect}" if report.skipped.any?
   end
 
+  # Imports a member's scores from their ratings spreadsheet, exported as a
+  # JSON array of {"url", "artist", "title", "year", "score"}. Silent; dry
+  # run unless DRY_RUN=0. CHAT_ID and USER_ID are Telegram ids.
+  #
+  #   bin/rails camerton:import_ratings RATINGS_FILE=tmp/ratings.json CHAT_ID=-1004499357183 USER_ID=123
+  desc "Import a member's Camerton scores from a ratings spreadsheet (as JSON)"
+  task import_ratings: :environment do
+    chat = Chat.find_by!(telegram_id: ENV.fetch("CHAT_ID"))
+    user = chat.users.find_by!(telegram_id: ENV.fetch("USER_ID"))
+    dry_run = ENV.fetch("DRY_RUN", "1") != "0"
+    ratings = JSON.parse(File.read(ENV.fetch("RATINGS_FILE"))).map do |row|
+      Camerton::RatingsImport::Rating.new(**row.slice("url", "artist", "title", "year", "score").symbolize_keys)
+    end
+
+    report = Camerton::RatingsImport.new(chat: chat, user: user, ratings: ratings, dry_run: dry_run).call
+
+    puts "#{dry_run ? 'DRY RUN, nothing written' : 'Done'}: #{ratings.size} ratings by #{user.name} in #{chat.title.inspect}"
+    puts "Releases: #{report.releases_created} new, #{report.releases_merged} merged into one the chat has"
+    puts "Reviews: #{report.reviews_created} new, #{report.reviews_filled} filled in"
+    report.skipped.each { |reason, names| puts "Skipped #{reason} (#{names.size}): #{names.join('; ')}" }
+  end
+
   # Merges releases resolved before ReleaseMerge existed: each one with the
   # same kind, artist and title as an older release. Newest first, so all of
   # a name's duplicates merge into its oldest release. Dry run unless DRY_RUN=0.
