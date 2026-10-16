@@ -1,9 +1,10 @@
 require "telegram/bot"
 
 module Camerton
-  # Tells whoever shared a release that it got a score, as a reply to the
-  # review's latest message: "@olya, твій реліз оцінили на 7/10 👍". Every
-  # member who shared it in this chat is mentioned, except the reviewer.
+  # Tells whoever first shared a release in this chat that it got a score,
+  # as a reply to the review's latest message: "@olya, твій реліз оцінили на
+  # 7/10 👍". Later sharers aren't mentioned; nor is anyone when the first
+  # sharer is the reviewer.
   # Cosmetic like ReviewReaction: a failure is logged, not retried, so it
   # never costs another scoring call.
   class SharerNotice
@@ -30,22 +31,20 @@ module Camerton
       Rails.logger.warn("[Camerton::SharerNotice] Review #{@review.id}: #{e.class}: #{e.message}")
     end
 
-    # HTML for Telegram, or nil when the reviewer is the only sharer.
+    # HTML for Telegram, or nil when the reviewer shared it first.
     def text
-      mentions = sharers.map { |user| Formatting.mention(user) }
-      return if mentions.empty?
+      sharer = first_sharer
+      return if sharer.nil? || sharer.id == @review.user_id
 
-      yours = mentions.one? ? "твій" : "ваш"
       emoji = ReviewReaction::EMOJIS.fetch(@review.label)
-
-      "#{mentions.join(', ')}, #{yours} реліз оцінили на #{@review.score}/10 #{emoji}"
+      "#{Formatting.mention(sharer)}, твій реліз оцінили на #{@review.score}/10 #{emoji}"
     end
 
     private
 
-    def sharers
-      shares = ReleaseShare.where(chat_id: @review.chat_id, release_id: @review.release_id)
-      User.where(id: shares.select(:user_id)).where.not(id: @review.user_id).order(:id)
+    def first_sharer
+      ReleaseShare.where(chat_id: @review.chat_id, release_id: @review.release_id)
+        .order(:shared_at, :id).first&.user
     end
   end
 end

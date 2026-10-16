@@ -6,8 +6,8 @@ RSpec.describe Camerton::SharerNotice do
   let(:reviewer) { create(:user, username: "reviewer") }
   let(:review) { create(:review, chat: chat, release: release, user: reviewer, score: 7) }
 
-  def share_by(user, chat: self.chat)
-    create(:release_share, chat: chat, release: release, user: user)
+  def share_by(user, chat: self.chat, shared_at: Time.current)
+    create(:release_share, chat: chat, release: release, user: user, shared_at: shared_at)
   end
 
   def sent
@@ -26,19 +26,25 @@ RSpec.describe Camerton::SharerNotice do
     expect(chat.messages.assistant.sole.content).to eq("@olya, твій реліз оцінили на 7/10 👍")
   end
 
-  it "mentions everyone who shared the release here once, except the reviewer" do
-    olya = create(:user, username: "olya")
-    ivan = create(:user, username: "ivan")
-    share = share_by(olya)
-    share_by(ivan)
-    share_by(olya)
-    share_by(reviewer)
-    share_by(create(:user, username: "elsewhere"), chat: create(:chat))
+  it "mentions only whoever shared the release here first" do
+    share_by(create(:user, username: "elsewhere"), chat: create(:chat), shared_at: 3.days.ago)
+    share = share_by(create(:user, username: "ivan"), shared_at: 1.day.ago)
+    share_by(create(:user, username: "olya"), shared_at: 2.days.ago)
     create(:review_message, review: review, release_share: share)
 
     described_class.new(review).call
 
-    expect(sent.sole[:text]).to eq("@olya, @ivan, ваш реліз оцінили на 7/10 👍")
+    expect(sent.sole[:text]).to eq("@olya, твій реліз оцінили на 7/10 👍")
+  end
+
+  it "stays quiet when the reviewer shared it first, even if others shared it later" do
+    share_by(reviewer, shared_at: 2.days.ago)
+    share = share_by(create(:user, username: "olya"), shared_at: 1.day.ago)
+    create(:review_message, review: review, release_share: share)
+
+    described_class.new(review).call
+
+    expect(sent).to be_empty
   end
 
   it "mentions a sharer without a username with an escaped link" do
