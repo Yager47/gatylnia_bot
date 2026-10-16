@@ -9,7 +9,8 @@ module Camerton
   # so imported releases stay out of the digest and "що послухати".
   #
   # Silent: no messages, reactions or AI calls. Only fills a review with no
-  # score (source: spreadsheet); a score from the chat is never replaced.
+  # score; a score from the chat is never replaced. The review's source is
+  # spreadsheet unless the chat shared the release (Review#source).
   # Safe to run again. A dry run rolls everything back.
   class RatingsImport
     Rating = Data.define(:url, :artist, :title, :year, :score)
@@ -48,7 +49,8 @@ module Camerton
         next skip(:already_scored, rating) if review.score
 
         counts[review.new_record? ? :reviews_created : :reviews_filled] += 1
-        review.update!(score: rating.score, source: :spreadsheet, scored_at: Time.current)
+        source = @chat.release_shares.exists?(release: release) ? :telegram : :spreadsheet
+        review.update!(score: rating.score, source: source, scored_at: Time.current)
       end
 
       Report.new(
