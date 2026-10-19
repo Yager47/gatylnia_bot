@@ -57,14 +57,7 @@ module Response
     end
 
     def remove_entry
-      last_entry = @user.entries.where(chat: @chat).order(:created_at, :id).last
-
-      if last_entry
-        last_entry.destroy!
-        reply("Твоє останнє гатіння видалено. \nТіряйся")
-      else
-        reply("Ти ще тут не гатив, придурок")
-      end
+      reply(Removals::Remover.new(user: @user, chat: @chat).gato)
     end
 
     def gato_response

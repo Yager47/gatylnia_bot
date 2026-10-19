@@ -42,6 +42,19 @@ RSpec.describe QuietHandler do
     expect(fake_telegram.sent_messages.sole).to include(parse_mode: "HTML", text: include(%(<a href="https://t.me/c/1234567890/7">)))
   end
 
+  it "removes the sender's review of a release on request, in their own words" do
+    chat.update!(camerton_enabled: true)
+    allow_any_instance_of(Removals::RequestClassifier).to receive(:call).and_return("review")
+    share = create(:release_share, chat: chat, release: create(:release, :resolved), telegram_message_id: 7)
+    dispatch(message_update(text: "Топ", message_id: 8, reply_to_message: { message_id: 7, text: "link" }))
+    expect(Review.count).to eq(1)
+
+    dispatch(message_update(update_id: 2, text: "@test_bot прибери моє ревю", message_id: 9, reply_to_message: { message_id: 7, text: "link" }))
+
+    expect(Review.count).to eq(0)
+    expect(sent_texts.last).to eq("Видалив твою оцінку: #{Camerton::Formatting.release(share.release)}")
+  end
+
   it "can switch back to another mode" do
     dispatch(message_update(text: "@test_bot режим: звичайний"))
 

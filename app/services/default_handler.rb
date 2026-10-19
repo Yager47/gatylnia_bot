@@ -38,6 +38,7 @@ class DefaultHandler < ChatModeHandler
     [
       -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
       -> { Response::BotCommand.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call },
+      -> { removal(text) unless edited },
       -> { gato(message, text) unless edited },
       -> { Response::UndoCoffee.new(user: user, text: text, chat: @chat).call unless edited },
       -> { Response::Equals.new(text: text).call },
@@ -45,6 +46,10 @@ class DefaultHandler < ChatModeHandler
       -> { Response::Includes.new(user: user, text: text).call if chance(0.1) },
       -> { answer_with_ai(message) }
     ]
+  end
+
+  def removal(text)
+    Response::Removal.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call
   end
 
   def gato(message, text)
