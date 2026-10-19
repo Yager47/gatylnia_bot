@@ -63,8 +63,14 @@ RSpec.describe Camerton::ReleaseMerge do
     expect(merge(create(:release, :resolved, :album, artist: "Can", title: "Ege Bamyasi"))).to eq(older_remaster)
   end
 
+  it "treats a deluxe edition as the same release" do
+    plain = create(:release, :resolved, :album, artist: "Depeche Mode", title: "Exciter")
+
+    expect(merge(create(:release, :resolved, :album, artist: "Depeche Mode", title: "Exciter (Deluxe)"))).to eq(plain)
+  end
+
   it "keeps other versions apart" do
-    [ "Follow You Home (Some DJ Mix)", "Follow You Home (Remix)", "Follow You Home (Live)", "Follow You Home (Deluxe Edition)" ]
+    [ "Follow You Home (Some DJ Mix)", "Follow You Home (Remix)", "Follow You Home (Live)", "Follow You Home (Expanded Edition)" ]
       .each { |title| expect(merge(create(:release, :resolved, artist: "Nickelback", title: title))).to be_nil }
   end
 
@@ -78,6 +84,12 @@ RSpec.describe Camerton::ReleaseMerge do
         "Let It Be (2021 Mix)" => "let it be",
         "Abbey Road (2019 Remix) (Remastered)" => "abbey road",
         "Tago Mago (Digitally Remastered Version)" => "tago mago",
+        "Exciter (Deluxe)" => "exciter",
+        "Abbey Road (Super Deluxe Edition)" => "abbey road",
+        "L.A. Woman (50th Anniversary Deluxe Edition)" => "l.a. woman",
+        "Rated R - Deluxe Edition" => "rated r",
+        "Rubber Soul (2009 Deluxe Version)" => "rubber soul",
+        "Deluxe" => "deluxe",
         "Let It Be (Some DJ Mix)" => "let it be (some dj mix)",
         "Remaster" => "remaster",
         "Grotesque (After the Gramme)" => "grotesque (after the gramme)"
