@@ -52,4 +52,28 @@ RSpec.describe Camerton::ReviewReaction do
     expect { described_class.new(review).call }.not_to raise_error
     expect(Rails.logger).to have_received(:warn).with(/REACTION_INVALID/)
   end
+
+  describe "#clear" do
+    it "takes the reaction off every message of the review" do
+      create(:review_message, review: review, telegram_message_id: 100)
+      create(:review_message, review: review, telegram_message_id: 101)
+
+      described_class.new(review).clear
+
+      expect(reactions_sent).to contain_exactly(
+        { chat_id: review.chat.telegram_id, message_id: 100, reaction: [] },
+        { chat_id: review.chat.telegram_id, message_id: 101, reaction: [] }
+      )
+    end
+
+    it "only logs a failure and goes on with the next message" do
+      create_list(:review_message, 2, review: review)
+      response = instance_double(Faraday::Response, status: 400, body: { ok: false, error_code: 400, description: "Bad Request: MESSAGE_ID_INVALID" }.to_json)
+      allow(fake_telegram).to receive(:set_message_reaction).and_raise(Telegram::Bot::Exceptions::ResponseError.new(response: response))
+      allow(Rails.logger).to receive(:warn)
+
+      expect { described_class.new(review).clear }.not_to raise_error
+      expect(Rails.logger).to have_received(:warn).twice
+    end
+  end
 end

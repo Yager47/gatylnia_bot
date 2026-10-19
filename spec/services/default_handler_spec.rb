@@ -162,6 +162,28 @@ RSpec.describe DefaultHandler do
 
       expect(Activity.count).to eq(2)
     end
+
+    context "in other words, addressed to the bot" do
+      before { allow_any_instance_of(Removals::RequestClassifier).to receive(:call).and_return("coffee") }
+
+      it "removes the latest coffee as the AI reads it, without tracking the message as coffee" do
+        create_list(:activity, 2, chat: chat, user: sender)
+
+        dispatch(message_update(text: "@test_bot прибери останню каву", message_id: 2))
+
+        expect(Activity.count).to eq(1)
+        expect(sent_texts.sole).to start_with("Видалив твою останню каву.")
+        expect(TrackCoffeeTextJob).not_to have_been_enqueued
+      end
+
+      it "doesn't remove another cup when the message is edited" do
+        create_list(:activity, 2, chat: chat, user: sender)
+
+        dispatch(edited_message_update(text: "@test_bot прибери останню каву", message_id: 2))
+
+        expect(Activity.count).to eq(2)
+      end
+    end
   end
 
   describe "counting a gato" do

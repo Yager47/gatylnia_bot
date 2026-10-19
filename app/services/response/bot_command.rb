@@ -58,7 +58,7 @@ module Response
 
     # Every mode.
     def process_help
-      reply(Help.new(chat: @chat).text) if HELP.include?(@command.strip)
+      Html.new(text: Help.new(chat: @chat).text) if HELP.include?(@command.strip)
     end
 
     def process_mode

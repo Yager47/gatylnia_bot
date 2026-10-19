@@ -1,8 +1,8 @@
 module Camerton
   # Camerton's commands in chats with it on: "топ", "дно" (optionally
   # "альбоми"/"пісні", then "за тиждень/місяць/рік"), "оцінки" in reply to a
-  # shared release, "критики", "камертони", "мій смак", "смак з @нік" and
-  # "що послухати [альбоми|пісні] [жанр] [@нік]".
+  # shared release, "критики", "камертони", "мій смак", "смак з @нік",
+  # "що послухати [альбоми|пісні] [жанр] [@нік]" and "жанри".
   class StatsCommand
     # Period word => [Time range method, label for the reply header]
     PERIODS = {
@@ -44,6 +44,7 @@ module Camerton
         when "критики" then Critics.new(chat: @chat).text
         when "камертони" then Sharers.new(chat: @chat).text
         when "мій смак" then Taste.new(chat: @chat, user: @user).text
+        when "жанри" then Genres.new(chat: @chat).text
         end
       end
     end
