@@ -3,19 +3,23 @@ module Camerton
   # video) are one release. Once a release is resolved, it merges into the
   # oldest other release of the same kind, artist and title (ignoring case
   # and surrounding spaces): its shares and reviews move there, and it stays
-  # behind only to map its link (merged_into). A remaster or a dated remix
-  # of the album is the same release: "Revolver (Remastered 2009)" and
-  # "Let It Be (2021 Mix)" match "Revolver" and "Let It Be", while
-  # "(Some DJ Mix)" stays a release of its own.
+  # behind only to map its link (merged_into). A remaster, a dated remix or
+  # a deluxe edition of the album is the same release: "Revolver (Remastered
+  # 2009)", "Let It Be (2021 Mix)" and "Exciter (Deluxe)" match "Revolver",
+  # "Let It Be" and "Exciter", while "(Some DJ Mix)" stays a release of its
+  # own.
   #
   # A member who reviewed both keeps one review: the messages are joined and
   # the review is re-scored from all of them, silently.
   class ReleaseMerge
     # A trailing "(…)", "[…]" or " - …" note on a title.
     TITLE_NOTE = /\s*(?:\((?<note>[^()]*)\)|\[(?<note>[^\[\]]*)\]|\s-\s(?<note>[^-]+))\z/
-    # Notes that only mark another edition: "Remastered 2009", "2009
-    # Remaster", "Remastered Version", "2021 Mix", "2021 Remix".
-    EDITION_NOTE = /\A(?:(?:\d{4}\s+)?(?:digital(?:ly)?\s+)?remaster(?:ed)?(?:\s+\d{4})?(?:\s+(?:version|edition))?|\d{4}\s+(?:re-?)?mix)\z/i
+    # Notes that only mark another edition.
+    EDITION_NOTE = /\A(?:
+      (?:\d{4}\s+)?(?:digital(?:ly)?\s+)?remaster(?:ed)?(?:\s+\d{4})?(?:\s+(?:version|edition))? # Remastered 2009, 2009 Remaster
+      | \d{4}\s+(?:re-?)?mix                                                                     # 2021 Mix, 2021 Remix
+      | (?:\d{4}\s+|\d+(?:st|nd|rd|th)\s+anniversary\s+)?(?:super\s+)?deluxe(?:\s+(?:edition|version))? # Deluxe, 50th Anniversary Super Deluxe Edition
+    )\z/xi
 
     # The title without edition notes, for comparing.
     def self.base_title(title)
