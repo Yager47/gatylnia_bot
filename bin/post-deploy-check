@@ -5,7 +5,9 @@
 # 1. its release finished, and the release phase (migrations) succeeded;
 # 2. the new web dyno started Solid Queue's Worker (jobs run in-process);
 # 3. /up answers 200;
-# 4. after a short settle, no boot timeout, memory error or crash in the
+# 4. ffmpeg runs on a one-off dyno: without it video notes quietly go
+#    unclassified (Video::FrameExtractor returns no frames);
+# 5. after a short settle, no boot timeout, memory error or crash in the
 #    platform logs since the release.
 # Needs the Heroku CLI logged in, or HEROKU_API_KEY set. Exits non-zero with
 # the reason, so a failed check turns the CI run red.
@@ -58,6 +60,12 @@ until [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$health_url")"
   wait_or_fail "$health_url didn't return 200"
 done
 echo "$health_url returned 200."
+
+# The ffmpeg buildpack installs it at build time; nothing in the app fails
+# loudly when it's missing.
+heroku run --no-tty --exit-code -a "$app" -- ffmpeg -hide_banner -version >/dev/null 2>&1 ||
+  fail "ffmpeg doesn't run on a v$version dyno (check the ffmpeg buildpack)"
+echo "ffmpeg runs."
 
 # R10 boot timeout, R14/R15 memory, H10 app crashed, or a dyno crash.
 sleep "$settle"
