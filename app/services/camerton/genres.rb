@@ -6,13 +6,16 @@ module Camerton
   # message holds 4096 characters. Three queries however many releases.
   class Genres
     STYLES_SHOWN = 20
+    # Whole SQL fragments, not a column name spliced in: nothing to inject.
+    GENRE_TAGS = "CROSS JOIN LATERAL unnest(releases.genres) AS tag".freeze
+    STYLE_TAGS = "CROSS JOIN LATERAL unnest(releases.styles) AS tag".freeze
 
     def initialize(chat:)
       @chat = chat
     end
 
     def text
-      genres = counts(:genres)
+      genres = counts(GENRE_TAGS)
       return "🎸 Жанри:\n\nЩе нема релізів із жанром з Discogs." if genres.empty?
 
       [ "🎸 Жанри наших релізів:", "", *lines(genres), *without_genre, *styles_section ].join("\n")
@@ -21,9 +24,9 @@ module Camerton
     private
 
     # [[tag, releases count]], the most releases first, then by name.
-    def counts(column)
+    def counts(tags_join)
       Release.where(id: shared_ids)
-        .joins("CROSS JOIN LATERAL unnest(releases.#{column}) AS tag")
+        .joins(tags_join)
         .group("tag")
         .order(Arel.sql("COUNT(DISTINCT releases.id) DESC, tag"))
         .pluck(Arel.sql("tag"), Arel.sql("COUNT(DISTINCT releases.id)"))
@@ -39,7 +42,7 @@ module Camerton
     end
 
     def styles_section
-      styles = counts(:styles)
+      styles = counts(STYLE_TAGS)
       return [] if styles.empty?
 
       section = [ "", "🎛 Стилі:", "", *lines(styles.first(STYLES_SHOWN)) ]
