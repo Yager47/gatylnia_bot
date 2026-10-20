@@ -6,6 +6,7 @@ class Review < ApplicationRecord
   belongs_to :release
   belongs_to :user
   has_many :messages, class_name: "ReviewMessage", dependent: :destroy
+  has_many :score_changes, class_name: "ReviewScoreChange", dependent: :delete_all
 
   # Where the release came from. telegram: shared in the chat (the score may
   # still have come from a ratings file). spreadsheet: only in a member's

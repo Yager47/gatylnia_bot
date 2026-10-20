@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
     t.datetime "revoked_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "level"
     t.index ["chat_id", "code", "period", "user_id"], name: "index_achievements_on_chat_id_and_code_and_period_and_user_id", unique: true
     t.index ["user_id"], name: "index_achievements_on_user_id"
   end
@@ -171,6 +172,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
     t.datetime "updated_at", null: false
     t.index ["release_share_id", "telegram_message_id"], name: "index_review_messages_on_share_and_telegram_message", unique: true
     t.index ["review_id"], name: "index_review_messages_on_review_id"
+  end
+
+  create_table "review_score_changes", force: :cascade do |t|
+    t.bigint "review_id", null: false
+    t.integer "from_score", null: false
+    t.integer "to_score", null: false
+    t.datetime "changed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["review_id"], name: "index_review_score_changes_on_review_id"
   end
 
   create_table "reviews", force: :cascade do |t|
@@ -368,6 +379,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
   add_foreign_key "releases", "releases", column: "merged_into_id"
   add_foreign_key "review_messages", "release_shares"
   add_foreign_key "review_messages", "reviews"
+  add_foreign_key "review_score_changes", "reviews"
   add_foreign_key "reviews", "chats"
   add_foreign_key "reviews", "releases"
   add_foreign_key "reviews", "users"

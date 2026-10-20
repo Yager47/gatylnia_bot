@@ -3,13 +3,15 @@ require "rails_helper"
 RSpec.describe Achievements::Checker do
   # Stands in for a real rule: whoever is in winners qualifies.
   let(:rule) do
-    Struct.new(:winners) do
+    Class.new(Achievements::Rule) do
+      attr_accessor :winners
+
       def code = "test"
       def title = "Тест"
       def description = "умова тесту"
       def period_kind = :month
       def winner_ids(_chat, _period) = winners
-    end.new([])
+    end.new.tap { |rule| rule.winners = [] }
   end
 
   let(:chat) { create(:chat, camerton_enabled: true) }
@@ -65,6 +67,40 @@ RSpec.describe Achievements::Checker do
     expect(sent_texts.size).to eq(1)
   end
 
+  describe "a rule with levels" do
+    let(:rule) do
+      Class.new(Achievements::Rule) do
+        attr_accessor :by_user
+
+        def code = "grows"
+        def title = "Росте"
+        def description = "росте"
+        def period_kind = :week
+        def levels(_chat, _period) = by_user
+        def level_line(mention, level) = "📈 #{mention}: #{level}"
+      end.new.tap { |rule| rule.by_user = {} }
+    end
+
+    it "announces each rise, stores a fall silently, and takes it back at zero" do
+      rule.by_user = { olya.id => 1 }
+      check
+      rule.by_user = { olya.id => 3 }
+      check
+      rule.by_user = { olya.id => 2 }
+      check
+      expect(chat.achievements.sole).to have_attributes(level: 2, period: "2026-W43")
+
+      rule.by_user = {}
+      check
+
+      expect(sent_texts).to eq([
+        "🏆 @olya отримує ачівку «Росте»: росте",
+        "📈 @olya: 3",
+        "↩️ @olya втрачає ачівку «Росте»: вже не росте"
+      ])
+    end
+  end
+
   it "rolls everything back when the message fails to send, so a retry announces it" do
     rule.winners = [ olya.id ]
     allow(fake_telegram).to receive(:send_message).and_raise(Faraday::ConnectionFailed, "down")
@@ -88,7 +124,7 @@ RSpec.describe Achievements::Checker do
     expect(Achievements::RULES.to_h { |rule| [ rule.code, rule.goal ] }).to eq(
       "song_half_marathon" => 21, "song_marathon" => 42, "genre_tourist" => 10, "chatterbox" => 20,
       "first_listener" => 5, "lightning" => 5, "rescuer" => 3, "archaeologist" => 5,
-      "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5
+      "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5, "turncoat" => nil
     )
     expect(Achievements::RULES.map(&:code)).to eq(Achievements::RULES.map(&:code).uniq)
   end

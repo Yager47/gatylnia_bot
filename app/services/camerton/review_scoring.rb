@@ -20,7 +20,10 @@ module Camerton
       return if result.score.nil? && @review.score
 
       previous_score = @review.score
-      @review.update!(score: result.score, summary: result.summary, scored_at: Time.current)
+      Review.transaction do
+        @review.update!(score: result.score, summary: result.summary, scored_at: Time.current)
+        record_change(previous_score)
+      end
       # Even with the score unchanged: a new message can make the review
       # longer or add a voice note, which achievements count.
       CheckAchievementsJob.perform_later(@review.chat)
@@ -31,6 +34,14 @@ module Camerton
     end
 
     private
+
+    # A member changing their mind, for Перевзувач. Silent scoring (imports,
+    # merges) re-reads old messages: a different score there isn't theirs.
+    def record_change(previous_score)
+      return unless @react && previous_score && @review.score && @review.score != previous_score
+
+      @review.score_changes.create!(from_score: previous_score, to_score: @review.score, changed_at: @review.scored_at)
+    end
 
     def analyzer
       @analyzer ||= FeedbackAnalyzer.new

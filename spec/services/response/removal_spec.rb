@@ -76,11 +76,13 @@ RSpec.describe Response::Removal do
     it "removes the author's review of the replied-to release, its messages and the bot's reactions" do
       review = create(:review, chat: chat, release: release, user: user, score: 8)
       create(:review_message, review: review, release_share: share, telegram_message_id: 8)
+      review.score_changes.create!(from_score: 5, to_score: 8, changed_at: Time.current)
       someone_elses = create(:review, chat: chat, release: release, score: 3)
 
       expect(removal("@test_bot видали мою оцінку", reply_to_message: { message_id: 7 })).to eq("Видалив твою оцінку: 🎵 Queen — Bohemian Rhapsody")
       expect(Review.ids).to eq([ someone_elses.id ])
       expect(ReviewMessage.count).to eq(0)
+      expect(ReviewScoreChange.count).to eq(0)
       expect(fake_telegram.calls).to include([ :set_message_reaction, { chat_id: chat.telegram_id, message_id: 8, reaction: [] } ])
       expect(classifier).to have_received(:call).with("видали мою оцінку", kinds: %w[review])
       expect(CheckAchievementsJob).to have_been_enqueued.with(chat)

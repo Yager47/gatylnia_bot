@@ -12,6 +12,7 @@ module Achievements
     Rules::Archaeologist.new(code: "archaeologist", title: "Археолог", goal: 5),
     Rules::BubbleExit.new(code: "bubble_exit", title: "Вихід з бульбашки", goal: 3),
     Rules::LongCritic.new(code: "long_critic", title: "Розгорнутий критик", goal: 5),
-    Rules::Necromancer.new(code: "necromancer", title: "Некромант", goal: 5)
+    Rules::Necromancer.new(code: "necromancer", title: "Некромант", goal: 5),
+    Rules::Turncoat.new(code: "turncoat", title: "Перевзувач")
   ].freeze
 end
