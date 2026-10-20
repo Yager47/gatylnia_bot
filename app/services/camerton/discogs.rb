@@ -20,6 +20,10 @@ module Camerton
       @token = token.presence
     end
 
+    def requests_per_minute
+      @token ? 60 : 25
+    end
+
     # Master releases matching the params (artist:, track: or release_title:),
     # as Discogs ranks them.
     def search_masters(**params)

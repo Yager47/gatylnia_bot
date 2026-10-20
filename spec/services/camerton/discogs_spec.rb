@@ -55,6 +55,10 @@ RSpec.describe Camerton::Discogs do
     expect { discogs.master(1) }.to raise_error(described_class::Error, /401/) { |error| expect(error).not_to be_a(described_class::TransientError) }
   end
 
+  it "knows the rate limit, higher with a token" do
+    expect([ discogs.requests_per_minute, described_class.new(token: "secret").requests_per_minute ]).to eq([ 25, 60 ])
+  end
+
   describe "the request" do
     let(:http) { instance_double(Net::HTTP, request: instance_double(Net::HTTPOK, code: "200", body: "{}")) }
 

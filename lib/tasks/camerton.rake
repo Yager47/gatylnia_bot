@@ -50,6 +50,26 @@ namespace :camerton do
     report.skipped.each { |reason, names| puts "Skipped #{reason} (#{names.size}): #{names.join('; ')}" }
   end
 
+  # Adds Discogs genres, styles, year and album to releases never checked
+  # (imported ones). Paced to the rate limit: about 5 seconds a release, 2
+  # with DISCOGS_TOKEN. Safe to stop and run again. Dry run unless DRY_RUN=0.
+  #
+  #   bin/rails camerton:discogs_backfill DRY_RUN=0
+  desc "Look up Discogs genres and styles for releases never checked"
+  task discogs_backfill: :environment do
+    dry_run = ENV.fetch("DRY_RUN", "1") != "0"
+    backfill = Camerton::DiscogsBackfill.new
+    count = Camerton::DiscogsBackfill.releases.count
+
+    if dry_run
+      puts "DRY RUN, nothing asked: #{count} releases to look up, about #{(count * backfill.pause / 60).ceil} minutes"
+      next
+    end
+
+    report = backfill.call
+    puts "Done: #{report.matched} matched, #{report.unmatched} no match, #{report.failed} failed (run again for those)"
+  end
+
   # Merges releases resolved before ReleaseMerge existed: each one with the
   # same kind, artist and title as an older release. Newest first, so all of
   # a name's duplicates merge into its oldest release. Dry run unless DRY_RUN=0.

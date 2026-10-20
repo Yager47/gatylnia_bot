@@ -166,6 +166,7 @@ source has a usage example.
 |---|---|
 | `camerton:import_history` | Import Camerton shares and text reviews from a Telegram HTML export |
 | `camerton:import_ratings` | Import one member's scores from a ratings spreadsheet (as JSON) |
+| `camerton:discogs_backfill` | Look up Discogs genres, styles and years for releases never checked (imported ones) |
 | `camerton:merge_duplicate_releases` | Merge releases that are the same song or album |
 | `gato:import_history` | Rebuild a chat's gato entries for a time range from an HTML export |
 | `chats:negate_pre_supergroup_ids` | Fix message numbers from before a group became a supergroup |
