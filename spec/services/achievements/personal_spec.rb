@@ -9,6 +9,7 @@ RSpec.describe Achievements::Personal do
     Struct.new(:code, :period_kind, :goal, :progress, :secret) do
       def title = "Ачівка #{code}"
       def secret? = secret
+      def decided_by = :checker
       def counts(_chat, _period) = progress
     end.new(code, period_kind, goal, counts, secret)
   end
@@ -75,6 +76,15 @@ RSpec.describe Achievements::Personal do
     earn("split", period: "release-1")
 
     expect(text([ rule("split", period_kind: :release) ])).to eq("🏆 Ачівки: Оля\n\nУсього: Ачівка split ×1")
+  end
+
+  it "shows the current and the longest streak" do
+    rules = [ Achievements::Rules::Streak.new(code: "streak", title: "Серія") ]
+    earn("streak", period: "streak-2026-09-01").update!(level: 12, finished_at: now - 1.month)
+    expect(text(rules)).to include("🔥 Найдовша серія: 12 днів")
+
+    earn("streak", period: "streak-2026-10-18").update!(level: 3)
+    expect(text(rules)).to eq("🏆 Ачівки: Оля\n\n🔥 Серія: 3 дні поспіль (найдовша — 12 днів)\n\nУсього: Серія ×2")
   end
 
   it "shows an earned secret" do

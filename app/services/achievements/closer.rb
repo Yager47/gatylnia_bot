@@ -14,7 +14,7 @@ module Achievements
     end
 
     def call
-      rules = RULES.select { |rule| rule.period_end? && rule.period_kind == @kind }
+      rules = RULES.select { |rule| rule.decided_by == :closer && rule.period_kind == @kind }
       period_at = @kind == :release ? @now : Period.current(@kind, now: @now).range.begin - 1.second
 
       Checker.new(@chat, rules: rules, now: @now, period_at: period_at, header: HEADERS.fetch(@kind)).call
