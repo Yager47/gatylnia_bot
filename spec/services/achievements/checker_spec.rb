@@ -84,8 +84,16 @@ RSpec.describe Achievements::Checker do
     expect(fake_telegram.sent_messages).to be_empty
   end
 
-  it "registers the song marathons" do
-    expect(Achievements::RULES.map(&:code)).to eq(%w[song_half_marathon song_marathon])
-    expect(Achievements::RULES.map(&:goal)).to eq([ 21, 42 ])
+  it "registers every rule once, with its goal" do
+    expect(Achievements::RULES.to_h { |rule| [ rule.code, rule.goal ] }).to eq(
+      "song_half_marathon" => 21, "song_marathon" => 42, "genre_tourist" => 10, "chatterbox" => 20,
+      "first_listener" => 5, "lightning" => 5, "rescuer" => 3, "archaeologist" => 5,
+      "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5
+    )
+    expect(Achievements::RULES.map(&:code)).to eq(Achievements::RULES.map(&:code).uniq)
+  end
+
+  it "runs every real rule against the database" do
+    expect { described_class.new(chat, now: now).call }.not_to raise_error
   end
 end

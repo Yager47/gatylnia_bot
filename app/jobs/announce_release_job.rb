@@ -22,5 +22,7 @@ class AnnounceReleaseJob < ApplicationJob
     share.reload # the release may have been merged into another one
     Camerton::DiscogsDetails.new(share.release).call
     Camerton::ShareAnnouncement.new(share).deliver
+    # Achievements count shares by their Discogs year, known only now.
+    CheckAchievementsJob.perform_later(share.chat)
   end
 end

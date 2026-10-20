@@ -47,16 +47,17 @@ RSpec.describe Camerton::ReviewScoring do
       described_class.new(review, analyzer: analyzer, react: react).call
     end
 
-    it "checks the chat when the score changes, even scoring silently" do
+    it "checks the chat after every scoring, even silent or with the score unchanged" do
+      review.update!(score: 7)
+
       score_as(7, react: false)
 
       expect(CheckAchievementsJob).to have_been_enqueued.with(review.chat)
     end
 
-    it "doesn't when the score stays the same" do
+    it "doesn't when the messages turn out not to be a review and the old score stays" do
       review.update!(score: 7)
 
-      score_as(7)
       score_as(nil)
 
       expect(CheckAchievementsJob).not_to have_been_enqueued
