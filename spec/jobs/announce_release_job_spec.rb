@@ -15,6 +15,7 @@ RSpec.describe AnnounceReleaseJob do
 
     expect(share.release.reload).to be_resolved
     expect(fake_telegram.sent_messages.sole[:text]).to eq("🎵 Rick Astley — Never Gonna Give You Up · пісня")
+    expect(CheckAchievementsJob).to have_been_enqueued.with(share.chat)
   end
 
   it "announces a duplicate link as the release it was merged into, with its history" do
