@@ -13,6 +13,15 @@ module Achievements
     Rules::BubbleExit.new(code: "bubble_exit", title: "Вихід з бульбашки", goal: 3),
     Rules::LongCritic.new(code: "long_critic", title: "Розгорнутий критик", goal: 5),
     Rules::Necromancer.new(code: "necromancer", title: "Некромант", goal: 5),
-    Rules::Turncoat.new(code: "turncoat", title: "Перевзувач")
+    Rules::Turncoat.new(code: "turncoat", title: "Перевзувач"),
+    # Decided at the end of the week or month.
+    Rules::SharerTitle.new(code: "best_sharer", title: "Найшанованіший камертон тижня", worst: false),
+    Rules::SharerTitle.new(code: "worst_sharer", title: "Найзневаженіший камертон тижня", worst: true, secret: true),
+    Rules::Eater.new(code: "song_eater", title: "Пісенний Пожирач", kinds: %w[song]),
+    Rules::Eater.new(code: "album_eater", title: "Альбомний Пожирач", kinds: %w[album]),
+    Rules::Eater.new(code: "eater", title: "Пожирач", kinds: %w[song album]),
+    Rules::AllPositive.new(code: "all_positive", title: "Всеїдний"),
+    Rules::Grumbler.new(code: "grumbler", title: "Буркотун", secret: true),
+    Rules::Contrarian.new(code: "contrarian", title: "Не такий як всі", secret: true)
   ].freeze
 end

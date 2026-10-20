@@ -152,7 +152,9 @@ Production runs on Heroku (app `gatylnia`) as a single web dyno.
   crashes show up afterwards. If any of these fail, the CI run turns red.
 - **Scheduled jobs** ([`config/recurring.yml`](config/recurring.yml)): hourly
   cleanup of finished Solid Queue jobs, daily deletion of finished Telegram updates
-  older than 30 days at 04:00 UTC, and Camerton reminders at 09:00 Kyiv time.
+  older than 30 days at 04:00 UTC, Camerton reminders at 09:00 Kyiv time, and
+  Camerton achievements for the past week (Mondays) and month (the 1st) at
+  09:00 Kyiv time.
 
 The Dockerfile and Kamal config (`config/deploy.yml`, `.kamal/`) are leftovers from the Rails generator and
 aren't used.

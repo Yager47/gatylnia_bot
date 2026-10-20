@@ -124,7 +124,12 @@ RSpec.describe Achievements::Checker do
     expect(Achievements::RULES.to_h { |rule| [ rule.code, rule.goal ] }).to eq(
       "song_half_marathon" => 21, "song_marathon" => 42, "genre_tourist" => 10, "chatterbox" => 20,
       "first_listener" => 5, "lightning" => 5, "rescuer" => 3, "archaeologist" => 5,
-      "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5, "turncoat" => nil
+      "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5, "turncoat" => nil,
+      "best_sharer" => nil, "worst_sharer" => nil, "song_eater" => nil, "album_eater" => nil, "eater" => nil,
+      "all_positive" => nil, "grumbler" => nil, "contrarian" => nil
+    )
+    expect(Achievements::RULES.select(&:secret?).map(&:title)).to contain_exactly(
+      "Перевзувач", "Найзневаженіший камертон тижня", "Буркотун", "Не такий як всі"
     )
     expect(Achievements::RULES.map(&:code)).to eq(Achievements::RULES.map(&:code).uniq)
   end
