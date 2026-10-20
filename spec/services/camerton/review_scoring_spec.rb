@@ -55,6 +55,18 @@ RSpec.describe Camerton::ReviewScoring do
       expect(CheckAchievementsJob).to have_been_enqueued.with(review.chat)
     end
 
+    it "records a member changing their score, but not a first score or a silent re-score" do
+      score_as(5)
+      expect(review.score_changes).to be_empty
+
+      score_as(8)
+      expect(review.score_changes.sole).to have_attributes(from_score: 5, to_score: 8, changed_at: review.reload.scored_at)
+
+      score_as(8)
+      score_as(3, react: false)
+      expect(review.score_changes.count).to eq(1)
+    end
+
     it "doesn't when the messages turn out not to be a review and the old score stays" do
       review.update!(score: 7)
 

@@ -65,6 +65,12 @@ RSpec.describe Achievements::Personal do
     TEXT
   end
 
+  it "shows the level of an achievement that has one" do
+    create(:achievement, chat: chat, user: olya, code: "grows", period: "2026-W43", level: 2)
+
+    expect(text([ rule("grows", period_kind: :week) ])).to include("✅ Ачівка grows (2)")
+  end
+
   it "shows an earned secret" do
     earn("secret", period: "2026-10")
 

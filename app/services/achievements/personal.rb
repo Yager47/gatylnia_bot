@@ -9,6 +9,9 @@ module Achievements
   #   ✅ Пісенний Напівмарафонець
   #   ⏳ Пісенний Марафонець — 25/42
   #
+  #   Цього тижня:
+  #   ✅ Перевзувач (2)
+  #
   #   Усього: Пісенний Напівмарафонець ×3
   class Personal
     PERIOD_LABELS = { week: "Цього тижня:", month: "Цього місяця:" }.freeze
@@ -32,17 +35,20 @@ module Achievements
 
     def current_sections
       periods = @rules.map(&:period_kind).uniq.index_with { |kind| Period.current(kind, now: @now) }
-      held = mine.where(period: periods.values.map(&:key)).pluck(:code, :period).to_set
+      held = mine.where(period: periods.values.map(&:key)).pluck(:code, :period, :level)
+        .to_h { |code, key, level| [ [ code, key ], level ] }
 
       @rules.group_by(&:period_kind).filter_map do |kind, rules|
         period = periods.fetch(kind)
-        lines = rules.filter_map { |rule| current_line(rule, period, held.include?([ rule.code, period.key ])) }
+        lines = rules.filter_map { |rule| current_line(rule, period, held) }
         [ PERIOD_LABELS.fetch(kind), *lines ].join("\n") if lines.any?
       end
     end
 
+    # held: { [code, period key] => level (nil for plain ones) }
     def current_line(rule, period, held)
-      return "✅ #{rule.title}" if held
+      key = [ rule.code, period.key ]
+      return "✅ #{rule.title}#{" (#{held[key]})" if held[key]}" if held.key?(key)
       return if rule.secret? || rule.goal.nil?
 
       "⏳ #{rule.title} — #{rule.counts(@chat, period).fetch(@user.id, 0)}/#{rule.goal}"
