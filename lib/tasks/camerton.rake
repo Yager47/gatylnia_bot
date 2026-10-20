@@ -57,6 +57,9 @@ namespace :camerton do
   #   bin/rails camerton:discogs_backfill DRY_RUN=0
   desc "Look up Discogs genres and styles for releases never checked"
   task discogs_backfill: :environment do
+    # A detached dyno's stdout is a pipe, which Ruby buffers: without this the
+    # per-release lines reach `heroku logs` only in chunks or at the end.
+    $stdout.sync = true
     dry_run = ENV.fetch("DRY_RUN", "1") != "0"
     backfill = Camerton::DiscogsBackfill.new
     count = Camerton::DiscogsBackfill.releases.count
