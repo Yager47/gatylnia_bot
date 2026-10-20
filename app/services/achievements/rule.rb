@@ -8,6 +8,12 @@ module Achievements
       false
     end
 
+    # Decided once its week or month is over (Achievements::Closer) rather
+    # than as soon as someone qualifies.
+    def period_end?
+      false
+    end
+
     # The goal of a counting rule ("17/42" in "мої ачівки"), or nil.
     def goal
       nil

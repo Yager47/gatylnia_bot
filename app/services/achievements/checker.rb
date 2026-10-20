@@ -6,10 +6,15 @@ module Achievements
   # restored. A second run with nothing new changes nothing. Closed periods
   # are never checked, so they stay as announced.
   class Checker
-    def initialize(chat, rules: RULES, now: Time.current)
+    # rules: the instant ones by default; Closer passes the period-end ones.
+    # period_at: a time in the periods to check (now, or Closer's last
+    # second of the period that just ended). header: a first line.
+    def initialize(chat, rules: RULES.reject(&:period_end?), now: Time.current, period_at: now, header: nil)
       @chat = chat
       @rules = rules
       @now = now
+      @period_at = period_at
+      @header = header
     end
 
     # The chat row lock makes a parallel run wait and then see this one's
@@ -31,7 +36,7 @@ module Achievements
 
     # Returns [[:awarded | :leveled | :revoked, rule, achievement], ...].
     def sync(rule)
-      period = Period.current(rule.period_kind, now: @now)
+      period = Period.current(rule.period_kind, now: @period_at)
       levels = rule.levels(@chat, period)
       rows = @chat.achievements.where(code: rule.code, period: period.key).index_by(&:user_id)
 
@@ -61,9 +66,10 @@ module Achievements
     def text(changes)
       users = User.where(id: changes.map { |_change, _rule, row| row.user_id }).index_by(&:id)
 
-      changes.map do |change, rule, row|
+      lines = changes.map do |change, rule, row|
         rule.line(change, Camerton::Formatting.mention(users.fetch(row.user_id)), row.level)
-      end.join("\n")
+      end
+      [ @header, *lines ].compact.join("\n")
     end
   end
 end
