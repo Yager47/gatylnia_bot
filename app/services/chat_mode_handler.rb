@@ -27,7 +27,8 @@ class ChatModeHandler
   end
 
   # outcome: a String, a Response::Threaded to answer a given message, or a
-  # Response::Html.
+  # Response::Html. HTML replies are lists ("що послухати", help), so a
+  # preview of their first link would only get in the way.
   def deliver(outcome)
     text, reply_to, parse_mode =
       case outcome
@@ -36,6 +37,6 @@ class ChatModeHandler
       else [ outcome, nil, nil ]
       end
     reply = @chat.messages.create!(role: :assistant, content: text)
-    ChatMessenger.new(chat: @chat).deliver(reply, reply_to: reply_to, parse_mode: parse_mode)
+    ChatMessenger.new(chat: @chat).deliver(reply, reply_to: reply_to, parse_mode: parse_mode, link_preview: parse_mode.nil?)
   end
 end

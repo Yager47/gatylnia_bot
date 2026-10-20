@@ -39,7 +39,9 @@ RSpec.describe QuietHandler do
 
     dispatch(message_update(text: "@test_bot що послухати"))
 
-    expect(fake_telegram.sent_messages.sole).to include(parse_mode: "HTML", text: include(%(<a href="https://t.me/c/1234567890/7">)))
+    sent = fake_telegram.sent_messages.sole
+    expect(sent).to include(parse_mode: "HTML", text: include(%(<a href="https://t.me/c/1234567890/7">)))
+    expect(sent[:link_preview_options].to_h).to eq(is_disabled: true)
   end
 
   it "removes the sender's review of a release on request, in their own words" do

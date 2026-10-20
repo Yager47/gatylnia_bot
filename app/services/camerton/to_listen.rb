@@ -6,8 +6,9 @@ module Camerton
   # albums or songs and only a Discogs genre or style (Release.with_genre).
   # Like the daily digest, the member's own shares are left out and a reply
   # that wasn't a review doesn't count. Each release links to its latest
-  # share, as in the digest, so the text is Telegram HTML. Three queries
-  # however many releases the chat has, plus one when a genre finds nothing.
+  # share (or YouTube Music when that has no link), as in the digest, so
+  # the text is Telegram HTML. Three queries however many releases the chat
+  # has, plus one when a genre finds nothing.
   class ToListen
     SHOWN = 10
     KIND_LABELS = { "album" => "альбоми", "song" => "пісні" }.freeze

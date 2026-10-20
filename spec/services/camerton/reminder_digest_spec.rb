@@ -79,13 +79,13 @@ RSpec.describe Camerton::ReminderDigest do
       expect(block.lines.map(&:strip)).to match([ "@olya", *Array.new(5, /\A<a href=.*R\d<\/a>\z/), "і ще 2" ])
     end
 
-    it "names releases without links in a basic group, which has no t.me/c links" do
+    it "links releases to YouTube Music in a basic group, which has no t.me/c links" do
       chat.update!(telegram_id: "-123456", telegram_type: "group")
       sharer = member("Sharer")
       member("Olya")
       shared("A", by: sharer)
 
-      expect(digest).to include("@olya\n🎵 Artist — A")
+      expect(digest).to match(%r{@olya\n<a href="https://music\.youtube\.com/watch\?v=vid\d+">🎵 Artist — A</a>})
       expect(digest).not_to include("t.me")
     end
 
@@ -114,6 +114,7 @@ RSpec.describe Camerton::ReminderDigest do
 
       sent = fake_telegram.sent_messages.sole
       expect(sent).to include(chat_id: chat.telegram_id, parse_mode: "HTML")
+      expect(sent[:link_preview_options].to_h).to eq(is_disabled: true)
       expect(sent[:text]).to start_with("🎧 Хто ще не оцінив свіже:")
       expect(chat.messages.sole).to have_attributes(role: "assistant", content: sent[:text])
       expect(chat.reload.camerton_digest_sent_on).to eq(Date.new(2026, 10, 13))

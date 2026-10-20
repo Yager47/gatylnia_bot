@@ -13,23 +13,25 @@ class ChatMessenger
   # reply_to: a Telegram message id to answer in a thread. Still sent if that
   # message was deleted in the meantime.
   # parse_mode: "HTML" when the content is Telegram HTML (links, mentions).
+  # link_preview: false hides the card Telegram adds for the first link.
   # Long content is split at blank lines, else at line breaks (HTML tags never
   # span lines here); the message keeps the first part's id, and only that
   # part is threaded.
-  def deliver(message, reply_to: nil, parse_mode: nil)
+  def deliver(message, reply_to: nil, parse_mode: nil, link_preview: true)
     return if message.content.blank?
 
     ids = chunks(message.content).each_with_index.map do |text, index|
-      send_text(text, reply_to: (reply_to if index.zero?), parse_mode: parse_mode)
+      send_text(text, reply_to: (reply_to if index.zero?), parse_mode: parse_mode, link_preview: link_preview)
     end
     message.update!(telegram_message_id: ids.first) if ids.first
   end
 
   private
 
-  def send_text(text, reply_to:, parse_mode:)
+  def send_text(text, reply_to:, parse_mode:, link_preview:)
     params = { chat_id: @chat.telegram_id, text: text }
     params[:parse_mode] = parse_mode if parse_mode
+    params[:link_preview_options] = Telegram::Bot::Types::LinkPreviewOptions.new(is_disabled: true) unless link_preview
     if reply_to
       params[:reply_parameters] = Telegram::Bot::Types::ReplyParameters.new(message_id: reply_to, allow_sending_without_reply: true)
     end

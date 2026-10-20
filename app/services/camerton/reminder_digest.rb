@@ -31,7 +31,7 @@ module Camerton
 
         if (body = text)
           reply = @chat.messages.create!(role: :assistant, content: body)
-          ChatMessenger.new(chat: @chat).deliver(reply, parse_mode: "HTML")
+          ChatMessenger.new(chat: @chat).deliver(reply, parse_mode: "HTML", link_preview: false)
         end
         @chat.update!(camerton_digest_sent_on: today)
       end

@@ -57,6 +57,11 @@ RSpec.describe Camerton::StatsCommand do
       expect(ask("що послухати @olya").text).to start_with("🎧 Що ще послухати — Olya:")
     end
 
+    it "takes \"шо послухати\" as well" do
+      olya
+      expect(ask("шо послухати пісні @olya").text).to start_with("🎧 Що ще послухати — Olya (пісні):")
+    end
+
     it "passes albums or songs, a genre and a @username through, in that order" do
       olya
       expect(ask("що послухати альбоми").text).to start_with("🎧 Me (альбоми): усе вже оцінено.")
