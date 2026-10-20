@@ -21,6 +21,7 @@ module Camerton
 
       previous_score = @review.score
       @review.update!(score: result.score, summary: result.summary, scored_at: Time.current)
+      CheckAchievementsJob.perform_later(@review.chat) if @review.score != previous_score
       return unless @react
 
       ReviewReaction.new(@review).call
