@@ -65,6 +65,8 @@ module Camerton
       end
 
       to_rescore.each { |review| ScoreReviewJob.perform_later(review, react: false) }
+      # A member who reviewed both now has one review instead of two.
+      Chat.where(id: to_rescore.map(&:chat_id).uniq).each { |chat| CheckAchievementsJob.perform_later(chat) }
       merged_into
     end
 

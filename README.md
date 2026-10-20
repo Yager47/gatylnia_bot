@@ -17,7 +17,7 @@ Each chat has a **mode**, plus two features that can be switched on or off.
 | `звичайний` (default) | Canned replies, points, rock-paper-scissors, coffee / push-up / "gato" stats, and AI replies (`gpt-5-mini`) when someone talks to the bot |
 | `бухгалтер` (accountant) | Points only: reply to a message with a number to give its author points, `@<bot> баланс`, and removal requests |
 | `тихий` (quiet) | Silent; answers commands only |
-| **Камертон** | Music reviews: share a `music.youtube.com` link, reply to it with a score from 1 to 10 (as text, a voice message or a video note), and get tops, stats, taste matches and a daily 09:00 reminder about unrated releases. Release metadata comes from YouTube oEmbed and Discogs |
+| **Камертон** | Music reviews: share a `music.youtube.com` link, reply to it with a score from 1 to 10 (as text, a voice message or a video note), and get tops, stats, taste matches, achievements and a daily 09:00 reminder about unrated releases. Release metadata comes from YouTube oEmbed and Discogs |
 | **Замітки** | Notes on demo audio: post an mp3/wav/flac, and replies to it are saved as notes on that version of the track |
 
 Video notes are transcribed with Whisper and classified from extracted frames,
@@ -152,7 +152,10 @@ Production runs on Heroku (app `gatylnia`) as a single web dyno.
   crashes show up afterwards. If any of these fail, the CI run turns red.
 - **Scheduled jobs** ([`config/recurring.yml`](config/recurring.yml)): hourly
   cleanup of finished Solid Queue jobs, daily deletion of finished Telegram updates
-  older than 30 days at 04:00 UTC, and Camerton reminders at 09:00 Kyiv time.
+  older than 30 days at 04:00 UTC, Camerton reminders at 09:00 Kyiv time, and
+  Camerton achievements at 09:00 Kyiv time: a daily re-check (streaks end),
+  releases shared a week ago (daily), the past week (Mondays) and the past
+  month (the 1st).
 
 The Dockerfile and Kamal config (`config/deploy.yml`, `.kamal/`) are leftovers from the Rails generator and
 aren't used.

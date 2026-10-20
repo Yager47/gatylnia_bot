@@ -125,4 +125,16 @@ RSpec.describe Camerton::StatsCommand do
       expect(fake_telegram.sent_messages.sole[:text]).to start_with("🏆 Топ за весь час:")
     end
   end
+
+  describe "achievements" do
+    let(:me) { create(:user, first_name: "Me", last_name: nil, chats: [ chat ]) }
+
+    it "lists them for ачівки or досягнення, and the asker's for мої ачівки or мої досягнення" do
+      overview = Achievements::Overview.new(chat: chat).text
+      mine = Achievements::Personal.new(chat: chat, user: me).text
+
+      %w[ачівки досягнення].each { |text| expect(described_class.new(command: text, chat: chat, user: me).call).to eq(overview) }
+      [ "мої ачівки", "мої досягнення" ].each { |text| expect(described_class.new(command: text, chat: chat, user: me).call).to eq(mine) }
+    end
+  end
 end

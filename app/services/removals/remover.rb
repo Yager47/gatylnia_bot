@@ -36,6 +36,7 @@ module Removals
 
       Camerton::ReviewReaction.new(review).clear
       review.destroy!
+      CheckAchievementsJob.perform_later(@chat) if review.score
       "Видалив твою оцінку: #{name}"
     end
 

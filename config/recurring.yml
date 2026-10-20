@@ -20,3 +20,21 @@ production:
   camerton_reminders:
     class: CamertonRemindersJob
     schedule: every day at 9am Europe/Kyiv
+  # Camerton achievements: a daily re-check (a Серія ends after a day
+  # without reviews), and the ones decided when a release turns a week old
+  # or a week or month ends.
+  check_achievements:
+    class: CheckAllAchievementsJob
+    schedule: "0 9 * * * Europe/Kyiv"
+  close_release_achievements:
+    class: CloseAchievementPeriodsJob
+    args: [ "release" ]
+    schedule: "0 9 * * * Europe/Kyiv"
+  close_weekly_achievements:
+    class: CloseAchievementPeriodsJob
+    args: [ "week" ]
+    schedule: "0 9 * * 1 Europe/Kyiv"
+  close_monthly_achievements:
+    class: CloseAchievementPeriodsJob
+    args: [ "month" ]
+    schedule: "0 9 1 * * Europe/Kyiv"
