@@ -2,7 +2,8 @@ module Camerton
   # Camerton's commands in chats with it on: "топ", "дно" (optionally
   # "альбоми"/"пісні", then "за тиждень/місяць/рік"), "оцінки" in reply to a
   # shared release, "критики", "камертони", "мій смак", "смак з @нік",
-  # "що послухати [альбоми|пісні] [жанр] [@нік]" and "жанри".
+  # "що послухати [альбоми|пісні] [жанр] [@нік]" (or "шо послухати") and
+  # "жанри".
   class StatsCommand
     # Period word => [Time range method, label for the reply header]
     PERIODS = {
@@ -17,7 +18,7 @@ module Camerton
     TASTE_MATCH = /\Aсмак з @(\w+)\z/
     # The genre is whatever is left before an optional @нік; it can't hold
     # an @, so "що послухати rock @olya ще щось" isn't ours.
-    TO_LISTEN = /\Aщо послухати(?: (#{KINDS.keys.join('|')}))?(?: ([^@]+?))?(?: @(\w+))?\z/
+    TO_LISTEN = /\A(?:що|шо) послухати(?: (#{KINDS.keys.join('|')}))?(?: ([^@]+?))?(?: @(\w+))?\z/
 
     def initialize(command:, chat:, user: nil, reply_to_message: nil)
       @command = command.strip

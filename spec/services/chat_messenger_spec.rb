@@ -88,6 +88,14 @@ RSpec.describe ChatMessenger do
     expect(fake_telegram.sent_messages.sole).to eq(chat_id: chat.telegram_id, text: "<b>Ало</b>", parse_mode: "HTML")
   end
 
+  it "turns the link preview off on request" do
+    message = chat.messages.create!(role: :assistant, content: "https://music.youtube.com/watch?v=a")
+
+    described_class.new(chat: chat).deliver(message, link_preview: false)
+
+    expect(fake_telegram.sent_messages.sole[:link_preview_options].to_h).to eq(is_disabled: true)
+  end
+
   describe "long content" do
     let(:limit) { described_class::MAX_LENGTH }
 
