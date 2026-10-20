@@ -36,7 +36,10 @@ module Achievements
 
     # Returns [[:awarded | :leveled | :revoked, rule, achievement], ...].
     def sync(rule)
-      period = Period.current(rule.period_kind, now: @period_at)
+      rule.periods(@chat, @period_at).flat_map { |period| sync_period(rule, period) }
+    end
+
+    def sync_period(rule, period)
       levels = rule.levels(@chat, period)
       rows = @chat.achievements.where(code: rule.code, period: period.key).index_by(&:user_id)
 
@@ -67,7 +70,7 @@ module Achievements
       users = User.where(id: changes.map { |_change, _rule, row| row.user_id }).index_by(&:id)
 
       lines = changes.map do |change, rule, row|
-        rule.line(change, Camerton::Formatting.mention(users.fetch(row.user_id)), row.level)
+        rule.line(change, Camerton::Formatting.mention(users.fetch(row.user_id)), row.level, period_key: row.period)
       end
       [ @header, *lines ].compact.join("\n")
     end

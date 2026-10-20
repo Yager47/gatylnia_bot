@@ -33,7 +33,7 @@ module Achievements
         levels(chat, period).keys
       end
 
-      def line(change, mention, level)
+      def line(change, mention, level, period_key: nil)
         return "↩️ #{mention} втрачає ачівку «#{title}»: змін оцінок цього тижня не лишилось" if change == :revoked
 
         super

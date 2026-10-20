@@ -33,14 +33,16 @@ module Achievements
       @chat.achievements.active.where(user: @user)
     end
 
+    # Per-release achievements have no current period; they show in totals.
     def current_sections
-      periods = @rules.map(&:period_kind).uniq.index_with { |kind| Period.current(kind, now: @now) }
+      rules = @rules.select { |rule| PERIOD_LABELS.key?(rule.period_kind) }
+      periods = rules.map(&:period_kind).uniq.index_with { |kind| Period.current(kind, now: @now) }
       held = mine.where(period: periods.values.map(&:key)).pluck(:code, :period, :level)
         .to_h { |code, key, level| [ [ code, key ], level ] }
 
-      @rules.group_by(&:period_kind).filter_map do |kind, rules|
+      rules.group_by(&:period_kind).filter_map do |kind, kind_rules|
         period = periods.fetch(kind)
-        lines = rules.filter_map { |rule| current_line(rule, period, held) }
+        lines = kind_rules.filter_map { |rule| current_line(rule, period, held) }
         [ PERIOD_LABELS.fetch(kind), *lines ].join("\n") if lines.any?
       end
     end
