@@ -10,9 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "achievements", force: :cascade do |t|
+    t.bigint "chat_id", null: false
+    t.bigint "user_id", null: false
+    t.string "code", null: false
+    t.string "period", null: false
+    t.datetime "awarded_at", null: false
+    t.datetime "revoked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "code", "period", "user_id"], name: "index_achievements_on_chat_id_and_code_and_period_and_user_id", unique: true
+    t.index ["user_id"], name: "index_achievements_on_user_id"
+  end
 
   create_table "activities", force: :cascade do |t|
     t.bigint "user_id", null: false
@@ -334,6 +347,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_100000) do
     t.index ["telegram_id"], name: "index_users_on_telegram_id", unique: true
   end
 
+  add_foreign_key "achievements", "chats"
+  add_foreign_key "achievements", "users"
   add_foreign_key "activities", "chats"
   add_foreign_key "activities", "users"
   add_foreign_key "audio_tracks", "chats"

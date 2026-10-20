@@ -83,6 +83,7 @@ RSpec.describe Response::Removal do
       expect(ReviewMessage.count).to eq(0)
       expect(fake_telegram.calls).to include([ :set_message_reaction, { chat_id: chat.telegram_id, message_id: 8, reaction: [] } ])
       expect(classifier).to have_received(:call).with("видали мою оцінку", kinds: %w[review])
+      expect(CheckAchievementsJob).to have_been_enqueued.with(chat)
     end
 
     it "says so when the author hasn't reviewed it" do

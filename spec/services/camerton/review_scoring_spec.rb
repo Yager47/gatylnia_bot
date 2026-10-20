@@ -39,6 +39,30 @@ RSpec.describe Camerton::ReviewScoring do
     expect(fake_telegram.calls).to be_empty
   end
 
+  describe "checking achievements" do
+    before { create(:review_message, review: review) }
+
+    def score_as(score, react: true)
+      allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: !score.nil?, score: score, summary: "ok"))
+      described_class.new(review, analyzer: analyzer, react: react).call
+    end
+
+    it "checks the chat when the score changes, even scoring silently" do
+      score_as(7, react: false)
+
+      expect(CheckAchievementsJob).to have_been_enqueued.with(review.chat)
+    end
+
+    it "doesn't when the score stays the same" do
+      review.update!(score: 7)
+
+      score_as(7)
+      score_as(nil)
+
+      expect(CheckAchievementsJob).not_to have_been_enqueued
+    end
+  end
+
   describe "telling the sharer" do
     let(:sharer) { create(:user, username: "olya") }
     let(:share) { create(:release_share, chat: review.chat, release: review.release, user: sharer) }

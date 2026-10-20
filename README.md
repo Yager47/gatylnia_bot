@@ -17,7 +17,7 @@ Each chat has a **mode**, plus two features that can be switched on or off.
 | `звичайний` (default) | Canned replies, points, rock-paper-scissors, coffee / push-up / "gato" stats, and AI replies (`gpt-5-mini`) when someone talks to the bot |
 | `бухгалтер` (accountant) | Points only: reply to a message with a number to give its author points, `@<bot> баланс`, and removal requests |
 | `тихий` (quiet) | Silent; answers commands only |
-| **Камертон** | Music reviews: share a `music.youtube.com` link, reply to it with a score from 1 to 10 (as text, a voice message or a video note), and get tops, stats, taste matches and a daily 09:00 reminder about unrated releases. Release metadata comes from YouTube oEmbed and Discogs |
+| **Камертон** | Music reviews: share a `music.youtube.com` link, reply to it with a score from 1 to 10 (as text, a voice message or a video note), and get tops, stats, taste matches, achievements and a daily 09:00 reminder about unrated releases. Release metadata comes from YouTube oEmbed and Discogs |
 | **Замітки** | Notes on demo audio: post an mp3/wav/flac, and replies to it are saved as notes on that version of the track |
 
 Video notes are transcribed with Whisper and classified from extracted frames,

@@ -9,6 +9,7 @@ class User < ApplicationRecord
   has_many :reviews, dependent: :destroy
   has_many :audio_tracks, dependent: :destroy
   has_many :track_notes, dependent: :destroy
+  has_many :achievements, dependent: :destroy
 
   validates :telegram_id, presence: true
 

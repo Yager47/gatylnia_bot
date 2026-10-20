@@ -39,6 +39,7 @@ RSpec.describe Camerton::ReleaseMerge do
     expect(kept.messages).to contain_exactly(old_message, moved_message)
     expect(moved_message.reload.release_share.release).to eq(original)
     expect(ScoreReviewJob).to have_been_enqueued.with(kept, react: false)
+    expect(CheckAchievementsJob).to have_been_enqueued.with(chat)
   end
 
   it "keeps reviews of the same member in other chats apart" do
@@ -49,6 +50,7 @@ RSpec.describe Camerton::ReleaseMerge do
 
     expect(elsewhere.reload.release).to eq(original)
     expect(ScoreReviewJob).not_to have_been_enqueued
+    expect(CheckAchievementsJob).not_to have_been_enqueued
   end
 
   it "treats a remaster or a dated remix as the same release, either way round" do
