@@ -14,6 +14,19 @@ RSpec.describe CloseAchievementPeriodsJob do
 
   # As for the reminders: Heroku's clock is UTC, so the zone must be in the
   # schedule itself.
+  it "decides week-old releases daily at 09:00 Kyiv time on a UTC server" do
+    task = YAML.load_file(Rails.root.join("config/recurring.yml")).dig("production", "close_release_achievements")
+    expect(task.values_at("class", "args")).to eq([ "CloseAchievementPeriodsJob", [ "release" ] ])
+
+    with_system_time_zone("UTC") do
+      schedule = Fugit.parse(task.fetch("schedule"))
+      [ Time.utc(2026, 7, 15, 12), Time.utc(2026, 12, 15, 12) ].each do |from|
+        next_run = schedule.next_time(from).to_t.in_time_zone("Europe/Kyiv")
+        expect([ next_run.strftime("%H:%M"), next_run.to_date ]).to eq([ "09:00", from.to_date + 1 ])
+      end
+    end
+  end
+
   it "closes weeks on Mondays and months on the 1st, at 09:00 Kyiv time on a UTC server" do
     tasks = YAML.load_file(Rails.root.join("config/recurring.yml")).fetch("production")
 

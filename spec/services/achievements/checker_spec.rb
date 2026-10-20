@@ -126,10 +126,10 @@ RSpec.describe Achievements::Checker do
       "first_listener" => 5, "lightning" => 5, "rescuer" => 3, "archaeologist" => 5,
       "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5, "turncoat" => nil,
       "best_sharer" => nil, "worst_sharer" => nil, "song_eater" => nil, "album_eater" => nil, "eater" => nil,
-      "all_positive" => nil, "grumbler" => nil, "contrarian" => nil
+      "all_positive" => nil, "grumbler" => nil, "contrarian" => nil, "unanimous" => nil, "split" => nil
     )
     expect(Achievements::RULES.select(&:secret?).map(&:title)).to contain_exactly(
-      "Перевзувач", "Найзневаженіший камертон тижня", "Буркотун", "Не такий як всі"
+      "Перевзувач", "Найзневаженіший камертон тижня", "Буркотун", "Не такий як всі", "Розкол"
     )
     expect(Achievements::RULES.map(&:code)).to eq(Achievements::RULES.map(&:code).uniq)
   end

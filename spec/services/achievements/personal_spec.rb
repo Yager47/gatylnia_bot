@@ -71,6 +71,12 @@ RSpec.describe Achievements::Personal do
     expect(text([ rule("grows", period_kind: :week) ])).to include("✅ Ачівка grows (2)")
   end
 
+  it "lists per-release achievements only in the totals" do
+    earn("split", period: "release-1")
+
+    expect(text([ rule("split", period_kind: :release) ])).to eq("🏆 Ачівки: Оля\n\nУсього: Ачівка split ×1")
+  end
+
   it "shows an earned secret" do
     earn("secret", period: "2026-10")
 

@@ -20,7 +20,12 @@ production:
   camerton_reminders:
     class: CamertonRemindersJob
     schedule: every day at 9am Europe/Kyiv
-  # Camerton achievements decided when a week or month ends.
+  # Camerton achievements decided when a release turns a week old, or a
+  # week or month ends.
+  close_release_achievements:
+    class: CloseAchievementPeriodsJob
+    args: [ "release" ]
+    schedule: "0 9 * * * Europe/Kyiv"
   close_weekly_achievements:
     class: CloseAchievementPeriodsJob
     args: [ "week" ]

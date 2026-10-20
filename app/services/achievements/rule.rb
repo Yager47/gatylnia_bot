@@ -19,6 +19,11 @@ module Achievements
       nil
     end
 
+    # The periods a check at `at` decides: the week or month it falls in.
+    def periods(_chat, at)
+      [ Period.current(period_kind, now: at) ]
+    end
+
     # { user_id => count so far } for a counting rule; empty otherwise.
     def counts(_chat, _period)
       {}
@@ -32,8 +37,8 @@ module Achievements
 
     # The chat's announcement of a change: :awarded, :revoked, or :leveled
     # (an achievement held already went up to `level`). Telegram HTML;
-    # `mention` is escaped already.
-    def line(change, mention, level)
+    # `mention` is escaped already; period_key names what it's for.
+    def line(change, mention, level, period_key: nil)
       case change
       when :awarded then "🏆 #{mention} отримує ачівку «#{title}»: #{description}"
       when :revoked then "↩️ #{mention} втрачає ачівку «#{title}»: вже не #{description}"

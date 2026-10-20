@@ -36,4 +36,18 @@ RSpec.describe Achievements::Closer do
 
     expect(chat.achievements.pluck(:code, :period)).to eq([])
   end
+
+  it "decides the releases that turned a week old, daily" do
+    release = create(:release, :resolved)
+    create(:release_share, chat: chat, release: release, user: olya, shared_at: Time.zone.local(2026, 10, 19, 20))
+    [ 1, 9 ].each { |value| create(:review, chat: chat, release: release, score: value) }
+
+    described_class.new(chat, :release, now: monday).call
+    described_class.new(chat, :release, now: monday + 3.hours).call
+
+    expect(fake_telegram.sent_messages.map { |message| message[:text] }).to eq([
+      "🏁 Релізи тижневої давності:\n🏆 @olya отримує ачівку «Розкол» за 🎵 Queen — Bohemian Rhapsody: оцінки розійшлися на 6+ балів"
+    ])
+    expect(chat.achievements.sole).to have_attributes(code: "split", period: "release-#{release.id}")
+  end
 end
