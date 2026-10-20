@@ -16,8 +16,8 @@ module Achievements
         @secret
       end
 
-      def period_end?
-        true
+      def decided_by
+        :closer
       end
 
       def winner_ids(chat, period)

@@ -8,10 +8,10 @@ module Achievements
       false
     end
 
-    # Decided once its week or month is over (Achievements::Closer) rather
-    # than as soon as someone qualifies.
-    def period_end?
-      false
+    # What awards it: :checker as soon as someone qualifies, :closer once
+    # its week, month or release is done, :streaks for Серія.
+    def decided_by
+      :checker
     end
 
     # The goal of a counting rule ("17/42" in "мої ачівки"), or nil.

@@ -24,7 +24,7 @@ module Achievements
     end
 
     def text
-      [ "🏆 Ачівки: #{@user.name}", *current_sections, totals ].join("\n\n")
+      [ "🏆 Ачівки: #{@user.name}", *current_sections, streak, totals ].compact.join("\n\n")
     end
 
     private
@@ -54,6 +54,21 @@ module Achievements
       return if rule.secret? || rule.goal.nil?
 
       "⏳ #{rule.title} — #{rule.counts(@chat, period).fetch(@user.id, 0)}/#{rule.goal}"
+    end
+
+    # "🔥 Серія: 5 днів поспіль (найдовша — 12 днів)", or nil without any.
+    def streak
+      rule = @rules.find { |candidate| candidate.decided_by == :streaks }
+      return unless rule
+
+      rows = mine.where(code: rule.code)
+      best = rows.maximum(:level)
+      return unless best
+
+      current = rows.find_by(finished_at: nil)&.level
+      return "🔥 Найдовша серія: #{rule.days(best)}" unless current
+
+      "🔥 Серія: #{rule.days(current)} поспіль (найдовша — #{rule.days(best)})"
     end
 
     def totals

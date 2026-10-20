@@ -24,6 +24,7 @@ module Achievements
     Rules::Grumbler.new(code: "grumbler", title: "Буркотун", secret: true),
     Rules::Contrarian.new(code: "contrarian", title: "Не такий як всі", secret: true),
     Rules::ReleaseVerdict.new(code: "unanimous", title: "Одностайність", spread: 0..1, wording: "розійшлися не більше ніж на 1 бал"),
-    Rules::ReleaseVerdict.new(code: "split", title: "Розкол", spread: 6.., wording: "розійшлися на 6+ балів", secret: true)
+    Rules::ReleaseVerdict.new(code: "split", title: "Розкол", spread: 6.., wording: "розійшлися на 6+ балів", secret: true),
+    Rules::Streak.new(code: "streak", title: "Серія")
   ].freeze
 end

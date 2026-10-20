@@ -9,7 +9,7 @@ module Achievements
     # rules: the instant ones by default; Closer passes the period-end ones.
     # period_at: a time in the periods to check (now, or Closer's last
     # second of the period that just ended). header: a first line.
-    def initialize(chat, rules: RULES.reject(&:period_end?), now: Time.current, period_at: now, header: nil)
+    def initialize(chat, rules: RULES.select { |rule| rule.decided_by == :checker }, now: Time.current, period_at: now, header: nil)
       @chat = chat
       @rules = rules
       @now = now

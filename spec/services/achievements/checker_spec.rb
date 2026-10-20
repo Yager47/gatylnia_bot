@@ -126,7 +126,8 @@ RSpec.describe Achievements::Checker do
       "first_listener" => 5, "lightning" => 5, "rescuer" => 3, "archaeologist" => 5,
       "bubble_exit" => 3, "long_critic" => 5, "necromancer" => 5, "turncoat" => nil,
       "best_sharer" => nil, "worst_sharer" => nil, "song_eater" => nil, "album_eater" => nil, "eater" => nil,
-      "all_positive" => nil, "grumbler" => nil, "contrarian" => nil, "unanimous" => nil, "split" => nil
+      "all_positive" => nil, "grumbler" => nil, "contrarian" => nil, "unanimous" => nil, "split" => nil,
+      "streak" => nil
     )
     expect(Achievements::RULES.select(&:secret?).map(&:title)).to contain_exactly(
       "Перевзувач", "Найзневаженіший камертон тижня", "Буркотун", "Не такий як всі", "Розкол"

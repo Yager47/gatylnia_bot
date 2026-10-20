@@ -27,8 +27,8 @@ module Achievements
         :release
       end
 
-      def period_end?
-        true
+      def decided_by
+        :closer
       end
 
       def description
