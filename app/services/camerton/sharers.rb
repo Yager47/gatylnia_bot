@@ -39,7 +39,7 @@ module Camerton
       count = @chat.release_shares.where(release_id: unanimous_flops).distinct.count(:release_id)
       return [] if count.zero?
 
-      [ "", "Без #{Formatting.count(count, 'релізу', 'релізів', 'релізів')}, які не зайшли нікому, навіть тому, хто скинув." ]
+      [ "", "Без #{Plural.count(count, 'релізу', 'релізів', 'релізів')}, які не зайшли нікому, навіть тому, хто скинув." ]
     end
 
     # [[user_id, distinct releases shared, average score or nil, scores], ...]
@@ -56,10 +56,10 @@ module Camerton
     end
 
     def line(user, releases, average, scores)
-      shared = Formatting.count(releases, "реліз", "релізи", "релізів")
+      shared = Plural.count(releases, "реліз", "релізи", "релізів")
       return "#{user.name}: #{shared}, оцінок ще нема" unless average
 
-      "#{user.name}: #{shared}, середня #{Formatting.score(average)} (#{Formatting.count(scores, 'оцінка', 'оцінки', 'оцінок')})"
+      "#{user.name}: #{shared}, середня #{Formatting.score(average)} (#{Plural.count(scores, 'оцінка', 'оцінки', 'оцінок')})"
     end
   end
 end

@@ -192,9 +192,9 @@ module Response
       @user.points.create!(chat: @chat, amount: -fee, reason: @command)
       # The command arrives lowercased; usernames are stored as written.
       target_user = @chat.users.find_by("LOWER(users.username) = ?", @command.delete_prefix(prefix))
-      return reply("Такої людини тут нема, але #{fee} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
+      return reply("Такої людини тут нема, але #{Zhmykhcoins.count(fee)} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
 
-      reply("#{@user.first_name} за #{fee} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
+      reply("#{@user.first_name} за #{Zhmykhcoins.count(fee)} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
     end
 
     def mention_user_in(phrases, user)
@@ -209,7 +209,7 @@ module Response
                    .map { |user| [ user.name, totals.fetch(user.id, 0) ] }
                    .sort_by { |name, balance| [ -balance, name ] }
 
-      "Загальний баланс в чаті: \n" + lines.map { |name, balance| "\n#{name}: #{balance}" }.join
+      "Баланс жмихкоїнів у чаті: \n" + lines.map { |name, balance| "\n#{name}: #{balance}" }.join
     end
 
     def data

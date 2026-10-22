@@ -10,12 +10,12 @@ RSpec.describe Response::RpsGame do
   end
 
   it "pays the stake for a win" do
-    expect(play("камінь", bot_index: 2)).to end_with("Камінь > Ножиці. +10")
+    expect(play("камінь", bot_index: 2)).to end_with("Камінь > Ножиці. +10 жмихкоїнів")
     expect(Point.sole).to have_attributes(user: user, chat: chat, amount: 10, reason: "RPS: камінь > ножиці")
   end
 
   it "takes the stake for a loss" do
-    expect(play("камінь", bot_index: 1)).to end_with("Камінь < Папір. -10")
+    expect(play("камінь", bot_index: 1)).to end_with("Камінь < Папір. -10 жмихкоїнів")
     expect(Point.sole.amount).to eq(-10)
   end
 

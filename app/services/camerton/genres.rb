@@ -46,12 +46,12 @@ module Camerton
       return [] if styles.empty?
 
       section = [ "", "🎛 Стилі:", "", *lines(styles.first(STYLES_SHOWN)) ]
-      section << "і ще #{Formatting.count(styles.size - STYLES_SHOWN, 'стиль', 'стилі', 'стилів')}" if styles.size > STYLES_SHOWN
+      section << "і ще #{Plural.count(styles.size - STYLES_SHOWN, 'стиль', 'стилі', 'стилів')}" if styles.size > STYLES_SHOWN
       section
     end
 
     def releases(count)
-      Formatting.count(count, "реліз", "релізи", "релізів")
+      Plural.count(count, "реліз", "релізи", "релізів")
     end
 
     def shared_ids

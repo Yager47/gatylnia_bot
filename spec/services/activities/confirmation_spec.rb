@@ -23,15 +23,6 @@ RSpec.describe Activities::Confirmation do
     expect(text(coffee: 1, push_ups: 1)).to eq("☕💪 Петро: 1 кава, 1 підхід відтискань за сьогодні")
   end
 
-  it "uses the Ukrainian plural for cups" do
-    labels = [ 1, 2, 4, 5, 11, 12, 14, 20, 21, 22, 25, 111, 112 ].index_with { |count| described_class.new(user: user, chat: chat, day: day).send(:plural, count, "кава", "кави", "кав") }
-
-    expect(labels).to eq(
-      1 => "кава", 2 => "кави", 4 => "кави", 5 => "кав", 11 => "кав", 12 => "кав", 14 => "кав",
-      20 => "кав", 21 => "кава", 22 => "кави", 25 => "кав", 111 => "кав", 112 => "кав"
-    )
-  end
-
   it "says кави for two cups" do
     create(:activity, chat: chat, user: user, occurred_at: day - 2.hours)
     create(:activity, chat: chat, user: user, occurred_at: day)

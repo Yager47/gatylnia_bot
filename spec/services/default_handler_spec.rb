@@ -232,6 +232,16 @@ RSpec.describe DefaultHandler do
       expect(fake_telegram.sent_messages.size).to eq(1)
     end
 
+    it "doesn't give жмихкоїни again when a signed number is edited" do
+      create(:user, telegram_id: "777")
+      replied = { message_id: 10, from: telegram_from(id: 777, first_name: "Ольга", username: "olga"), text: "жарт" }
+
+      dispatch(message_update(text: "+50", message_id: 11, reply_to_message: replied))
+      dispatch(edited_message_update(update_id: 2, text: "+500", message_id: 11, reply_to_message: replied))
+
+      expect(Point.sole.amount).to eq(50)
+    end
+
     it "ignores an edit made more than a minute after the message" do
       sent_at = Time.current
 

@@ -26,7 +26,7 @@ module Camerton
       releases = Release.where(id: rows.map(&:first)).index_by(&:id)
       lines = rows.each_with_index.map do |(release_id, average, count), index|
         "#{index + 1}. #{Formatting.release(releases.fetch(release_id))} · " \
-          "#{Formatting.score(average)} (#{Formatting.count(count, 'оцінка', 'оцінки', 'оцінок')})"
+          "#{Formatting.score(average)} (#{Plural.count(count, 'оцінка', 'оцінки', 'оцінок')})"
       end
 
       "#{header}\n\n#{lines.join("\n")}"

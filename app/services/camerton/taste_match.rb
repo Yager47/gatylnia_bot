@@ -44,7 +44,7 @@ module Camerton
       return "🤝 #{names}: спільних оцінок ще нема." unless common
 
       [
-        "🤝 #{names}: збіг #{agreement}% на #{Formatting.count(common, 'спільному релізі', 'спільних релізах', 'спільних релізах')}",
+        "🤝 #{names}: збіг #{agreement}% на #{Plural.count(common, 'спільному релізі', 'спільних релізах', 'спільних релізах')}",
         *biggest_gap
       ].join("\n")
     end

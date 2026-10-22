@@ -4,6 +4,7 @@ class User < ApplicationRecord
   has_many :entries, dependent: :destroy
   has_many :activities, dependent: :destroy
   has_many :points, dependent: :destroy
+  has_many :given_points, class_name: "Point", foreign_key: :giver_id, inverse_of: :giver, dependent: :nullify
   has_many :messages, dependent: :destroy
   has_many :release_shares, dependent: :destroy
   has_many :reviews, dependent: :destroy

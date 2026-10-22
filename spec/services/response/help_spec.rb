@@ -61,6 +61,14 @@ RSpec.describe Response::Help do
     expect(help).not_to include("підтримай мене", "камінь")
   end
 
+  it "says how to give жмихкоїни in default and accountant modes" do
+    line = "• <b>+200 / -100</b> (відповіддю на повідомлення) — дати чи забрати жмихкоїни, до 500 на день; число без знака не рахується"
+    expect(help).to include(line)
+
+    chat.update!(mode: :accountant)
+    expect(help).to include(line)
+  end
+
   it "lists no mode commands in quiet mode" do
     chat.update!(mode: :quiet)
 

@@ -14,11 +14,19 @@ Each chat has a **mode**, plus two features that can be switched on or off.
 
 | | What it is |
 |---|---|
-| `звичайний` (default) | Canned replies, points, rock-paper-scissors, coffee / push-up / "gato" stats, and AI replies (`gpt-5-mini`) when someone talks to the bot |
-| `бухгалтер` (accountant) | Points only: reply to a message with a number to give its author points, `@<bot> баланс`, and removal requests |
+| `звичайний` (default) | Canned replies, points ("жмихкоїни", see below), rock-paper-scissors, coffee / push-up / "gato" stats, and AI replies (`gpt-5-mini`) when someone talks to the bot |
+| `бухгалтер` (accountant) | Points only (see below), `@<bot> баланс`, and removal requests |
 | `тихий` (quiet) | Silent; answers commands only |
 | **Камертон** | Music reviews: share a `music.youtube.com` link, reply to it with a score from 1 to 10 (as text, a voice message or a video note), and get tops, stats, taste matches, achievements and a daily 09:00 reminder about unrated releases. Release metadata comes from YouTube oEmbed and Discogs |
 | **Замітки** | Notes on demo audio: post an mp3/wav/flac, and replies to it are saved as notes on that version of the track |
+
+### Жмихкоїни
+
+The chat's points. Reply to someone's message with a signed number to give
+(`+200`) or take (`-100`) that many; a bare `100` is just a message. Each
+member can give or take 500 in total per chat per day (Kyiv time), so `+300`
+and `-200` use it all up. Rock-paper-scissors and the paid `пошли @нік` /
+`образь @нік` also win or cost жмихкоїни; `@<bot> баланс` shows everyone's.
 
 Video notes are transcribed with Whisper and classified from extracted frames,
 so production needs `ffmpeg`.

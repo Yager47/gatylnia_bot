@@ -36,7 +36,7 @@ class DefaultHandler < ChatModeHandler
     edited = @message[:edit_date].present?
 
     [
-      -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call },
+      -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call unless edited },
       -> { Response::BotCommand.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call },
       -> { removal(text) unless edited },
       -> { gato(message, text) unless edited },

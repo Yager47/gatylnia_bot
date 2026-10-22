@@ -26,7 +26,7 @@ module Achievements
 
       # "5 оцінок", "21 оцінена пісня"
       def goal_count(one, few, many)
-        Camerton::Formatting.count(goal, one, few, many)
+        Plural.count(goal, one, few, many)
       end
     end
   end
