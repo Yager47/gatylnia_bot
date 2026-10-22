@@ -24,7 +24,7 @@ module Activities
         recorded.keys.map { |kind| "#{totals.fetch(kind.to_s)} #{label(kind, totals.fetch(kind.to_s))}" }.join(", ")
       end
 
-      text = "#{emoji} #{@user.name}: #{summary} за сьогодні"
+      text = "#{emoji} #{@chat.member_names.name(@user)}: #{summary} за сьогодні"
       reward.zero? ? text : "#{text}, #{Zhmykhcoins.count(reward, signed: true)}"
     end
 

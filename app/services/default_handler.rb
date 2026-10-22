@@ -37,13 +37,14 @@ class DefaultHandler < ChatModeHandler
 
     [
       -> { Response::Reply.new(user: user, chat: @chat, text: text, reply_to_message: @message[:reply_to_message]).call unless edited },
+      -> { Response::Pseudonym.new(user: user, chat: @chat, text: message.content).call unless edited },
       -> { Response::BotCommand.new(user: user, text: text, chat: @chat, reply_to_message: @message[:reply_to_message]).call },
       -> { removal(text) unless edited },
       -> { gato(message, text) unless edited },
       -> { Response::UndoCoffee.new(user: user, text: text, chat: @chat).call unless edited },
       -> { Response::Equals.new(text: text).call },
       -> { track_coffee(message) if !edited && Activities::CoffeeTextClassifier.candidate?(text) },
-      -> { Response::Includes.new(user: user, text: text).call if chance(0.1) },
+      -> { Response::Includes.new(first_name: @chat.member_names.first_name(user), text: text).call if chance(0.1) },
       -> { answer_with_ai(message) }
     ]
   end

@@ -65,7 +65,7 @@ module Response
         "gato",
         text: @text,
         rhythm: TimeSignature.call,
-        first_name: @user.first_name,
+        first_name: @chat.member_names.first_name(@user),
         last_name: @user.last_name,
         chat_title: @chat.title
       ))

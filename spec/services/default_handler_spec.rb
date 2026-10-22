@@ -110,7 +110,7 @@ RSpec.describe DefaultHandler do
     end
 
     it "no longer jokes about coffee" do
-      expect(Response::Includes.new(user: build(:user), text: "кава").call).to be_nil
+      expect(Response::Includes.new(first_name: "Петро", text: "кава").call).to be_nil
     end
   end
 
@@ -214,6 +214,19 @@ RSpec.describe DefaultHandler do
       dispatch(edited_message_update(text: "видали гатіння", message_id: 7))
 
       expect(Entry.count).to eq(2)
+    end
+  end
+
+  describe "pseudonyms" do
+    it "buys one with the case as written and uses it in later replies" do
+      dispatch(message_update(text: "Ало")) # creates Петро in the chat
+      Point.create!(chat: Chat.sole, user: User.sole, amount: 500)
+
+      dispatch(message_update(update_id: 2, message_id: 43, text: "@test_bot псевдонім Сер Гатило"))
+      dispatch(message_update(update_id: 3, message_id: 44, text: "@test_bot баланс"))
+
+      expect(ChatUser.sole.pseudonym).to eq("Сер Гатило")
+      expect(fake_telegram.sent_messages.last[:text]).to eq("Баланс жмихкоїнів у чаті: \n\nСер Гатило: 0")
     end
   end
 

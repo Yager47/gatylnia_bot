@@ -109,9 +109,11 @@ RSpec.describe Camerton::ToListen do
     queries_for_few = count_queries { to_listen }
 
     12.times { |index| shared("More #{index}", at: index.hours.ago) }
+    chat.reload # drops the cached pseudonyms (Chat#member_names), as a new update would
 
-    expect(count_queries { to_listen }).to eq(queries_for_few).and eq(3)
-    expect(count_queries { to_listen(kind: "song") }).to eq(3)
+    expect(count_queries { to_listen }).to eq(queries_for_few).and eq(4)
+    chat.reload
+    expect(count_queries { to_listen(kind: "song") }).to eq(4)
   end
 
   def count_queries(&block)

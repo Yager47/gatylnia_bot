@@ -24,7 +24,7 @@ module Achievements
     end
 
     def text
-      [ "🏆 Ачівки: #{@user.name}", *current_sections, streak, totals ].compact.join("\n\n")
+      [ "🏆 Ачівки: #{@chat.member_names.name(@user)}", *current_sections, streak, totals ].compact.join("\n\n")
     end
 
     private

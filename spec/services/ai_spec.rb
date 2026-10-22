@@ -114,11 +114,32 @@ RSpec.describe Ai do
       expect(content).to end_with("до 15 слів.")
     end
 
+    it "calls members by their pseudonym in the history and the note, loading pseudonyms once" do
+      ChatUser.create!(chat: chat, user: petro, pseudonym: "Сер Гатило")
+      replied = create(:message, chat: chat, user: petro, content: "дай ритм", reply_to: video)
+
+      queries_for_few = count_queries { messages(target: replied, frame_paths: []) }
+      3.times { create(:message, chat: chat, user: create(:user)) }
+      fresh = Chat.find(chat.id)
+
+      result = described_class.send(:messages, fresh, target: replied, frame_paths: [])
+      expect(result.map { |message| message[:content] }.join).to include("Сер Гатило: \"дай ритм\"", "[відповідь Сер Гатило → Сер Гатило:")
+      expect(result.last[:content]).to start_with("Ти відповідаєш на повідомлення від Сер Гатило:")
+      expect(count_queries { described_class.send(:messages, Chat.find(chat.id), target: replied, frame_paths: []) }).to eq(queries_for_few + 1) # + Chat.find
+    end
+
     it "sends plain text history without a target" do
       result = messages(target: nil, frame_paths: [])
 
       expect(result.map { |message| message[:content] }).to all(be_a(String))
       expect(result.last).to eq({ role: "user", content: later_text.ai_context })
     end
+  end
+
+  def count_queries(&block)
+    count = 0
+    counter = ->(*, payload) { count += 1 unless payload[:name].in?(%w[SCHEMA TRANSACTION]) }
+    ActiveSupport::Notifications.subscribed(counter, "sql.active_record", &block)
+    count
   end
 end

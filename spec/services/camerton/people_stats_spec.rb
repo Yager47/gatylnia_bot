@@ -60,6 +60,7 @@ RSpec.describe "Camerton people stats" do
       queries_for_one = count_queries { command("критики") }
 
       3.times { |index| scores(member("Member #{index}"), a => 7, b => 8) }
+      chat.reload # drops the cached pseudonyms (Chat#member_names), as a new update would
 
       expect(count_queries { command("критики") }).to eq(queries_for_one)
     end
@@ -143,6 +144,7 @@ RSpec.describe "Camerton people stats" do
       queries_for_one = count_queries { command("камертони") }
 
       3.times { |index| create(:release_share, chat: chat, release: release("R#{index}"), user: member("M#{index}")) }
+      chat.reload # drops the cached pseudonyms (Chat#member_names), as a new update would
 
       expect(count_queries { command("камертони") }).to eq(queries_for_one)
     end

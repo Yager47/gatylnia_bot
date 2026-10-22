@@ -32,7 +32,7 @@ module Response
       lines =
         case @chat.mode
         when "default" then default_lines
-        when "accountant" then [ give_line, command("#{bot} баланс", "жмихкоїни всіх у чаті"), summary_line ]
+        when "accountant" then [ give_line, command("#{bot} баланс", "жмихкоїни всіх у чаті"), summary_line, *pseudonym_lines ]
         when "quiet" then [ fact("Тут я мовчу і відповідаю лише на команди.") ]
         end
 
@@ -52,6 +52,7 @@ module Response
         give_line,
         command("#{bot} баланс", "жмихкоїни всіх у чаті"),
         summary_line,
+        *pseudonym_lines,
         fact("За каву плачу жмихкоїнами: 1–2 чашки +25, 3–4 +10, з пʼятої −10; за підхід відтискань +100, до трьох на день"),
         command("#{bot} гатуни за сьогодні|тиждень|місяць|рік", "хто скільки гатив"),
         command("#{bot} кава за … / віджимання за …", "те саме для кави й віджимань"),
@@ -63,6 +64,13 @@ module Response
 
     def give_line
       command("+200 / -100", "дати чи забрати жмихкоїни, до #{Reply::DAILY_BUDGET} на день; число без знака не рахується", hint: "відповіддю на повідомлення")
+    end
+
+    def pseudonym_lines
+      [
+        command("#{bot} псевдонім <імʼя>", "моє імʼя для тебе в цьому чаті, до #{ChatUser::MAX_PSEUDONYM} символів, за #{Pseudonym::FEE} жмихкоїнів"),
+        command("#{bot} мій псевдонім / прибери псевдонім", "показати чи безкоштовно прибрати")
+      ]
     end
 
     def summary_line

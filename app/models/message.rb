@@ -23,7 +23,7 @@ class Message < ApplicationRecord
 
   def body
     if role == "user"
-      "#{user&.name || 'Хтось'}: \"#{content}\""
+      "#{name_of(user) || 'Хтось'}: \"#{content}\""
     else
       "\"#{content}\""
     end
@@ -31,15 +31,20 @@ class Message < ApplicationRecord
 
   def reply_prefix
     if reply_to.present?
-      target = reply_to.user&.name || "бот"
+      target = name_of(reply_to.user) || "бот"
       quoted = reply_to.content.to_s.truncate(200)
-      "[відповідь #{user&.name || 'Хтось'} → #{target}: \"#{quoted}\"]"
+      "[відповідь #{name_of(user) || 'Хтось'} → #{target}: \"#{quoted}\"]"
     elsif reply_snapshot.present?
       snapshot = reply_snapshot.with_indifferent_access
       target = snapshot[:user_name] || "хтось"
       quoted = snapshot[:content].to_s.truncate(200)
-      "[відповідь #{user&.name || 'Хтось'} → #{target}: \"#{quoted}\"]"
+      "[відповідь #{name_of(user) || 'Хтось'} → #{target}: \"#{quoted}\"]"
     end
+  end
+
+  # As the chat calls them (MemberNames): a pseudonym if they bought one.
+  def name_of(person)
+    chat.member_names.name(person) if person
   end
 
   def reactions_prefix

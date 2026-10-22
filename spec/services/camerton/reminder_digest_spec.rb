@@ -97,6 +97,7 @@ RSpec.describe Camerton::ReminderDigest do
 
       3.times { |index| member("M#{index}") }
       3.times { |index| shared("More #{index}", by: sharer) }
+      chat.reload # drops the cached pseudonyms (Chat#member_names), as a new update would
 
       expect(count_queries { digest }).to eq(queries_for_few)
     end

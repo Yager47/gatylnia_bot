@@ -17,4 +17,15 @@ class Chat < ApplicationRecord
   }
 
   validates :telegram_id, :telegram_type, :title, :mode, presence: true
+
+  # Memoized per loaded chat, so a reply naming many members queries the
+  # pseudonyms once; reload drops it.
+  def member_names
+    @member_names ||= MemberNames.new(self)
+  end
+
+  def reload(...)
+    @member_names = nil
+    super
+  end
 end

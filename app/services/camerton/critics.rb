@@ -1,6 +1,7 @@
 module Camerton
   # "@bot критики": how many releases each member scored and how generous
-  # they are. Two queries however many members and reviews there are.
+  # they are. Three queries however many members and reviews there are,
+  # pseudonyms included.
   class Critics
     # Fewer scores than this say little about how strict someone is.
     MIN_FOR_EXTREMES = 3
@@ -16,7 +17,7 @@ module Camerton
 
       users = User.where(id: rows.map(&:first)).index_by(&:id)
       rows = rows.map { |user_id, count, average| [ users.fetch(user_id), count, average ] }
-        .sort_by { |user, count, average| [ average, -count, user.name ] }
+        .sort_by { |user, count, average| [ average, -count, @chat.member_names.name(user) ] }
 
       [ "🧐 Критики (від найсуворіших):", "", *lines(rows), *extremes(rows) ].join("\n")
     end
@@ -25,7 +26,7 @@ module Camerton
 
     def lines(rows)
       rows.map do |user, count, average|
-        "#{user.name}: #{Plural.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}"
+        "#{@chat.member_names.name(user)}: #{Plural.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}"
       end
     end
 
@@ -37,8 +38,8 @@ module Camerton
       kindest = ranked.last
       [
         "",
-        "Найсуворіші оцінки: #{harshest[0].name} (#{Formatting.score(harshest[2])})",
-        "Найщедріші оцінки: #{kindest[0].name} (#{Formatting.score(kindest[2])})"
+        "Найсуворіші оцінки: #{@chat.member_names.name(harshest[0])} (#{Formatting.score(harshest[2])})",
+        "Найщедріші оцінки: #{@chat.member_names.name(kindest[0])} (#{Formatting.score(kindest[2])})"
       ]
     end
   end

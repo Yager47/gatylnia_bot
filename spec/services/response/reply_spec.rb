@@ -16,6 +16,12 @@ RSpec.describe Response::Reply do
     expect(Point.sole).to have_attributes(user: receiver, giver: giver, chat: chat, amount: 50, reason: "смішний жарт")
   end
 
+  it "calls the receiver by their pseudonym in this chat" do
+    receiver.chat_users.find_by!(chat: chat).update!(pseudonym: "Сер Гатило")
+
+    expect(reply_with("+50")).to start_with("Сер Гатило отримує +50")
+  end
+
   it "ignores a bare number: it takes a sign to give" do
     expect(reply_with("100")).to be_nil
     expect(Point.count).to eq(0)

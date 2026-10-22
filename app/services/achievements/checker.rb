@@ -70,7 +70,7 @@ module Achievements
       users = User.where(id: changes.map { |_change, _rule, row| row.user_id }).index_by(&:id)
 
       lines = changes.map do |change, rule, row|
-        rule.line(change, Camerton::Formatting.mention(users.fetch(row.user_id)), row.level, period_key: row.period)
+        rule.line(change, Camerton::Formatting.mention(users.fetch(row.user_id), @chat.member_names.name(users.fetch(row.user_id))), row.level, period_key: row.period)
       end
       [ @header, *lines ].compact.join("\n")
     end

@@ -29,6 +29,13 @@ and `-200` use it all up. `@<bot> баланс` shows everyone's, and every Mond
 at 10:00 the bot posts the past week's summary: each member's change, the
 week's top earner ("жмихкоїн тижня") and the most generous giver.
 
+A pseudonym costs 500: `@<bot> псевдонім Сер Гатило` (up to 32 characters,
+unique in the chat whatever the case) makes the bot call you that in every
+reply in this chat, AI replies included; @mentions stay your Telegram
+username. Each change costs 500 again, refused unless the balance covers it;
+`@<bot> мій псевдонім` shows it and `@<bot> прибери псевдонім` (or `видали`)
+removes it for free. Default and accountant modes.
+
 In default mode they're also earned and spent:
 
 | | жмихкоїни |

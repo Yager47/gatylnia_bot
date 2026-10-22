@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_22_130100) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_22_150100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,6 +66,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_130100) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "pseudonym"
+    t.string "pseudonym_key"
+    t.index ["chat_id", "pseudonym_key"], name: "index_chat_users_on_chat_id_and_pseudonym_key", unique: true, where: "(pseudonym_key IS NOT NULL)"
     t.index ["chat_id", "user_id"], name: "index_chat_users_on_chat_id_and_user_id", unique: true
     t.index ["user_id"], name: "index_chat_users_on_user_id"
   end
