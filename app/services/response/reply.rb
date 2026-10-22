@@ -63,7 +63,7 @@ module Response
     end
 
     def point_answer(point, receiver)
-      response = "#{receiver.name} отримує #{Zhmykhcoins.count(point.amount, signed: true)}"
+      response = "#{@chat.member_names.name(receiver)} отримує #{Zhmykhcoins.count(point.amount, signed: true)}"
       response += " по причині: \n\"#{point.reason}\"" if point.reason.present?
       response
     end

@@ -42,7 +42,7 @@ module Activities
     def body(rows)
       return "Нікого." if rows.empty?
 
-      rows.map { |row| "#{row.user.name}: #{row.total}" }.join("\n")
+      rows.map { |row| "#{@chat.member_names.name(row.user)}: #{row.total}" }.join("\n")
     end
   end
 end

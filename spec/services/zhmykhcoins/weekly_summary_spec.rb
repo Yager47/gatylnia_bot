@@ -68,10 +68,10 @@ RSpec.describe Zhmykhcoins::WeeklySummary do
       expect(summary).to be_nil
     end
 
-    it "takes four queries however many members there are" do
+    it "takes five queries however many members there are" do
       3.times { |n| point(member("Член #{n}"), 10, giver: member("Дарувальник #{n}")) }
 
-      expect(count_queries { summary }).to eq(4)
+      expect(count_queries { summary }).to eq(5)
     end
   end
 

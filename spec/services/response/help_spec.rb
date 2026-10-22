@@ -77,6 +77,15 @@ RSpec.describe Response::Help do
     expect(help).not_to include("За каву")
   end
 
+  it "says how to buy, show and remove a pseudonym in default and accountant modes" do
+    lines = [ "<b>@test_bot псевдонім &lt;імʼя&gt;</b> — моє імʼя для тебе в цьому чаті, до 32 символів, за 500 жмихкоїнів",
+              "<b>@test_bot мій псевдонім / прибери псевдонім</b>" ]
+    expect(help).to include(*lines)
+
+    chat.update!(mode: :accountant)
+    expect(help).to include(*lines)
+  end
+
   it "lists no mode commands in quiet mode" do
     chat.update!(mode: :quiet)
 

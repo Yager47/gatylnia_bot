@@ -37,11 +37,11 @@ module Camerton
     end
 
     # Telegram HTML: @username notifies by itself; without one, a mention
-    # link does.
-    def mention(user)
+    # link does, showing name (pass the chat's MemberNames name).
+    def mention(user, name = user.name)
       return "@#{user.username}" if user.username.present?
 
-      %(<a href="tg://user?id=#{user.telegram_id}">#{ERB::Util.html_escape(user.name)}</a>)
+      %(<a href="tg://user?id=#{user.telegram_id}">#{ERB::Util.html_escape(name)}</a>)
     end
 
     def kind(release)

@@ -1,7 +1,7 @@
 module Camerton
   # "@bot мій смак": one member's scores in the chat, favourites and least
-  # favourites, and whose taste is closest. Seven queries however many
-  # reviews there are.
+  # favourites, and whose taste is closest. Eight queries however many
+  # reviews there are, pseudonyms included.
   class Taste
     SHOWN = 10
     # Favourites are good or great reviews; the least liked, bad or mid ones.
@@ -16,13 +16,13 @@ module Camerton
 
     def text
       count, average = @reviews.pick(Arel.sql("COUNT(*)"), Arel.sql("AVG(score)"))
-      return "🎧 #{@user.name}: оцінок ще нема." if count.zero?
+      return "🎧 #{@chat.member_names.name(@user)}: оцінок ще нема." if count.zero?
 
       favourites = @reviews.where(score: LIKED).order(score: :desc, scored_at: :desc, id: :desc).includes(:release).limit(SHOWN).to_a
       least = @reviews.where(score: DISLIKED).order(:score, scored_at: :desc, id: :desc).includes(:release).limit(SHOWN).to_a
 
       [
-        "🎧 Смак: #{@user.name}",
+        "🎧 Смак: #{@chat.member_names.name(@user)}",
         "#{Plural.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}",
         *release_section("Найбільше зайшло:", favourites),
         *release_section("Найменше зайшло:", least),
@@ -42,7 +42,7 @@ module Camerton
       user_id, common, agreement = TasteMatch.agreements(chat: @chat, user: @user).first
       return [] unless user_id
 
-      [ "", "Найближчий смак: #{User.find(user_id).name} (збіг #{agreement}% на #{Plural.count(common, 'спільному релізі', 'спільних релізах', 'спільних релізах')})" ]
+      [ "", "Найближчий смак: #{@chat.member_names.name(User.find(user_id))} (збіг #{agreement}% на #{Plural.count(common, 'спільному релізі', 'спільних релізах', 'спільних релізах')})" ]
     end
   end
 end

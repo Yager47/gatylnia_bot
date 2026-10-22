@@ -5,7 +5,7 @@ module Camerton
   #
   # A release every member of the chat scored as bad, the sharer included,
   # is left out: everyone agrees it's a flop, so it was likely shared as one.
-  # Four queries however many shares there are.
+  # Five queries however many shares there are, pseudonyms included.
   class Sharers
     def initialize(chat:)
       @chat = chat
@@ -17,7 +17,7 @@ module Camerton
 
       users = User.where(id: rows.map(&:first)).index_by(&:id)
       rows = rows.map { |user_id, releases, average, scores| [ users.fetch(user_id), releases, average, scores ] }
-        .sort_by { |user, releases, average, _scores| [ average ? -average : Float::INFINITY, -releases, user.name ] }
+        .sort_by { |user, releases, average, _scores| [ average ? -average : Float::INFINITY, -releases, @chat.member_names.name(user) ] }
 
       [ "🎛 Камертони (чиї релізи заходять найкраще):", "", *rows.map { |row| line(*row) }, *flops_note ].join("\n")
     end
@@ -57,9 +57,9 @@ module Camerton
 
     def line(user, releases, average, scores)
       shared = Plural.count(releases, "реліз", "релізи", "релізів")
-      return "#{user.name}: #{shared}, оцінок ще нема" unless average
+      return "#{@chat.member_names.name(user)}: #{shared}, оцінок ще нема" unless average
 
-      "#{user.name}: #{shared}, середня #{Formatting.score(average)} (#{Plural.count(scores, 'оцінка', 'оцінки', 'оцінок')})"
+      "#{@chat.member_names.name(user)}: #{shared}, середня #{Formatting.score(average)} (#{Plural.count(scores, 'оцінка', 'оцінки', 'оцінок')})"
     end
   end
 end

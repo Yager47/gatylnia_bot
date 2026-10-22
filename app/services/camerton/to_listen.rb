@@ -7,8 +7,8 @@ module Camerton
   # Like the daily digest, the member's own shares are left out and a reply
   # that wasn't a review doesn't count. Each release links to its latest
   # share (or YouTube Music when that has no link), as in the digest, so
-  # the text is Telegram HTML. Three queries however many releases the chat
-  # has, plus one when a genre finds nothing.
+  # the text is Telegram HTML. Four queries however many releases the chat
+  # has (one for pseudonyms), plus one when a genre finds nothing.
   class ToListen
     SHOWN = 10
     KIND_LABELS = { "album" => "альбоми", "song" => "пісні" }.freeze
@@ -25,7 +25,7 @@ module Camerton
 
     # Telegram HTML.
     def text
-      name = ERB::Util.html_escape(@user.name)
+      name = ERB::Util.html_escape(@chat.member_names.name(@user))
       shares = latest_shares.includes(:release).order(shared_at: :desc, id: :desc).limit(SHOWN).to_a
       return nothing_left(name) if shares.empty?
 

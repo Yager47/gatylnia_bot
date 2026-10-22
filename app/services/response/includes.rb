@@ -4,8 +4,9 @@ module Response
   class Includes
     include Responder
 
-    def initialize(user:, text:)
-      @user = user
+    # first_name: as the chat calls the author (MemberNames).
+    def initialize(first_name:, text:)
+      @first_name = first_name
       @text = text
     end
 
@@ -21,7 +22,7 @@ module Response
 
     def call
       rule = self.class.rules.find { |candidate| matches?(candidate) }
-      reply_with_rule(rule, first_name: @user.first_name) if rule
+      reply_with_rule(rule, first_name: @first_name) if rule
     end
 
     private

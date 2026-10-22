@@ -86,6 +86,12 @@ RSpec.describe Response::BotCommand do
       expect(reply_to("@test_bot баланс")).to eq("Баланс жмихкоїнів у чаті: \n\nПетро: 20\nОльга: 0\nІван: -5")
     end
 
+    it "shows pseudonyms" do
+      ChatUser.find_by!(chat: chat, user: user).update!(pseudonym: "Сер Гатило")
+
+      expect(reply_to("@test_bot баланс")).to include("Сер Гатило: 0")
+    end
+
     it "runs the same number of queries regardless of how many members there are" do
       user # create the lazy chat and user outside the counted block
       queries_with_one_member = count_queries { reply_to("@test_bot баланс") }

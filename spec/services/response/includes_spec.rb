@@ -1,11 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Response::Includes do
-  let(:user) { build(:user, first_name: "Петро") }
-
   def reply_to(text)
     allow_any_instance_of(described_class).to receive(:pick) { |_, value| value }
-    described_class.new(user: user, text: text).call
+    described_class.new(first_name: "Петро", text: text).call
   end
 
   it "answers the first rule whose word the message contains" do

@@ -1,7 +1,7 @@
 module Notes
   # The notes on the track a command replied to, grouped by person in the
-  # order they first wrote, each person's notes in the order sent. Two
-  # queries however many notes. Long lists are split into several messages
+  # order they first wrote, each person's notes in the order sent. Three
+  # queries however many notes (one for pseudonyms). Long lists are split into several messages
   # by ChatMessenger.
   class List
     SOURCE_MARKS = { "voice" => "🎤 ", "video_note" => "⭕ " }.freeze
@@ -34,11 +34,11 @@ module Notes
     def empty_text
       return "До цього треку ще нема заміток." unless @author
 
-      "#{@author.name}: заміток до цього треку нема."
+      "#{@chat.member_names.name(@author)}: заміток до цього треку нема."
     end
 
     def block(user, notes)
-      [ "#{user.name}:", *notes.map { |note| "• #{SOURCE_MARKS[note.source]}#{note.text.strip}" } ].join("\n")
+      [ "#{@chat.member_names.name(user)}:", *notes.map { |note| "• #{SOURCE_MARKS[note.source]}#{note.text.strip}" } ].join("\n")
     end
   end
 end

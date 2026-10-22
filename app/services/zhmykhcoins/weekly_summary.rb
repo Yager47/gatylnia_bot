@@ -8,8 +8,8 @@ module Zhmykhcoins
   #   Ольга: -50 (разом 300)
   #
   #   🎁 Найщедріший: Іван, роздав 450
-  # Members whose balance didn't move are left out. Four queries however many
-  # members and points there are.
+  # Members whose balance didn't move are left out. Five queries however many
+  # members and points there are, pseudonyms included.
   class WeeklySummary
     def initialize(chat, now: Time.current)
       @chat = chat
@@ -41,17 +41,21 @@ module Zhmykhcoins
       generous = week_points.where("amount > 0").where.not(giver_id: nil).group(:giver_id).sum(:amount).max_by { |_id, amount| amount }
       users = User.where(id: changes.keys + [ generous&.first ].compact).index_by(&:id)
       totals = @chat.points.where(user_id: changes.keys).group(:user_id).sum(:amount)
-      ranked = changes.sort_by { |user_id, amount| [ -amount, users[user_id].name ] }
+      ranked = changes.sort_by { |user_id, amount| [ -amount, name(users[user_id]) ] }
 
       [
         "💰 Жмихкоїни за минулий тиждень:",
         king_line(ranked, users),
-        ranked.map { |user_id, amount| "#{users[user_id].name}: #{format('%+d', amount)} (разом #{totals.fetch(user_id)})" }.join("\n"),
-        ("🎁 Найщедріший: #{users[generous.first].name}, роздав #{generous.last}" if generous)
+        ranked.map { |user_id, amount| "#{name(users[user_id])}: #{format('%+d', amount)} (разом #{totals.fetch(user_id)})" }.join("\n"),
+        ("🎁 Найщедріший: #{name(users[generous.first])}, роздав #{generous.last}" if generous)
       ].compact.join("\n\n")
     end
 
     private
+
+    def name(user)
+      @chat.member_names.name(user)
+    end
 
     def week_points
       @chat.points.where(created_at: (@now - 1.week).all_week)
@@ -60,7 +64,7 @@ module Zhmykhcoins
     # Only for someone who came out ahead.
     def king_line(ranked, users)
       user_id, amount = ranked.first
-      "👑 Жмихкоїн тижня: #{users[user_id].name}, #{Zhmykhcoins.count(amount, signed: true)}" if amount.positive?
+      "👑 Жмихкоїн тижня: #{name(users[user_id])}, #{Zhmykhcoins.count(amount, signed: true)}" if amount.positive?
     end
   end
 end

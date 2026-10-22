@@ -8,8 +8,8 @@ module Camerton
   #   🎵 Queen — Bohemian Rhapsody
   #   💿 Eminem — Revival
   # The sharer isn't reminded of their own release, and a reply that wasn't
-  # a review doesn't count as one. Four queries however many members and
-  # releases there are.
+  # a review doesn't count as one. Five queries however many members and
+  # releases there are, pseudonyms included.
   class ReminderDigest
     WINDOW = 7.days
     PER_MEMBER = 5
@@ -42,7 +42,7 @@ module Camerton
       blocks = pending_by_member.map do |member, shares|
         lines = shares.first(PER_MEMBER).map { |share| Formatting.release_link(share, @chat) }
         lines << "і ще #{shares.size - PER_MEMBER}" if shares.size > PER_MEMBER
-        [ Formatting.mention(member), *lines ].join("\n")
+        [ Formatting.mention(member, @chat.member_names.name(member)), *lines ].join("\n")
       end
       return if blocks.empty?
 

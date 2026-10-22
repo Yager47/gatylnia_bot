@@ -84,7 +84,7 @@ module Achievements
       users = User.where(id: changes.map { |_change, row| row.user_id }).index_by(&:id)
 
       changes.map do |change, row|
-        mention = Camerton::Formatting.mention(users.fetch(row.user_id))
+        mention = Camerton::Formatting.mention(users.fetch(row.user_id), @chat.member_names.name(users.fetch(row.user_id)))
         days = @rule.days(row.level)
         case change
         when :awarded then "🏆 #{mention} отримує ачівку «#{@rule.title}»: #{days} поспіль з оцінками 🔥"

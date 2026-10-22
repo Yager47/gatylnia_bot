@@ -5,7 +5,7 @@ module Camerton
   #   Вперше скинув Петро 12.03.2026, всього 2 рази
   #
   #   Іван: 9 🔥 — каже, що це шедевр
-  # Four queries however many reviews there are.
+  # Five queries however many reviews there are, pseudonyms included.
   class ReleaseCard
     def initialize(share)
       @share = share
@@ -36,12 +36,12 @@ module Camerton
       total = shares.count
       times = total > 1 ? ", всього #{Plural.count(total, 'раз', 'рази', 'разів')}" : ""
 
-      "Вперше скинув #{first.user.name} #{first.shared_at.strftime('%d.%m.%Y')}#{times}"
+      "Вперше скинув #{@chat.member_names.name(first.user)} #{first.shared_at.strftime('%d.%m.%Y')}#{times}"
     end
 
     def review_lines(reviews)
       reviews.map do |review|
-        line = "#{review.user.name}: #{review.score} #{ReviewReaction::EMOJIS.fetch(review.label)}"
+        line = "#{@chat.member_names.name(review.user)}: #{review.score} #{ReviewReaction::EMOJIS.fetch(review.label)}"
         review.summary.present? ? "#{line} — #{review.summary}" : line
       end
     end

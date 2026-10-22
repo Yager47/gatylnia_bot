@@ -37,7 +37,7 @@ module Camerton
       return if sharer.nil? || sharer.id == @review.user_id
 
       emoji = ReviewReaction::EMOJIS.fetch(@review.label)
-      "#{Formatting.mention(sharer)}, твій реліз оцінили на #{@review.score}/10 #{emoji}"
+      "#{Formatting.mention(sharer, @chat.member_names.name(sharer))}, твій реліз оцінили на #{@review.score}/10 #{emoji}"
     end
 
     private

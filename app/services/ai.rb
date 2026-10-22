@@ -90,7 +90,7 @@ class Ai
             "Не повторюй з них слів, образів і підколів. "
         end
 
-      "Ти відповідаєш на повідомлення від #{message.user&.name || 'когось'}: " \
+      "Ти відповідаєш на повідомлення від #{message.user ? message.chat.member_names.name(message.user) : 'когось'}: " \
         "\"#{message.content.to_s.truncate(200)}\". #{addressee} #{repeats}" \
         "Відповідь: одне коротке речення, до 15 слів."
     end

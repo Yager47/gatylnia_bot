@@ -168,14 +168,14 @@ module Response
       reply(stats) if stats
     end
 
-    # Two queries no matter how many users the chat has: one grouped count,
-    # one to load the names of users who have entries.
+    # Three queries no matter how many users the chat has: one grouped count,
+    # one to load the users who have entries, one for their pseudonyms.
     def calculate_entries(range)
       counts = @chat.entries.where(created_at: range).group(:user_id).count
       users = User.where(id: counts.keys).index_by(&:id)
 
       counts.sort_by { |_user_id, count| -count }
-            .map { |user_id, count| "#{users[user_id].name}: #{count}" }
+            .map { |user_id, count| "#{@chat.member_names.name(users[user_id])}: #{count}" }
             .join("\n")
     end
 
@@ -199,19 +199,19 @@ module Response
       target_user = @chat.users.find_by("LOWER(users.username) = ?", @command.delete_prefix(prefix))
       return reply("Такої людини тут нема, але #{Zhmykhcoins.count(fee)} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
 
-      reply("#{@user.first_name} за #{Zhmykhcoins.count(fee)} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
+      reply("#{@chat.member_names.first_name(@user)} за #{Zhmykhcoins.count(fee)} замовив: \n\n#{pick(mention_user_in(send(phrase_list), target_user))}")
     end
 
     def mention_user_in(phrases, user)
       phrases.map { |phrase| "@#{user.username} #{phrase}" }
     end
 
-    # Two queries however many members the chat has: one grouped SUM, one to
-    # load the members. Members without points show 0.
+    # Three queries however many members the chat has: one grouped SUM, one
+    # to load the members, one for pseudonyms. Members without points show 0.
     def balance_all
       totals = @chat.points.group(:user_id).sum(:amount)
       lines = @chat.users
-                   .map { |user| [ user.name, totals.fetch(user.id, 0) ] }
+                   .map { |user| [ @chat.member_names.name(user), totals.fetch(user.id, 0) ] }
                    .sort_by { |name, balance| [ -balance, name ] }
 
       "Баланс жмихкоїнів у чаті: \n" + lines.map { |name, balance| "\n#{name}: #{balance}" }.join
@@ -227,7 +227,7 @@ module Response
 
     def default_data
       {
-        "підтримай мене" => -> { render_answers("support", first_name: @user.first_name) },
+        "підтримай мене" => -> { render_answers("support", first_name: @chat.member_names.first_name(@user)) },
         "дай ритм" => -> { TimeSignature.call },
         "пошли мене" => -> { mention_user_in(fu_phrases, @user) },
         "образь мене" => -> { mention_user_in(swear_phrases, @user) },

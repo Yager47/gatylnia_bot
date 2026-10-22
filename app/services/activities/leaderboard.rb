@@ -1,6 +1,7 @@
 module Activities
   # Totals per user for one kind of activity in a chat, highest first.
-  # Two queries regardless of chat size: one grouped sum, one for the users.
+  # Three queries regardless of chat size: one grouped sum, one for the
+  # users, one for their pseudonyms.
   class Leaderboard
     Row = Data.define(:user, :total)
 
@@ -15,7 +16,7 @@ module Activities
       users = User.where(id: totals.keys).index_by(&:id)
 
       totals.map { |user_id, total| Row.new(user: users.fetch(user_id), total: total) }
-            .sort_by { |row| [ -row.total, row.user.name ] }
+            .sort_by { |row| [ -row.total, @chat.member_names.name(row.user) ] }
     end
   end
 end

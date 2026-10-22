@@ -64,7 +64,7 @@ module Response
 
     def roast(target)
       text = write(
-        "Напиши жорстку, але дружню й смішну образу для #{target.name}. Можеш чіпляти те, що ця людина писала вище. " \
+        "Напиши жорстку, але дружню й смішну образу для #{@chat.member_names.name(target)}. Можеш чіпляти те, що ця людина писала вище. " \
           "Одне-два речення, до 40 слів, на \"ти\". Не починай зі звертання: імʼя додадуть перед твоїм текстом. " \
           "Обовʼязково напиши текст, не #{::Ai::SKIP}."
       )
@@ -73,7 +73,7 @@ module Response
       # Checked again: someone may have taken from the balance while the AI wrote.
       return too_poor unless spend(ROAST_FEE)
 
-      reply("#{@user.first_name} за #{Zhmykhcoins.count(ROAST_FEE)} замовив: \n\n#{mention(target)} #{text}")
+      reply("#{@chat.member_names.first_name(@user)} за #{Zhmykhcoins.count(ROAST_FEE)} замовив: \n\n#{mention(target)} #{text}")
     end
 
     def anecdote(topic)
@@ -85,7 +85,7 @@ module Response
       return reply(UNAVAILABLE) unless text
 
       @user.points.create!(chat: @chat, amount: -ANECDOTE_FEE, reason: @command)
-      reply("#{@user.first_name} замовив анекдот за #{Zhmykhcoins.count(ANECDOTE_FEE)}:\n\n#{text}")
+      reply("#{@chat.member_names.first_name(@user)} замовив анекдот за #{Zhmykhcoins.count(ANECDOTE_FEE)}:\n\n#{text}")
     end
 
     # nil when OpenAI fails or the model writes nothing usable.
@@ -106,7 +106,7 @@ module Response
     end
 
     def mention(user)
-      user.username ? "@#{user.username}" : user.name
+      user.username ? "@#{user.username}" : @chat.member_names.name(user)
     end
   end
 end

@@ -37,9 +37,9 @@ module Camerton
       @other = other
     end
 
-    # "@bot смак з @нік". Three queries.
+    # "@bot смак з @нік". Four queries, pseudonyms included.
     def text
-      names = "#{@user.name} і #{@other.name}"
+      names = "#{@chat.member_names.name(@user)} і #{@chat.member_names.name(@other)}"
       _other_id, common, agreement = self.class.agreements(chat: @chat, user: @user, other: @other, min_common: 1).first
       return "🤝 #{names}: спільних оцінок ще нема." unless common
 
