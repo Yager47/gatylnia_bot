@@ -5,8 +5,8 @@ RSpec.describe Activities::Confirmation do
   let(:user) { create(:user, first_name: "Петро", last_name: nil) }
   let(:day) { Time.zone.local(2026, 10, 12, 9, 0) }
 
-  def text(recorded)
-    described_class.new(user: user, chat: chat, day: day).text(recorded)
+  def text(reward: 0, **recorded)
+    described_class.new(user: user, chat: chat, day: day).text(recorded, reward: reward)
   end
 
   it "shows the day's total for one kind, one emoji per cup just recorded" do
@@ -21,6 +21,14 @@ RSpec.describe Activities::Confirmation do
     create(:activity, :push_ups, chat: chat, user: user, occurred_at: day)
 
     expect(text(coffee: 1, push_ups: 1)).to eq("☕💪 Петро: 1 кава, 1 підхід відтискань за сьогодні")
+  end
+
+  it "adds the жмихкоїни earned, or a loss, and nothing for zero" do
+    create(:activity, chat: chat, user: user, occurred_at: day)
+
+    expect(text(coffee: 1, reward: 25)).to eq("☕ Петро: 1 за сьогодні, +25 жмихкоїнів")
+    expect(text(coffee: 1, reward: -10)).to eq("☕ Петро: 1 за сьогодні, -10 жмихкоїнів")
+    expect(text(coffee: 1, reward: 0)).to eq("☕ Петро: 1 за сьогодні")
   end
 
   it "says кави for two cups" do

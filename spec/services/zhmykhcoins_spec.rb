@@ -13,4 +13,23 @@ RSpec.describe Zhmykhcoins do
     expect(described_class.count(-21, signed: true)).to eq("-21 жмихкоїн")
     expect(described_class.count(-3)).to eq("-3 жмихкоїни")
   end
+
+  describe ".spend" do
+    let(:chat) { create(:chat) }
+    let(:user) { create(:user) }
+
+    it "takes the fee while the balance covers it, never below zero" do
+      create(:point, user: user, chat: chat, amount: 150)
+
+      expect(described_class.spend(user, chat, 100, reason: "пошли @olga")).to have_attributes(amount: -100, reason: "пошли @olga", chat: chat)
+      expect(described_class.spend(user, chat, 100, reason: "пошли @olga")).to be_nil
+      expect(described_class.balance(user, chat)).to eq(50)
+    end
+
+    it "counts only the balance in that chat" do
+      create(:point, user: user, amount: 500)
+
+      expect(described_class.spend(user, chat, 100, reason: "пошли @olga")).to be_nil
+    end
+  end
 end

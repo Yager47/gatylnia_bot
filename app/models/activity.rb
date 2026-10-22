@@ -1,6 +1,9 @@
 class Activity < ApplicationRecord
   belongs_to :user
   belongs_to :chat
+  # The жмихкоїни it earned (Activities::Reward); removing the activity
+  # takes them away.
+  has_one :reward, class_name: "Point", inverse_of: :activity, dependent: :destroy
 
   enum :kind, { coffee: 0, push_ups: 1 }
   enum :source, { text: 0, video_note: 1 }, prefix: true

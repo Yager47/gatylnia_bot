@@ -11,13 +11,14 @@ class Ai
     # frame_paths: a video note's frames, attached to the target message.
     # note: what to do with the target, instead of judging whom it's for.
     def reply_in(chat, target: nil, frame_paths: [], note: nil)
-      response = OpenAiClient.build.chat.completions.create(
-        model: "gpt-5-mini",
-        verbosity: :low,
-        messages: messages(chat, target: target, frame_paths: frame_paths, note: note)
-      )
+      complete(messages(chat, target: target, frame_paths: frame_paths, note: note))
+    end
 
-      response.choices.first.message.content
+    # Something written on request rather than an answer to a message: task
+    # says what (a roast, an anecdote). The chat's recent history comes along
+    # so the model can pick on what people said.
+    def compose(chat, task)
+      complete(messages(chat, target: nil, frame_paths: []) << { role: "system", content: task })
     end
 
     # Tolerates the model adding punctuation or spaces around the word.
@@ -26,6 +27,11 @@ class Ai
     end
 
     private
+
+    def complete(messages)
+      response = OpenAiClient.build.chat.completions.create(model: "gpt-5-mini", verbosity: :low, messages: messages)
+      response.choices.first.message.content
+    end
 
     def messages(chat, target:, frame_paths:, note: nil)
       result = [

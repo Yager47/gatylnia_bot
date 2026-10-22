@@ -57,16 +57,18 @@ class HandleVideoNoteJob < ApplicationJob
   # records back, so a retry starts clean.
   def record_and_confirm(verdict, sent_at)
     Activity.transaction do
-      recorded = verdict.kinds.select do |kind|
+      activities = verdict.kinds.filter_map do |kind|
         Activities::Recorder.new(
           user: @user, chat: @chat, kind: kind, source: :video_note,
           telegram_message_id: @message.telegram_message_id, occurred_at: sent_at,
           details: kind == :coffee ? { "ordinal" => verdict.ordinal }.compact : {}
         ).call
       end
-      next if recorded.empty?
+      next if activities.empty?
 
-      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text(recorded.index_with(1)))
+      recorded = activities.to_h { |activity| [ activity.kind.to_sym, 1 ] }
+      reward = activities.sum { |activity| activity.reward&.amount.to_i }
+      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text(recorded, reward: reward))
     end
   end
 

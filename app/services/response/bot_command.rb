@@ -18,11 +18,11 @@ module Response
       "рік" => [ :all_year, "Гатуни за поточний рік" ]
     }.freeze
 
-    # "пошли @username" / "образь @username": the author pays the fee whether
-    # or not the target is in the chat. Prefix => [fee, phrase list method]
+    # "пошли @username": the author pays the fee whether or not the target is
+    # in the chat, if their balance covers it. Prefix => [fee, phrase list
+    # method]. "образь @username" is written by the AI (AiOrder).
     BUGGING = {
-      "пошли @" => [ 100, :fu_phrases ],
-      "образь @" => [ 150, :swear_phrases ]
+      "пошли @" => [ 100, :fu_phrases ]
     }.freeze
 
     # reply_to_message: the Telegram message the command replied to, if any
@@ -46,7 +46,7 @@ module Response
     # The first command that answers wins, in this order.
     def mode_reply
       if @chat.default?
-        process_rps || process_stat || process_activity_stats || process_data || process_bugging
+        process_rps || process_stat || process_activity_stats || process_ai_order || process_data || process_bugging
       elsif @chat.accountant?
         process_data
       end
@@ -54,6 +54,10 @@ module Response
 
     def process_rps
       RpsGame.new(user: @user, user_weapon: @command, chat: @chat).call
+    end
+
+    def process_ai_order
+      AiOrder.new(user: @user, command: @command, chat: @chat).call
     end
 
     # Every mode.
@@ -189,7 +193,8 @@ module Response
       prefix, (fee, phrase_list) = BUGGING.find { |prefix, _| @command.start_with?(prefix) }
       return unless prefix
 
-      @user.points.create!(chat: @chat, amount: -fee, reason: @command)
+      return reply(Zhmykhcoins.not_enough(@user, @chat, fee)) unless Zhmykhcoins.spend(@user, @chat, fee, reason: @command)
+
       # The command arrives lowercased; usernames are stored as written.
       target_user = @chat.users.find_by("LOWER(users.username) = ?", @command.delete_prefix(prefix))
       return reply("Такої людини тут нема, але #{Zhmykhcoins.count(fee)} я все одно забрав. Шоб не вмикала чєпуха.") unless target_user
@@ -227,7 +232,6 @@ module Response
         "пошли мене" => -> { mention_user_in(fu_phrases, @user) },
         "образь мене" => -> { mention_user_in(swear_phrases, @user) },
         "пошли когось" => -> { mention_user_in(fu_phrases, @chat.users.sample) },
-        "образь когось" => -> { mention_user_in(swear_phrases, @chat.users.sample) },
         "баланс" => -> { balance_all }
       }
     end

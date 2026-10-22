@@ -25,8 +25,20 @@ Each chat has a **mode**, plus two features that can be switched on or off.
 The chat's points. Reply to someone's message with a signed number to give
 (`+200`) or take (`-100`) that many; a bare `100` is just a message. Each
 member can give or take 500 in total per chat per day (Kyiv time), so `+300`
-and `-200` use it all up. Rock-paper-scissors and the paid `пошли @нік` /
-`образь @нік` also win or cost жмихкоїни; `@<bot> баланс` shows everyone's.
+and `-200` use it all up. `@<bot> баланс` shows everyone's, and every Monday
+at 10:00 the bot posts the past week's summary: each member's change, the
+week's top earner ("жмихкоїн тижня") and the most generous giver.
+
+In default mode they're also earned and spent:
+
+| | жмихкоїни |
+|---|---|
+| Coffee (text or video note) | cups 1–2 of the day +25, 3–4 +10, from the 5th −10; removing a coffee takes its reward back |
+| Push-up set | +100 for each of the first 3 sets a day |
+| Rock-paper-scissors | ±10 |
+| `@<bot> пошли @нік` | −100; refused unless the balance covers it |
+| `@<bot> образь когось` / `образь @нік` (AI roast) | −150, only if the AI delivers (a username nobody here has still costs it); refused unless the balance covers it |
+| `@<bot> анекдот [про …]` (AI anecdote) | −50, only if the AI delivers; may take the balance below zero |
 
 Video notes are transcribed with Whisper and classified from extracted frames,
 so production needs `ffmpeg`.

@@ -63,7 +63,7 @@ RSpec.describe HandleVideoNoteJob do
     perform
 
     expect(Activity.sole).to have_attributes(kind: "coffee", source: "video_note", amount: 1, occurred_at: sent_at, details: { "ordinal" => 2 })
-    expect(sent_texts).to eq([ "☕ Петро: 1 за сьогодні" ])
+    expect(sent_texts).to eq([ "☕ Петро: 1 за сьогодні, +25 жмихкоїнів" ])
     expect(Ai).not_to have_received(:reply_in)
   end
 
@@ -73,7 +73,7 @@ RSpec.describe HandleVideoNoteJob do
     perform
 
     expect(Activity.sole).to have_attributes(kind: "push_ups", amount: 1, details: {})
-    expect(sent_texts).to eq([ "💪 Петро: 1 підхід за сьогодні" ])
+    expect(sent_texts).to eq([ "💪 Петро: 1 підхід за сьогодні, +100 жмихкоїнів" ])
   end
 
   it "records both from one video in one message" do
@@ -82,7 +82,7 @@ RSpec.describe HandleVideoNoteJob do
     perform
 
     expect(Activity.pluck(:kind)).to contain_exactly("coffee", "push_ups")
-    expect(sent_texts).to eq([ "☕💪 Петро: 1 кава, 1 підхід відтискань за сьогодні" ])
+    expect(sent_texts).to eq([ "☕💪 Петро: 1 кава, 1 підхід відтискань за сьогодні, +125 жмихкоїнів" ])
   end
 
   context "when the video shows neither coffee nor push-ups" do

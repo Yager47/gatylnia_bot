@@ -269,12 +269,19 @@ RSpec.describe Response::BotCommand do
     end
   end
 
-  describe "пошли @ / образь @" do
+  describe "пошли @ and the AI orders" do
     def reply_to(text)
       described_class.new(user: user, chat: chat, text: text).call
     end
 
-    before { user.update!(first_name: "Іван") }
+    before do
+      user.update!(first_name: "Іван")
+      create(:point, user: user, chat: chat, amount: 1000)
+    end
+
+    def fees
+      Point.where("amount < 0")
+    end
 
     it "charges the author and mentions the target with a fuck-you phrase" do
       create(:user, username: "olga", chats: [ chat ])
@@ -283,7 +290,7 @@ RSpec.describe Response::BotCommand do
 
       expect(reply).to start_with("Іван за 100 жмихкоїнів замовив: \n\n@olga ")
       expect(AnswerFiles.yaml("phrases", "fuck_you")).to include(reply.split("@olga ").last)
-      expect(Point.sole).to have_attributes(user: user, chat: chat, amount: -100, reason: "пошли @olga")
+      expect(fees.sole).to have_attributes(user: user, chat: chat, amount: -100, reason: "пошли @olga")
     end
 
     it "finds a target whose username has capitals, mentioning it as written" do
@@ -292,16 +299,27 @@ RSpec.describe Response::BotCommand do
       expect(reply_to("@test_bot пошли @olga_k")).to start_with("Іван за 100 жмихкоїнів замовив: \n\n@Olga_K ")
     end
 
-    it "uses the bigger fee and the swear list for образь" do
+    it "has the AI roast for образь @нік and образь когось, and tell anecdotes" do
       create(:user, username: "olga", chats: [ chat ])
+      allow(Ai).to receive(:compose).and_return("Текст")
 
-      expect(reply_to("@test_bot образь @olga")).to start_with("Іван за 150 жмихкоїнів замовив:")
-      expect(Point.sole.amount).to eq(-150)
+      expect(reply_to("@test_bot образь @olga")).to eq("Іван за 150 жмихкоїнів замовив: \n\n@olga Текст")
+      expect(reply_to("@test_bot образь когось")).to eq("Іван за 150 жмихкоїнів замовив: \n\n@olga Текст")
+      expect(reply_to("@test_bot анекдот")).to eq("Іван замовив анекдот за 50 жмихкоїнів:\n\nТекст")
     end
 
     it "still charges when the target isn't in the chat" do
       expect(reply_to("@test_bot пошли @nobody")).to start_with("Такої людини тут нема, але 100 жмихкоїнів")
-      expect(Point.sole.amount).to eq(-100)
+      expect(fees.sole.amount).to eq(-100)
+    end
+
+    it "refuses пошли when the balance doesn't cover it, even for someone not in the chat" do
+      create(:user, username: "olga", chats: [ chat ])
+      Point.update_all(amount: 99)
+
+      expect(reply_to("@test_bot пошли @olga")).to eq("Це коштує 100 жмихкоїнів, а в тебе 99 жмихкоїнів. Спершу назбирай.")
+      expect(reply_to("@test_bot пошли @nobody")).to start_with("Це коштує 100")
+      expect(fees).to be_empty
     end
   end
 

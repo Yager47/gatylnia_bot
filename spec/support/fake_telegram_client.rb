@@ -55,6 +55,7 @@ RSpec.configure do |config|
 
     # Fail loudly if a spec reaches OpenAI without stubbing it explicitly.
     allow(Ai).to receive(:reply_in).and_raise("Unstubbed Ai.reply_in call in spec")
+    allow(Ai).to receive(:compose).and_raise("Unstubbed Ai.compose call in spec")
   end
 end
 
