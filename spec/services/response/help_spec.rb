@@ -31,7 +31,7 @@ RSpec.describe Response::Help do
   # the help doesn't mention.
   it "lists every default-mode command" do
     command = Response::BotCommand.new(user: user, chat: chat, text: "@test_bot рятуй")
-    phrases = command.send(:default_data).keys + Response::RpsGame::WEAPONS + %w[пошли\ @ образь\ @ гатуни\ за кава\ за віджимання\ за]
+    phrases = command.send(:default_data).keys + Response::RpsGame::WEAPONS + %w[пошли\ @ образь\ @ образь\ когось анекдот гатуни\ за кава\ за віджимання\ за]
 
     phrases.each { |phrase| expect(help).to include(phrase), phrase }
   end
@@ -67,6 +67,14 @@ RSpec.describe Response::Help do
 
     chat.update!(mode: :accountant)
     expect(help).to include(line)
+  end
+
+  it "mentions the activity rewards in default mode and the weekly summary in both modes" do
+    expect(help).to include("• За каву плачу жмихкоїнами", "• Щопонеділка о 10:00 підсумок жмихкоїнів за тиждень")
+
+    chat.update!(mode: :accountant)
+    expect(help).to include("Щопонеділка о 10:00")
+    expect(help).not_to include("За каву")
   end
 
   it "lists no mode commands in quiet mode" do

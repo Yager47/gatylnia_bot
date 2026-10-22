@@ -40,14 +40,14 @@ class TrackCoffeeTextJob < ApplicationJob
   # a retry sends the confirmation again; that rare case is accepted.
   def record_and_confirm(verdict, sent_at)
     Activity.transaction do
-      recorded = Activities::Recorder.new(
+      activity = Activities::Recorder.new(
         user: @user, chat: @chat, kind: :coffee, source: :text,
         telegram_message_id: @message.telegram_message_id, occurred_at: sent_at,
         details: { "ordinal" => verdict.ordinal }.compact
       ).call
-      next unless recorded
+      next unless activity
 
-      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text(coffee: 1))
+      deliver(Activities::Confirmation.new(user: @user, chat: @chat, day: sent_at).text({ coffee: 1 }, reward: activity.reward&.amount.to_i))
     end
   end
 

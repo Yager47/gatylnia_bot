@@ -1,7 +1,8 @@
 module Activities
-  # Records one activity per Telegram message and kind. Safe to call twice for
-  # the same message (job retries, Telegram's edited re-sends): the second call
-  # finds the existing row and reports that nothing new was recorded.
+  # Records one activity per Telegram message and kind, with its жмихкоїни
+  # reward (Activities::Reward). Safe to call twice for the same message (job
+  # retries, Telegram's edited re-sends): the second call finds the existing
+  # row, pays nothing and reports that nothing new was recorded.
   class Recorder
     def initialize(user:, chat:, kind:, source:, telegram_message_id:, occurred_at:, amount: 1, details: {})
       @user = user
@@ -14,8 +15,8 @@ module Activities
       @details = details
     end
 
-    # Returns true if this call recorded the activity, false if it already
-    # existed. Callers confirm to the user only on true.
+    # Returns the Activity if this call recorded it, nil if it already
+    # existed. Callers confirm to the user only when it's new.
     #
     # create_or_find_by! relies on the unique index and runs the INSERT in a
     # savepoint, so a duplicate doesn't abort the caller's transaction.
@@ -29,7 +30,10 @@ module Activities
         record.details = @details
       end
 
-      activity.previously_new_record?
+      return unless activity.previously_new_record?
+
+      Reward.new(activity).grant
+      activity
     end
   end
 end

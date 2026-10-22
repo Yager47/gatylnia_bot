@@ -20,6 +20,22 @@ RSpec.describe Ai do
     end
   end
 
+  describe ".compose" do
+    it "sends the task after the persona and the chat's history" do
+      chat = create(:chat)
+      create(:message, chat: chat, content: "я сьогодні знову не в темп")
+      completions = double(create: double(choices: [ double(message: double(content: "Анекдот")) ]))
+      allow(OpenAiClient).to receive(:build).and_return(double(chat: double(completions: completions)))
+      allow(described_class).to receive(:compose).and_call_original
+
+      expect(described_class.compose(chat, "Розкажи анекдот")).to eq("Анекдот")
+      expect(completions).to have_received(:create).with(hash_including(messages: satisfy { |messages|
+        messages.first[:role] == "system" && messages.any? { |m| m[:content].to_s.include?("не в темп") } &&
+          messages.last == { role: "system", content: "Розкажи анекдот" }
+      }))
+    end
+  end
+
   describe ".skip?" do
     it "recognizes the skip word with stray case, spaces or punctuation" do
       expect([ "SKIP", " skip. ", "Skip!" ].map { |text| described_class.skip?(text) }).to all(be(true))

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_22_120100) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_22_130100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -81,6 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_120100) do
     t.date "camerton_digest_sent_on"
     t.boolean "notes_enabled", default: false, null: false
     t.datetime "supergroup_since"
+    t.date "points_summary_sent_on"
     t.index ["telegram_id"], name: "index_chats_on_telegram_id", unique: true
   end
 
@@ -119,6 +120,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_120100) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "giver_id"
+    t.bigint "activity_id"
+    t.index ["activity_id"], name: "index_points_on_activity_id", unique: true
     t.index ["chat_id", "user_id"], name: "index_points_on_chat_id_and_user_id"
     t.index ["giver_id", "created_at"], name: "index_points_on_giver_id_and_created_at"
     t.index ["user_id"], name: "index_points_on_user_id"
@@ -374,6 +377,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_120100) do
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "messages", column: "reply_to_id"
   add_foreign_key "messages", "users"
+  add_foreign_key "points", "activities"
   add_foreign_key "points", "chats"
   add_foreign_key "points", "users"
   add_foreign_key "points", "users", column: "giver_id"

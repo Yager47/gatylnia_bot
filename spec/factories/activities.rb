@@ -7,6 +7,10 @@ FactoryBot.define do
     sequence(:telegram_message_id) { |n| n }
     occurred_at { Time.current }
 
+    trait :coffee do
+      kind { :coffee }
+    end
+
     trait :push_ups do
       kind { :push_ups }
       source { :video_note }

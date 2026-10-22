@@ -38,3 +38,7 @@ production:
     class: CloseAchievementPeriodsJob
     args: [ "month" ]
     schedule: "0 9 1 * * Europe/Kyiv"
+  # The weekly жмихкоїни summary, for the Kyiv week that just ended.
+  points_summaries:
+    class: PointsSummariesJob
+    schedule: "0 10 * * 1 Europe/Kyiv"

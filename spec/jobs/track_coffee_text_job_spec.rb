@@ -37,15 +37,15 @@ RSpec.describe TrackCoffeeTextJob do
       expect(Activity.coffee.last).to have_attributes(
         user: user, source: "text", telegram_message_id: 42, occurred_at: sent_at, amount: 1, details: { "ordinal" => 2 }
       )
-      expect(sent_texts).to eq([ "☕ Петро: 2 за сьогодні" ])
-      expect(chat.messages.assistant.last.content).to eq("☕ Петро: 2 за сьогодні")
+      expect(sent_texts).to eq([ "☕ Петро: 2 за сьогодні, +25 жмихкоїнів" ])
+      expect(chat.messages.assistant.last.content).to eq("☕ Петро: 2 за сьогодні, +25 жмихкоїнів")
     end
 
     it "counts one cup even when the message names a number" do
       perform(message_with("випив 2 каву"))
 
       expect(Activity.coffee.sole.amount).to eq(1)
-      expect(sent_texts).to eq([ "☕ Петро: 1 за сьогодні" ])
+      expect(sent_texts).to eq([ "☕ Петро: 1 за сьогодні, +25 жмихкоїнів" ])
     end
 
     it "does nothing when run again for the same message" do
