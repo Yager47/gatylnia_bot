@@ -43,7 +43,7 @@ module Achievements
 
       # "🔄 @olya перевзувається: 2 рази цього тижня"
       def level_line(mention, level)
-        "🔄 #{mention} перевзувається: #{Camerton::Formatting.count(level, 'раз', 'рази', 'разів')} цього тижня"
+        "🔄 #{mention} перевзувається: #{Plural.count(level, 'раз', 'рази', 'разів')} цього тижня"
       end
     end
   end

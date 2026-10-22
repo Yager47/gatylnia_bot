@@ -23,7 +23,7 @@ module Camerton
 
       [
         "🎧 Смак: #{@user.name}",
-        "#{Formatting.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}",
+        "#{Plural.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}",
         *release_section("Найбільше зайшло:", favourites),
         *release_section("Найменше зайшло:", least),
         *twin_lines
@@ -42,7 +42,7 @@ module Camerton
       user_id, common, agreement = TasteMatch.agreements(chat: @chat, user: @user).first
       return [] unless user_id
 
-      [ "", "Найближчий смак: #{User.find(user_id).name} (збіг #{agreement}% на #{Formatting.count(common, 'спільному релізі', 'спільних релізах', 'спільних релізах')})" ]
+      [ "", "Найближчий смак: #{User.find(user_id).name} (збіг #{agreement}% на #{Plural.count(common, 'спільному релізі', 'спільних релізах', 'спільних релізах')})" ]
     end
   end
 end

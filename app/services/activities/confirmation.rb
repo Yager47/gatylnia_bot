@@ -28,26 +28,14 @@ module Activities
     private
 
     def single_summary(kind, total)
-      kind == :push_ups ? "#{total} #{plural(total, 'підхід', 'підходи', 'підходів')}" : total.to_s
+      kind == :push_ups ? "#{total} #{Plural.word(total, 'підхід', 'підходи', 'підходів')}" : total.to_s
     end
 
     def label(kind, total)
       if kind == :coffee
-        plural(total, "кава", "кави", "кав")
+        Plural.word(total, "кава", "кави", "кав")
       else
-        plural(total, "підхід відтискань", "підходи відтискань", "підходів відтискань")
-      end
-    end
-
-    # Ukrainian plural: one for 1, 21, 31; few for 2-4, 22-24; many for
-    # 5-20, 25-30 (11-14 are always many).
-    def plural(count, one, few, many)
-      if count % 10 == 1 && count % 100 != 11
-        one
-      elsif (2..4).cover?(count % 10) && !(12..14).cover?(count % 100)
-        few
-      else
-        many
+        Plural.word(total, "підхід відтискань", "підходи відтискань", "підходів відтискань")
       end
     end
   end

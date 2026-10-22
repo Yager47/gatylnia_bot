@@ -25,7 +25,7 @@ module Camerton
 
     def lines(rows)
       rows.map do |user, count, average|
-        "#{user.name}: #{Formatting.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}"
+        "#{user.name}: #{Plural.count(count, 'оцінка', 'оцінки', 'оцінок')}, середня #{Formatting.score(average)}"
       end
     end
 

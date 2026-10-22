@@ -27,14 +27,14 @@ module Camerton
       return "#{title}\nОцінок ще нема." if reviews.empty?
 
       average = reviews.sum(&:score).fdiv(reviews.size)
-      "#{title}\nСередня #{Formatting.score(average)} · #{Formatting.count(reviews.size, 'оцінка', 'оцінки', 'оцінок')}"
+      "#{title}\nСередня #{Formatting.score(average)} · #{Plural.count(reviews.size, 'оцінка', 'оцінки', 'оцінок')}"
     end
 
     def history
       shares = @chat.release_shares.where(release: @release)
       first = shares.includes(:user).order(:shared_at, :id).first
       total = shares.count
-      times = total > 1 ? ", всього #{Formatting.count(total, 'раз', 'рази', 'разів')}" : ""
+      times = total > 1 ? ", всього #{Plural.count(total, 'раз', 'рази', 'разів')}" : ""
 
       "Вперше скинув #{first.user.name} #{first.shared_at.strftime('%d.%m.%Y')}#{times}"
     end

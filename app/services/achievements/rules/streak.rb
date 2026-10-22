@@ -31,7 +31,7 @@ module Achievements
       end
 
       def days(count)
-        Camerton::Formatting.count(count, "день", "дні", "днів")
+        Plural.count(count, "день", "дні", "днів")
       end
     end
   end
