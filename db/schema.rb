@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_22_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -118,7 +118,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_140000) do
     t.string "reason"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "giver_id"
     t.index ["chat_id", "user_id"], name: "index_points_on_chat_id_and_user_id"
+    t.index ["giver_id", "created_at"], name: "index_points_on_giver_id_and_created_at"
     t.index ["user_id"], name: "index_points_on_user_id"
   end
 
@@ -374,6 +376,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_140000) do
   add_foreign_key "messages", "users"
   add_foreign_key "points", "chats"
   add_foreign_key "points", "users"
+  add_foreign_key "points", "users", column: "giver_id"
   add_foreign_key "release_shares", "chats"
   add_foreign_key "release_shares", "releases"
   add_foreign_key "release_shares", "users"

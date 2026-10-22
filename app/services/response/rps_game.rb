@@ -35,7 +35,7 @@ module Response
       amount = won ? STAKE : -STAKE
       @user.points.create!(chat: @chat, amount: amount, reason: "RPS: #{@user_weapon} #{sign} #{bot_weapon}")
 
-      "#{pick(answers(answers_name))} #{@user_weapon.capitalize} #{sign} #{bot_weapon.capitalize}. #{format('%+d', amount)}"
+      "#{pick(answers(answers_name))} #{@user_weapon.capitalize} #{sign} #{bot_weapon.capitalize}. #{Zhmykhcoins.count(amount, signed: true)}"
     end
   end
 end

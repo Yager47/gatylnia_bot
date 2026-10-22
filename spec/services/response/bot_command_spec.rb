@@ -83,7 +83,7 @@ RSpec.describe Response::BotCommand do
       Point.create!(chat: chat, user: user, amount: -5)
       Point.create!(chat: create(:chat), user: user, amount: 1_000)
 
-      expect(reply_to("@test_bot баланс")).to eq("Загальний баланс в чаті: \n\nПетро: 20\nОльга: 0\nІван: -5")
+      expect(reply_to("@test_bot баланс")).to eq("Баланс жмихкоїнів у чаті: \n\nПетро: 20\nОльга: 0\nІван: -5")
     end
 
     it "runs the same number of queries regardless of how many members there are" do
@@ -99,7 +99,7 @@ RSpec.describe Response::BotCommand do
     it "works in accountant mode too" do
       chat.update!(mode: :accountant)
 
-      expect(reply_to("@test_bot баланс")).to start_with("Загальний баланс в чаті:")
+      expect(reply_to("@test_bot баланс")).to start_with("Баланс жмихкоїнів у чаті:")
     end
   end
 
@@ -281,7 +281,7 @@ RSpec.describe Response::BotCommand do
 
       reply = reply_to("@test_bot пошли @olga")
 
-      expect(reply).to start_with("Іван за 100 замовив: \n\n@olga ")
+      expect(reply).to start_with("Іван за 100 жмихкоїнів замовив: \n\n@olga ")
       expect(AnswerFiles.yaml("phrases", "fuck_you")).to include(reply.split("@olga ").last)
       expect(Point.sole).to have_attributes(user: user, chat: chat, amount: -100, reason: "пошли @olga")
     end
@@ -289,18 +289,18 @@ RSpec.describe Response::BotCommand do
     it "finds a target whose username has capitals, mentioning it as written" do
       create(:user, username: "Olga_K", chats: [ chat ])
 
-      expect(reply_to("@test_bot пошли @olga_k")).to start_with("Іван за 100 замовив: \n\n@Olga_K ")
+      expect(reply_to("@test_bot пошли @olga_k")).to start_with("Іван за 100 жмихкоїнів замовив: \n\n@Olga_K ")
     end
 
     it "uses the bigger fee and the swear list for образь" do
       create(:user, username: "olga", chats: [ chat ])
 
-      expect(reply_to("@test_bot образь @olga")).to start_with("Іван за 150 замовив:")
+      expect(reply_to("@test_bot образь @olga")).to start_with("Іван за 150 жмихкоїнів замовив:")
       expect(Point.sole.amount).to eq(-150)
     end
 
     it "still charges when the target isn't in the chat" do
-      expect(reply_to("@test_bot пошли @nobody")).to start_with("Такої людини тут нема, але 100")
+      expect(reply_to("@test_bot пошли @nobody")).to start_with("Такої людини тут нема, але 100 жмихкоїнів")
       expect(Point.sole.amount).to eq(-100)
     end
   end
