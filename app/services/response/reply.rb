@@ -8,6 +8,14 @@ module Response
 
     DAILY_BUDGET = 500
     SIGNED_NUMBER = /\A[+-]\d+\z/
+    BUDGET_GONE = "Пʼятихатку жмихкоїнів на сьогодні вже вʼєбано, приходь завтра".freeze
+
+    # What user can still give or take in chat today; "@bot мій ліміт"
+    # shows it too. Time.current is in the app time zone (Kyiv), so the day
+    # starts at Kyiv midnight.
+    def self.left_today(user, chat)
+      DAILY_BUDGET - user.given_points.where(chat: chat, created_at: Time.current.all_day).sum(Arel.sql("ABS(amount)"))
+    end
 
     def initialize(user:, text:, chat:, reply_to_message:)
       @user = user
@@ -42,7 +50,7 @@ module Response
     # what's left of the budget.
     def give(receiver, amount)
       @user.with_lock do
-        left = DAILY_BUDGET - spent_today
+        left = self.class.left_today(@user, @chat)
         next over_budget(left) if amount.abs > left
 
         point = receiver.points.create!(amount: amount, giver: @user, reason: @reply_to_message[:text], chat: @chat)
@@ -50,14 +58,8 @@ module Response
       end
     end
 
-    # Time.current is in the app time zone (Kyiv), so the day starts at
-    # Kyiv midnight.
-    def spent_today
-      @user.given_points.where(chat: @chat, created_at: Time.current.all_day).sum(Arel.sql("ABS(amount)"))
-    end
-
     def over_budget(left)
-      return "Пʼятихатку жмихкоїнів на сьогодні вже вʼєбано, приходь завтра" if left.zero?
+      return BUDGET_GONE if left.zero?
 
       "Сьогодні можна вʼєбать ще лише #{Zhmykhcoins.count(left)}, ліміт — пʼятихатка на день"
     end

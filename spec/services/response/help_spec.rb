@@ -57,7 +57,8 @@ RSpec.describe Response::Help do
     chat.update!(mode: :accountant)
     command = Response::BotCommand.new(user: user, chat: chat, text: "@test_bot рятуй")
 
-    command.send(:accountant_data).each_key { |phrase| expect(help).to include("<b>@test_bot #{phrase}</b>") }
+    command.send(:accountant_data).each_key { |phrase| expect(help).to include(phrase) }
+    expect(help).to include("<b>@test_bot баланс</b>", "<b>@test_bot мій ліміт / ліміт</b>")
     expect(help).not_to include("підтримай мене", "камінь")
   end
 
