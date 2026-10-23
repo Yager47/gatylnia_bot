@@ -172,7 +172,10 @@ Production runs on Heroku (app `gatylnia`) as a single web dyno.
 - **Migrations run in the release phase** (`release:` in [`Procfile`](Procfile)).
 - **Jobs run inside the web dyno.** Solid Queue is a Puma plugin in async
   mode, and its threads share one 12-connection pool with Puma. Fork mode used
-  to push the 512 MB dyno into R14 memory errors.
+  to push the 512 MB dyno into R14 memory errors. Async mode doesn't restart a
+  supervisor that dies (e.g. when Postgres drops), so
+  [`config/initializers/solid_queue.rb`](config/initializers/solid_queue.rb)
+  stops Puma when that happens, and Heroku restarts the dyno.
 - **The deploy is verified.** [`bin/post-deploy-check`](bin/post-deploy-check)
   confirms that the release succeeded, the Solid Queue worker started, `/up`
   returns 200 and `ffmpeg` runs on a dyno, and that no R10/R14/H10 errors or
