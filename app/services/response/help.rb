@@ -32,7 +32,7 @@ module Response
       lines =
         case @chat.mode
         when "default" then default_lines
-        when "accountant" then [ give_line, command("#{bot} баланс", "жмихкоїни всіх у чаті"), summary_line, *pseudonym_lines ]
+        when "accountant" then [ give_line, limit_line, command("#{bot} баланс", "жмихкоїни всіх у чаті"), summary_line, *pseudonym_lines ]
         when "quiet" then [ fact("Тут я мовчу і відповідаю лише на команди.") ]
         end
 
@@ -50,6 +50,7 @@ module Response
         command("#{bot} анекдот [про …]", "ШІ розкаже анекдот (маткор, гатіння, нерівні розміри…), за #{AiOrder::ANECDOTE_FEE} жмихкоїнів"),
         command("#{bot} камінь / ножиці / папір", "зіграємо на 10 жмихкоїнів"),
         give_line,
+        limit_line,
         command("#{bot} баланс", "жмихкоїни всіх у чаті"),
         summary_line,
         *pseudonym_lines,
@@ -64,6 +65,10 @@ module Response
 
     def give_line
       command("+200 / -100", "дати чи забрати жмихкоїни, до #{Reply::DAILY_BUDGET} на день; число без знака не рахується", hint: "відповіддю на повідомлення")
+    end
+
+    def limit_line
+      command("#{bot} мій ліміт / ліміт", "скільки ще можеш дати чи забрати сьогодні")
     end
 
     def pseudonym_lines

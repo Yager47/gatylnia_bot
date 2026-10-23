@@ -217,6 +217,13 @@ module Response
       "Баланс жмихкоїнів у чаті: \n" + lines.map { |name, balance| "\n#{name}: #{balance}" }.join
     end
 
+    def my_limit
+      left = Reply.left_today(@user, @chat)
+      return Reply::BUDGET_GONE if left.zero?
+
+      "Сьогодні можеш вʼєбать ще #{Zhmykhcoins.count(left)} з пʼятихатки"
+    end
+
     def data
       if @chat.default?
         default_data
@@ -232,13 +239,17 @@ module Response
         "пошли мене" => -> { mention_user_in(fu_phrases, @user) },
         "образь мене" => -> { mention_user_in(swear_phrases, @user) },
         "пошли когось" => -> { mention_user_in(fu_phrases, @chat.users.sample) },
-        "баланс" => -> { balance_all }
+        "баланс" => -> { balance_all },
+        "мій ліміт" => -> { my_limit },
+        "ліміт" => -> { my_limit }
       }
     end
 
     def accountant_data
       {
-        "баланс" => -> { balance_all }
+        "баланс" => -> { balance_all },
+        "мій ліміт" => -> { my_limit },
+        "ліміт" => -> { my_limit }
       }
     end
   end

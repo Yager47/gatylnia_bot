@@ -25,9 +25,10 @@ Each chat has a **mode**, plus two features that can be switched on or off.
 The chat's points. Reply to someone's message with a signed number to give
 (`+200`) or take (`-100`) that many; a bare `100` is just a message. Each
 member can give or take 500 in total per chat per day (Kyiv time), so `+300`
-and `-200` use it all up. `@<bot> баланс` shows everyone's, and every Monday
-at 10:00 the bot posts the past week's summary: each member's change, the
-week's top earner ("жмихкоїн тижня") and the most generous giver.
+and `-200` use it all up; `@<bot> мій ліміт` (or `ліміт`) shows what's left of yours.
+`@<bot> баланс` shows everyone's balance, and every Monday at 10:00 the bot
+posts the past week's summary: each member's change, the week's top earner
+("жмихкоїн тижня") and the most generous giver.
 
 A pseudonym costs 500: `@<bot> псевдонім Сер Гатило` (up to 32 characters,
 unique in the chat whatever the case) makes the bot call you that in every

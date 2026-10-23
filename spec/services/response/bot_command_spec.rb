@@ -109,6 +109,40 @@ RSpec.describe Response::BotCommand do
     end
   end
 
+  describe "мій ліміт" do
+    def reply_to(text)
+      described_class.new(user: user, chat: chat, text: text).call
+    end
+
+    it "shows what's left of the author's daily budget in this chat, gives and takes together" do
+      expect(reply_to("@test_bot мій ліміт")).to eq("Сьогодні можеш вʼєбать ще 500 жмихкоїнів з пʼятихатки")
+
+      create(:point, giver: user, chat: chat, amount: 300)
+      create(:point, giver: user, chat: chat, amount: -150)
+      create(:point, giver: user, chat: create(:chat), amount: 50)
+      create(:point, giver: create(:user), chat: chat, amount: 20)
+      create(:point, user: user, chat: chat, amount: -10)
+
+      expect(reply_to("@test_bot мій ліміт")).to eq("Сьогодні можеш вʼєбать ще 50 жмихкоїнів з пʼятихатки")
+    end
+
+    it "says when nothing is left" do
+      create(:point, giver: user, chat: chat, amount: 500)
+
+      expect(reply_to("@test_bot мій ліміт")).to eq("Пʼятихатку жмихкоїнів на сьогодні вже вʼєбано, приходь завтра")
+    end
+
+    it "answers to ліміт too" do
+      expect(reply_to("@test_bot ліміт")).to eq(reply_to("@test_bot мій ліміт"))
+    end
+
+    it "works in accountant mode too" do
+      chat.update!(mode: :accountant)
+
+      expect(reply_to("@test_bot мій ліміт")).to start_with("Сьогодні можеш вʼєбать ще 500")
+    end
+  end
+
   describe "a mention that isn't a command" do
     it "builds no command replies: no queries, no YAML" do
       user
