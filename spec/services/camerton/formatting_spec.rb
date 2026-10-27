@@ -43,6 +43,15 @@ RSpec.describe Camerton::Formatting do
     end
   end
 
+  describe ".platform_link" do
+    it "links an escaped name to the release on its platform" do
+      release = build(:release, :resolved, artist: "Tom & <Jerry>", url: "https://music.youtube.com/watch?v=a&list=b")
+
+      expect(described_class.platform_link(release))
+        .to eq(%(<a href="https://music.youtube.com/watch?v=a&amp;list=b">🎵 Tom &amp; &lt;Jerry&gt; — Bohemian Rhapsody</a>))
+    end
+  end
+
   describe ".release" do
     it "shows the icon with the artist and title, the title alone, or the link" do
       expect(described_class.release(build(:release, :resolved))).to eq("🎵 Queen — Bohemian Rhapsody")

@@ -5,8 +5,9 @@ module Camerton
   #
   # The release is the link's, created resolved with those names if new,
   # then merged like any resolved release (ReleaseMerge): an album the chat
-  # already has under another link keeps the score. No shares are created,
-  # so imported releases stay out of the digest and "що послухати".
+  # already has under another link keeps the score. No shares are created;
+  # the digest and "що послухати" offer imported releases to the other
+  # members, linked to the platform.
   #
   # Silent: no messages, reactions or AI calls. Only fills a review with no
   # score; a score from the chat is never replaced. The review's source is
