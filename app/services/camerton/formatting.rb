@@ -21,10 +21,17 @@ module Camerton
     # ones keep the old basic group's ids. Otherwise it links to the release
     # on its platform (YouTube Music).
     def release_link(share, chat)
-      name = ERB::Util.html_escape(release(share.release))
-      url = message_url(share, chat) || share.release.url
+      link(share.release, message_url(share, chat) || share.release.url)
+    end
 
-      %(<a href="#{ERB::Util.html_escape(url)}">#{name}</a>)
+    # Telegram HTML: the release as a link to its platform, for one never
+    # shared in the chat (a ratings import).
+    def platform_link(release)
+      link(release, release.url)
+    end
+
+    def link(release, url)
+      %(<a href="#{ERB::Util.html_escape(url)}">#{ERB::Util.html_escape(release(release))}</a>)
     end
 
     # The shared message's t.me/c link, or nil when it has none.

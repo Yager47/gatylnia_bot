@@ -66,6 +66,65 @@ RSpec.describe Camerton::ToListen do
     expect(to_listen).to eq("🎧 Olya: усе вже оцінено.")
   end
 
+  # Scored by `by` from a ratings file: never shared in the chat.
+  def imported(title, at:, kind: :resolved, by: sharer, score: 7, genres: nil)
+    release = create(:release, kind, status: :resolved, artist: "Artist", title: title, genres: genres)
+    create(:review, chat: chat, release: release, user: by, score: score, scored_at: at, source: :spreadsheet)
+    release
+  end
+
+  describe "imported releases" do
+    it "lists releases only another member imported, by when they were last scored, linking to the platform" do
+      shared("Shared", at: 2.days.ago, telegram_message_id: 5)
+      album = imported("Imported", at: 1.day.ago, kind: :album)
+      create(:review, chat: chat, release: album, user: create(:user, chats: [ chat ]), score: 4, scored_at: 3.days.ago)
+      imported("Older", at: 1.month.ago)
+
+      expect(to_listen).to eq(<<~TEXT.strip)
+        🎧 Що ще послухати — Olya:
+
+        <a href="#{album.url}">💿 Artist — Imported</a>
+        <a href="https://t.me/c/1234567890/5">🎵 Artist — Shared</a>
+        <a href="#{Release.find_by!(title: "Older").url}">🎵 Artist — Older</a>
+      TEXT
+    end
+
+    it "leaves out the member's own imports and ones they scored, keeping a shared one linked to its share" do
+      imported("Mine", at: 1.day.ago, by: olya)
+      scored = imported("Scored", at: 1.day.ago)
+      create(:review, chat: chat, release: scored, user: olya, score: 5, scored_at: 1.hour.ago)
+      imported("Not a review", at: 1.day.ago, score: nil)
+      both = shared("Both", at: 1.month.ago, telegram_message_id: 9)
+      create(:review, chat: chat, release: both, user: sharer, score: 8, scored_at: 1.day.ago)
+      create(:review, release: create(:release, :resolved), score: 8, scored_at: 1.day.ago) # another chat
+
+      expect(to_listen).to eq(<<~TEXT.strip)
+        🎧 Що ще послухати — Olya:
+
+        <a href="https://t.me/c/1234567890/9">🎵 Artist — Both</a>
+      TEXT
+    end
+
+    it "shows the 10 latest of shares and imports together and counts the rest of both" do
+      6.times { |index| shared("S#{index}", at: (2 * index).hours.ago) }
+      6.times { |index| imported("I#{index}", at: (2 * index + 1).hours.ago) }
+
+      expect(names).to eq([ *(0..4).flat_map { |index| [ "🎵 Artist — S#{index}", "🎵 Artist — I#{index}" ] }, "і ще 2" ])
+    end
+
+    it "filters them by kind and genre, and counts an imported genre as found" do
+      imported("Jazz album", at: 1.day.ago, kind: :album, genres: [ "Jazz" ])
+      imported("Rock song", at: 1.day.ago, genres: [ "Rock" ])
+
+      expect(names(kind: "album")).to eq([ "💿 Artist — Jazz album" ])
+      expect(names(genre: "rock")).to eq([ "🎵 Artist — Rock song" ])
+      expect(to_listen(kind: "song", genre: "jazz")).to eq("🎧 Не знайшов у чаті пісень з жанром «jazz».")
+
+      create(:review, chat: chat, release: Release.find_by!(title: "Jazz album"), user: olya, score: 6, scored_at: 1.hour.ago)
+      expect(to_listen(genre: "jazz")).to eq("🎧 Olya (jazz): усе вже оцінено.")
+    end
+  end
+
   describe "filters" do
     before do
       shared("Rock song", at: 1.hour.ago, genres: [ "Rock" ], styles: [ "Post-Punk" ])
@@ -106,14 +165,16 @@ RSpec.describe Camerton::ToListen do
   it "runs the same number of queries however many releases there are" do
     olya
     shared("A", at: 1.day.ago)
+    imported("B", at: 1.day.ago)
     queries_for_few = count_queries { to_listen }
 
     12.times { |index| shared("More #{index}", at: index.hours.ago) }
+    12.times { |index| imported("Imported #{index}", at: index.hours.ago) }
     chat.reload # drops the cached pseudonyms (Chat#member_names), as a new update would
 
-    expect(count_queries { to_listen }).to eq(queries_for_few).and eq(4)
+    expect(count_queries { to_listen }).to eq(queries_for_few).and eq(7)
     chat.reload
-    expect(count_queries { to_listen(kind: "song") }).to eq(4)
+    expect(count_queries { to_listen(kind: "song") }).to eq(7)
   end
 
   def count_queries(&block)

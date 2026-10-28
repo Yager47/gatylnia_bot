@@ -61,6 +61,31 @@ RSpec.describe Camerton::ReminderDigest do
       expect(digest).not_to include("@petro", "@olya")
     end
 
+    it "lists releases only imported and scored in the last week, by when they were scored, to the platform" do
+      petro = member("Petro")
+      olya = member("Olya")
+      album = create(:release, :album, status: :resolved, artist: "Artist", title: "Imported")
+      create(:review, chat: chat, release: album, user: petro, score: 8, scored_at: now - 1.day, source: :spreadsheet)
+      old = create(:release, :resolved, artist: "Artist", title: "Old import")
+      create(:review, chat: chat, release: old, user: petro, score: 8, scored_at: now - 8.days, source: :spreadsheet)
+      shared("Shared", by: petro, at: now - 2.days, message_id: 41)
+      shared("Newer", by: petro, at: now - 1.hour, message_id: 42)
+
+      expect(digest).to eq(<<~HTML.strip)
+        🎧 Хто ще не оцінив свіже:
+
+        @olya
+        <a href="https://t.me/c/1234567890/42">🎵 Artist — Newer</a>
+        <a href="#{album.url}">💿 Artist — Imported</a>
+        <a href="https://t.me/c/1234567890/41">🎵 Artist — Shared</a>
+
+        Відповідайте на реліз текстом, голосовим чи кружечком.
+      HTML
+
+      create(:review, chat: chat, release: album, user: olya, score: 3, scored_at: now - 1.hour, source: :spreadsheet)
+      expect(digest).not_to include("Imported")
+    end
+
     it "mentions a member without a username with a link, escaping names and titles" do
       sharer = member("Sharer")
       member("<Іван & Co>", username: nil).update!(telegram_id: "777")
@@ -93,13 +118,15 @@ RSpec.describe Camerton::ReminderDigest do
       sharer = member("Sharer")
       member("Olya")
       shared("A", by: sharer)
+      create(:review, chat: chat, release: create(:release, :resolved), user: sharer, score: 7, scored_at: now - 1.hour)
       queries_for_few = count_queries { digest }
 
       3.times { |index| member("M#{index}") }
       3.times { |index| shared("More #{index}", by: sharer) }
+      3.times { |index| create(:review, chat: chat, release: create(:release, :resolved), user: sharer, score: 7, scored_at: now - index.hours) }
       chat.reload # drops the cached pseudonyms (Chat#member_names), as a new update would
 
-      expect(count_queries { digest }).to eq(queries_for_few)
+      expect(count_queries { digest }).to eq(queries_for_few).and eq(8)
     end
   end
 
