@@ -1,24 +1,27 @@
 module Activities
   # The жмихкоїни a freshly recorded activity earns, as a Point linked to it.
   # Push-ups pay for the first PUSH_UP_SETS sets of the day; coffee by the
-  # cup's number that day, and from the fifth cup it costs.
+  # cup's number that day: the ENOUGH_COFFEE cup is free, and later ones cost.
   class Reward
     PUSH_UPS = 100
     PUSH_UP_SETS = 3
     # Cup number that day => жмихкоїни.
-    COFFEE = { 1..2 => 25, 3..4 => 10, 5.. => -10 }.freeze
+    COFFEE = { 1..1 => 25, 2..2 => 10, 3..3 => 0, 4.. => -25 }.freeze
+    # The cup Activities::Confirmation says "хвате на сьогодні" on.
+    ENOUGH_COFFEE = 3
 
     def initialize(activity)
       @activity = activity
     end
 
-    # The Point, or nil when the activity earns nothing. Locks the user's row
-    # so two activities recorded at once are numbered one after the other.
+    # The Point, or nil when the activity earns nothing (a zero is not saved).
+    # Locks the user's row so two activities recorded at once are numbered
+    # one after the other.
     def grant
       @activity.user.with_lock do
         number = number_today
         amount = @activity.coffee? ? COFFEE.find { |cups, _| cups.cover?(number) }.last : push_ups_amount(number)
-        next unless amount
+        next if amount.to_i.zero?
 
         @activity.create_reward!(user: @activity.user, chat: @activity.chat, amount: amount, reason: reason(number))
       end

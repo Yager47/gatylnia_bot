@@ -41,7 +41,7 @@ In default mode they're also earned and spent:
 
 | | жмихкоїни |
 |---|---|
-| Coffee (text or video note) | cups 1–2 of the day +25, 3–4 +10, from the 5th −10; removing a coffee takes its reward back |
+| Coffee (text or video note) | 1st cup of the day +25, 2nd +10, 3rd 0 (the bot says "хвате на сьогодні"), from the 4th −25; removing a coffee takes its reward back |
 | Push-up set | +100 for each of the first 3 sets a day |
 | Rock-paper-scissors | ±10 |
 | `@<bot> пошли @нік` | −100; refused unless the balance covers it |

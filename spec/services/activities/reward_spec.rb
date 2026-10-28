@@ -14,8 +14,9 @@ RSpec.describe Activities::Reward do
     end
   end
 
-  it "pays 25 for cups 1-2, 10 for cups 3-4 and takes 10 from the fifth cup on" do
-    expect(rewards(:coffee, 6)).to eq([ 25, 25, 10, 10, -10, -10 ])
+  it "pays 25 for the first cup, 10 for the second, nothing for the third and takes 25 from the fourth on" do
+    expect(rewards(:coffee, 5)).to eq([ 25, 10, nil, -25, -25 ])
+    expect(Point.count).to eq(4)
   end
 
   it "pays 100 for each of the first three push-up sets a day, then nothing" do
@@ -31,7 +32,7 @@ RSpec.describe Activities::Reward do
   end
 
   it "starts counting again at Kyiv midnight" do
-    expect(rewards(:coffee, 5, from: Time.zone.local(2026, 10, 22, 23, 57))).to eq([ 25, 25, 10, 25, 25 ])
+    expect(rewards(:coffee, 5, from: Time.zone.local(2026, 10, 22, 23, 57))).to eq([ 25, 10, nil, 25, 10 ])
   end
 
   it "counts each user and chat apart" do

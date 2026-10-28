@@ -13,7 +13,16 @@ RSpec.describe Activities::Confirmation do
     create(:activity, chat: chat, user: user, occurred_at: day - 2.hours)
     create(:activity, chat: chat, user: user, occurred_at: day, amount: 2)
 
-    expect(text(coffee: 2)).to eq("☕☕ Петро: 3 за сьогодні")
+    expect(text(coffee: 2)).to eq("☕☕ Петро: 3 за сьогодні. Хвате на сьогодні")
+  end
+
+  it "says хвате only when the cups just recorded reach the third" do
+    create_list(:activity, 3, chat: chat, user: user, occurred_at: day)
+
+    expect(text(coffee: 1)).to eq("☕ Петро: 3 за сьогодні. Хвате на сьогодні")
+
+    create(:activity, chat: chat, user: user, occurred_at: day)
+    expect(text(coffee: 1, reward: -25)).to eq("☕ Петро: 4 за сьогодні, -25 жмихкоїнів")
   end
 
   it "names each kind when several were recorded" do
