@@ -2,11 +2,14 @@ require "telegram/bot"
 
 module Camerton
   # The bot's emoji on a review's latest message, so the reviewer sees it was
-  # counted and how it was read. A reply that isn't a review clears it.
+  # counted and how it was read. A review without a written score gets ✍
+  # (noted, no score); a reply that isn't a review clears it.
   # Cosmetic: a failure (the chat may not allow the emoji) is logged, not
   # retried, so it never costs another scoring call.
   class ReviewReaction
     EMOJIS = { bad: "🤬", mid: "🤔", good: "👍", great: "🔥" }.freeze
+    # Without the variation selector: Telegram's reaction list has it bare.
+    UNSCORED_EMOJI = "✍".freeze
 
     def initialize(review, client: TelegramClient.build)
       @review = review
@@ -42,9 +45,15 @@ module Camerton
       Rails.logger.warn("[Camerton::ReviewReaction] Review #{@review.id}: #{error.class}: #{error.message}")
     end
 
+    # Only a review has a summary (ReviewScoring), so one without a score is
+    # a review whose author wrote no score.
     def reaction
-      label = @review.label
-      label ? [ Telegram::Bot::Types::ReactionTypeEmoji.new(type: "emoji", emoji: EMOJIS.fetch(label)) ] : []
+      emoji = if @review.label
+        EMOJIS.fetch(@review.label)
+      elsif @review.summary.present?
+        UNSCORED_EMOJI
+      end
+      emoji ? [ Telegram::Bot::Types::ReactionTypeEmoji.new(type: "emoji", emoji: emoji) ] : []
     end
   end
 end

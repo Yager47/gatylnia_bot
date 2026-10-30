@@ -34,6 +34,15 @@ RSpec.describe Camerton::ReviewReaction do
     end
   end
 
+  it "writes ✍ on a review without a written score" do
+    create(:review_message, review: review)
+    review.update!(score: nil, summary: "каже, що приспів топ")
+
+    described_class.new(review).call
+
+    expect(sent_emojis).to eq([ "✍" ])
+  end
+
   it "clears its reaction when the replies aren't a review" do
     create(:review_message, review: review)
 

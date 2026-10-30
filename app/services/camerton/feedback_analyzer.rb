@@ -1,6 +1,6 @@
 module Camerton
-  # Reads everything one member said about a release and decides how much
-  # they liked it.
+  # Reads everything one member said about a release: whether it's a review,
+  # the score they wrote (never one guessed from their words) and a summary.
   class FeedbackAnalyzer
     Result = Data.define(:review, :score, :summary)
 
@@ -10,15 +10,16 @@ module Camerton
       You read what one member of a Ukrainian friends' music chat wrote about a song or album someone shared.
       You get the release and their replies in order, possibly across several listens. Surzhyk, slang and swearing are normal.
       Replies with source "voice" or "video_note" are speech transcripts and may contain recognition mistakes.
-      - review: true if they say anything about how the music sounds or how they like it.
+      - review: true if they rate it or say anything about how the music sounds or how they like it.
         false if the replies are only questions, jokes, links, logistics or about something else
         ("де ти це знайшов?", "скинь ще", "о, це ж з того фільму").
-      - score: how much they like it overall, a whole number from 1 to 10; null when review is false.
-        1-3 bad (dislike), 4-5 mid (meh, okay), 6-8 good, 9-10 great (love it, masterpiece).
-        An explicit rating ("7/10", "8 з 10", "на дев'ятку", "4 з 5") wins: convert other scales to 10 and round.
-        If their opinion changed over time, the latest replies matter most.
+      - score: only a rating they wrote themselves, as a whole number from 1 to 10:
+        a bare number as the reply ("8"), "7/10", "8 з 10", "на дев'ятку", "4 з 5" (convert other scales to 10 and round).
+        null when they wrote no rating, however clearly they love or hate it: never guess a score from their words.
+        null when review is false. If they rated it more than once, the latest rating counts.
       - summary: their opinion in at most 12 Ukrainian words, third person, no name ("каже, що приспів топ, але інтро затягнуте").
-        Empty when review is false.
+        Only what they actually said: never add opinions or words of your own.
+        Empty when review is false, and when they only gave a rating with no words about the music ("8", "7/10").
     TEXT
 
     SCHEMA = {
@@ -46,8 +47,9 @@ module Camerton
       )
       verdict = JSON.parse(response.choices[0].message.content)
 
-      score = verdict["review"] ? verdict["score"]&.clamp(1, 10) : nil
-      Result.new(review: verdict["review"], score: score, summary: score ? verdict["summary"].strip.presence : nil)
+      return Result.new(review: false, score: nil, summary: nil) unless verdict["review"]
+
+      Result.new(review: true, score: verdict["score"]&.clamp(1, 10), summary: verdict["summary"].strip.presence)
     end
 
     private

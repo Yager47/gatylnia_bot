@@ -129,6 +129,30 @@ RSpec.describe Camerton::ReviewScoring do
     expect(fake_telegram.calls).to be_empty
   end
 
+  it "records a review without a written score with its summary only, and reacts with ✍" do
+    create(:review_message, review: review, text: "приспів топ, інтро затягнуте")
+    allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: true, score: nil, summary: "каже, що приспів топ"))
+
+    described_class.new(review, analyzer: analyzer).call
+
+    expect(review.reload).to have_attributes(score: nil, summary: "каже, що приспів топ")
+    _name, params = fake_telegram.calls.find { |name, _| name == :set_message_reaction }
+    expect(params[:reaction].map(&:emoji)).to eq([ "✍" ])
+    expect(fake_telegram.sent_messages).to be_empty
+  end
+
+  it "keeps an existing score but takes the new summary when a review has no written score" do
+    review.update!(score: 7, summary: "старе")
+    create(:review_message, review: review, text: "з часом ще краще")
+    allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: true, score: nil, summary: "з часом ще краще"))
+
+    described_class.new(review, analyzer: analyzer).call
+
+    expect(review.reload).to have_attributes(score: 7, summary: "з часом ще краще")
+    expect(review.score_changes).to be_empty
+    expect(fake_telegram.sent_messages).to be_empty
+  end
+
   it "records an unscored review when the messages aren't a review" do
     create(:review_message, review: review, text: "де знайшов?")
     allow(analyzer).to receive(:call).and_return(Camerton::FeedbackAnalyzer::Result.new(review: false, score: nil, summary: nil))

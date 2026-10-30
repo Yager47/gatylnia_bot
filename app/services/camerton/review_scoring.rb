@@ -1,9 +1,11 @@
 module Camerton
   # Re-derives a review's score and summary from all of its messages, then
   # reacts to the latest one with the result and, when the score changed,
-  # tells the release's sharers (SharerNotice). Messages that aren't a review
-  # never clear an existing score: it may have come from outside the chat
-  # (a spreadsheet import), with no messages behind it.
+  # tells the release's sharers (SharerNotice). A review only gets a score
+  # its author wrote; without one it keeps just the summary. Neither that nor
+  # messages that aren't a review clear an existing score: it may have come
+  # from outside the chat (a spreadsheet import), with no messages behind
+  # it, or from before scores had to be written out.
   class ReviewScoring
     # react: false scores silently (history imports, merges).
     def initialize(review, analyzer: nil, react: true)
@@ -17,11 +19,11 @@ module Camerton
       return if messages.empty?
 
       result = analyzer.call(release: @review.release, messages: messages)
-      return if result.score.nil? && @review.score
+      return if !result.review && @review.score
 
       previous_score = @review.score
       Review.transaction do
-        @review.update!(score: result.score, summary: result.summary, scored_at: Time.current)
+        @review.update!(score: result.score || previous_score, summary: result.summary, scored_at: Time.current)
         record_change(previous_score)
       end
       # Even with the score unchanged: a new message can make the review
