@@ -42,13 +42,29 @@ RSpec.describe Camerton::FeedbackAnalyzer do
     expect(analyze).to eq(described_class::Result.new(review: false, score: nil, summary: nil))
   end
 
+  it "keeps the summary of a review without a written score" do
+    model_returns(review: true, score: nil, summary: "каже, що приспів топ")
+
+    expect(analyze).to eq(described_class::Result.new(review: true, score: nil, summary: "каже, що приспів топ"))
+  end
+
+  it "has no summary for a bare score" do
+    model_returns(review: true, score: 8, summary: "")
+
+    expect(analyze).to eq(described_class::Result.new(review: true, score: 8, summary: nil))
+  end
+
+  it "tells the model not to make up a summary for a bare score" do
+    expect(described_class::PROMPT).to include("never add opinions or words of your own", "only gave a rating")
+  end
+
   it "keeps a score the model returns out of range within 1-10" do
     model_returns(review: true, score: 11, summary: "шедевр")
 
     expect(analyze.score).to eq(10)
   end
 
-  it "tells the model that explicit ratings win, the latest opinion matters most and transcripts may be off" do
-    expect(described_class::PROMPT).to include("7/10", "latest replies matter most", "speech transcripts")
+  it "tells the model to take only written scores, the latest one, and that transcripts may be off" do
+    expect(described_class::PROMPT).to include("7/10", "never guess a score", "the latest rating counts", "speech transcripts")
   end
 end
