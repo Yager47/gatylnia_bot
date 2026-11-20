@@ -6,8 +6,10 @@ module Camerton
   # behind only to map its link (merged_into). A remaster, a dated remix or
   # a deluxe edition of the album is the same release: "Revolver (Remastered
   # 2009)", "Let It Be (2021 Mix)" and "Exciter (Deluxe)" match "Revolver",
-  # "Let It Be" and "Exciter", while "(Some DJ Mix)" stays a release of its
-  # own.
+  # "Let It Be" and "Exciter", and so does a cut of the same recording:
+  # "(Single Version)", "(Radio Edit)", "(Mono)", "(2011 Version)". "(Some
+  # DJ Mix)", "(Live Version)" or "(Acoustic Version)" stays a release of
+  # its own.
   #
   # A member who reviewed both keeps one review: the messages are joined and
   # the review is re-scored from all of them, silently.
@@ -19,6 +21,8 @@ module Camerton
       (?:\d{4}\s+)?(?:digital(?:ly)?\s+)?remaster(?:ed)?(?:\s+\d{4})?(?:\s+(?:version|edition))? # Remastered 2009, 2009 Remaster
       | \d{4}\s+(?:re-?)?mix                                                                     # 2021 Mix, 2021 Remix
       | (?:\d{4}\s+|\d+(?:st|nd|rd|th)\s+anniversary\s+)?(?:super\s+)?deluxe(?:\s+(?:edition|version))? # Deluxe, 50th Anniversary Super Deluxe Edition
+      | (?:album|single|radio|original|mono|stereo|explicit|clean)(?:\s+(?:version|edit|mix))?   # Single Version, Radio Edit, Original Mix, Mono
+      | (?:\d{4}\s+version|version\s+\d{4})                                                      # 2011 Version, Version 2011
     )\z/xi
 
     # The title without edition notes, for comparing.

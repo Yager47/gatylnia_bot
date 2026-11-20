@@ -71,8 +71,14 @@ RSpec.describe Camerton::ReleaseMerge do
     expect(merge(create(:release, :resolved, :album, artist: "Depeche Mode", title: "Exciter (Deluxe)"))).to eq(plain)
   end
 
+  it "treats a single, radio or album version as the same release" do
+    expect(merge(create(:release, :resolved, artist: "Nickelback", title: "Follow You Home (Single Version)"))).to eq(original)
+    expect(merge(create(:release, :resolved, artist: "Nickelback", title: "Follow You Home - Radio Edit"))).to eq(original)
+  end
+
   it "keeps other versions apart" do
-    [ "Follow You Home (Some DJ Mix)", "Follow You Home (Remix)", "Follow You Home (Live)", "Follow You Home (Expanded Edition)" ]
+    [ "Follow You Home (Some DJ Mix)", "Follow You Home (Remix)", "Follow You Home (Live)", "Follow You Home (Expanded Edition)",
+      "Follow You Home (Live Version)", "Follow You Home (Acoustic Version)", "Follow You Home (Instrumental Version)" ]
       .each { |title| expect(merge(create(:release, :resolved, artist: "Nickelback", title: title))).to be_nil }
   end
 
@@ -91,6 +97,18 @@ RSpec.describe Camerton::ReleaseMerge do
         "L.A. Woman (50th Anniversary Deluxe Edition)" => "l.a. woman",
         "Rated R - Deluxe Edition" => "rated r",
         "Rubber Soul (2009 Deluxe Version)" => "rubber soul",
+        "Penny Lane (Single Version)" => "penny lane",
+        "Get Back (Album Version)" => "get back",
+        "Enjoy the Silence (Radio Edit)" => "enjoy the silence",
+        "Strobe (Original Mix)" => "strobe",
+        "Help! (Mono)" => "help!",
+        "Hey Jude (Stereo Version) [Remastered 2015]" => "hey jude",
+        "Stan (Explicit)" => "stan",
+        "Blue Monday - 1988 Version" => "blue monday",
+        "Something (Version 2019)" => "something",
+        "Yesterday (Live Version)" => "yesterday (live version)",
+        "Creep (Acoustic Version)" => "creep (acoustic version)",
+        "Version" => "version",
         "Deluxe" => "deluxe",
         "Let It Be (Some DJ Mix)" => "let it be (some dj mix)",
         "Remaster" => "remaster",
